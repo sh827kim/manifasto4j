@@ -3,6 +3,7 @@
 build/
 **/build/
 *.iml
+*.class
 
 CHANGES.md
 DEPLOYMENT.md
