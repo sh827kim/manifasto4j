@@ -1,0 +1,87 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+}
+
+dependencies {
+    // No external runtime dependencies - pure computation engine
+}
+
+// Javadoc configuration (failOnError = false to ignore HTML/tag errors in comments)
+javadoc {
+    failOnError = false
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+// Additional JAR tasks for sources and javadoc
+task sourcesJar(type: Jar) {
+    archiveClassifier = 'sources'
+    from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar) {
+    archiveClassifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+// Ensure javadoc is built before javadocJar
+javadocJar.dependsOn javadoc
+
+// Publishing Configuration for manifesto-core
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = project.group
+            artifactId = project.name
+            version = project.version
+
+            // Default jar is automatically included
+            artifact sourcesJar
+            artifact javadocJar
+
+            pom {
+                name = 'Manifesto Core'
+                description = 'Core computation engine for Manifesto LLM Constitution'
+                url = 'https://github.com/manifesto-ai/core'
+
+                licenses {
+                    license {
+                        name = 'MIT'
+                        url = 'https://opensource.org/licenses/MIT'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'manifesto'
+                        name = 'Manifesto Team'
+                    }
+                }
+
+                scm {
+                    connection = 'scm:git:https://github.com/manifesto-ai/core.git'
+                    developerConnection = 'scm:git:ssh://git@github.com/manifesto-ai/core.git'
+                    url = 'https://github.com/manifesto-ai/core'
+                }
+            }
+        }
+    }
+
+    repositories {
+        // Local Maven Repository
+        maven {
+            name = 'localRelease'
+            url = layout.buildDirectory.dir('repo')
+        }
+
+        // Commented out: Configure your own Maven repository
+        // maven {
+        //     name = 'mavencentral'
+        //     url = 'https://oss.sonatype.org/service/local/staging/deploy/maven2'
+        //     credentials {
+        //         username System.getenv('MAVEN_USERNAME')
+        //         password System.getenv('MAVEN_PASSWORD')
+        //     }
+        // }
+    }
+}
