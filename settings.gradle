@@ -1,0 +1,4 @@
+rootProject.name = 'manifesto'
+
+include ':manifesto-core'
+include ':manifesto-examples'
