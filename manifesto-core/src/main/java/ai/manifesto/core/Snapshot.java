@@ -1,0 +1,265 @@
+package ai.manifesto.core;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
+/**
+ * Snapshot - 애플리케이션 상태의 불변 스냅샷
+ *
+ * Snapshot은 Manifesto의 중심이다.
+ * 모든 상태 변경은 이전 Snapshot에서 새로운 Snapshot으로의 전환이다.
+ * "If it's not in Snapshot, it doesn't exist." - Manifesto 핵심 원칙
+ *
+ * 필드:
+ * - data: 도메인 상태 (사용자가 정의한 스키마에 따름)
+ * - computed: 계산된 값 (항상 재계산, 저장되지 않음)
+ * - system: 시스템 상태
+ * - input: 현재 액션 입력 (임시)
+ * - meta: 메타데이터 (버전, 타임스탬프 등)
+ */
+public class Snapshot {
+
+    private final Map<String, Object> data;        // 도메인 데이터
+    private final Map<String, Object> computed;    // 계산된 값
+    private final SystemState system;              // 시스템 상태
+    private final Map<String, Object> input;       // 현재 액션 입력
+    private final SnapshotMeta meta;               // 메타데이터
+
+    /**
+     * 생성자 (불변)
+     */
+    private Snapshot(Map<String, Object> data, Map<String, Object> computed,
+                     SystemState system, Map<String, Object> input,
+                     SnapshotMeta meta) {
+        this.data = new HashMap<>(data != null ? data : new HashMap<>());
+        this.computed = new HashMap<>(computed != null ? computed : new HashMap<>());
+        this.system = system != null ? system : SystemState.initial();
+        this.input = new HashMap<>(input != null ? input : new HashMap<>());
+        this.meta = meta != null ? meta : SnapshotMeta.create(0);
+    }
+
+    // ===== Getters =====
+    public Map<String, Object> getData() {
+        return new HashMap<>(data);
+    }
+
+    public Map<String, Object> getComputed() {
+        return new HashMap<>(computed);
+    }
+
+    public SystemState getSystem() {
+        return system;
+    }
+
+    public Map<String, Object> getInput() {
+        return new HashMap<>(input);
+    }
+
+    public SnapshotMeta getMeta() {
+        return meta;
+    }
+
+    // ===== Copy-on-Write 패턴 =====
+    // 불변성을 유지하면서 특정 필드만 변경한 새로운 Snapshot 생성
+
+    /**
+     * data를 변경한 새로운 Snapshot 생성
+     */
+    public Snapshot withData(Map<String, Object> newData) {
+        if (Objects.equals(newData, this.data)) return this;
+        return new Snapshot(newData, computed, system, input, meta);
+    }
+
+    /**
+     * computed를 변경한 새로운 Snapshot 생성
+     */
+    public Snapshot withComputed(Map<String, Object> newComputed) {
+        if (Objects.equals(newComputed, this.computed)) return this;
+        return new Snapshot(data, newComputed, system, input, meta);
+    }
+
+    /**
+     * system을 변경한 새로운 Snapshot 생성
+     */
+    public Snapshot withSystem(SystemState newSystem) {
+        if (Objects.equals(newSystem, this.system)) return this;
+        return new Snapshot(data, computed, newSystem, input, meta);
+    }
+
+    /**
+     * input을 변경한 새로운 Snapshot 생성
+     */
+    public Snapshot withInput(Map<String, Object> newInput) {
+        if (Objects.equals(newInput, this.input)) return this;
+        return new Snapshot(data, computed, system, newInput, meta);
+    }
+
+    /**
+     * meta를 변경한 새로운 Snapshot 생성
+     */
+    public Snapshot withMeta(SnapshotMeta newMeta) {
+        if (Objects.equals(newMeta, this.meta)) return this;
+        return new Snapshot(data, computed, system, input, newMeta);
+    }
+
+    /**
+     * 모든 필드를 변경한 새로운 Snapshot 생성
+     */
+    public Snapshot copy(Map<String, Object> data, Map<String, Object> computed,
+                        SystemState system, Map<String, Object> input,
+                        SnapshotMeta meta) {
+        return new Snapshot(data, computed, system, input, meta);
+    }
+
+    // ===== 빌더 =====
+    public static class Builder {
+        private Map<String, Object> data = new HashMap<>();
+        private Map<String, Object> computed = new HashMap<>();
+        private SystemState system = SystemState.initial();
+        private Map<String, Object> input = new HashMap<>();
+        private SnapshotMeta meta = SnapshotMeta.create(0);
+
+        public Builder data(Map<String, Object> data) {
+            this.data = data != null ? new HashMap<>(data) : new HashMap<>();
+            return this;
+        }
+
+        public Builder computed(Map<String, Object> computed) {
+            this.computed = computed != null ? new HashMap<>(computed) : new HashMap<>();
+            return this;
+        }
+
+        public Builder system(SystemState system) {
+            this.system = system != null ? system : SystemState.initial();
+            return this;
+        }
+
+        public Builder input(Map<String, Object> input) {
+            this.input = input != null ? new HashMap<>(input) : new HashMap<>();
+            return this;
+        }
+
+        public Builder meta(SnapshotMeta meta) {
+            this.meta = meta;
+            return this;
+        }
+
+        public Snapshot build() {
+            return new Snapshot(data, computed, system, input, meta);
+        }
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * 초기 Snapshot 생성
+     */
+    public static Snapshot initial() {
+        return new Snapshot(new HashMap<>(), new HashMap<>(),
+            SystemState.initial(), new HashMap<>(),
+            SnapshotMeta.create(0));
+    }
+
+    @Override
+    public String toString() {
+        return "Snapshot{" +
+               "version=" + meta.getVersion() +
+               ", status=" + system.getStatus() +
+               ", dataKeys=" + data.keySet() +
+               ", computedKeys=" + computed.keySet() +
+               ", timestamp=" + meta.getTimestamp() +
+               '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Snapshot snapshot)) return false;
+        return Objects.equals(data, snapshot.data) &&
+               Objects.equals(computed, snapshot.computed) &&
+               Objects.equals(system, snapshot.system) &&
+               Objects.equals(input, snapshot.input) &&
+               Objects.equals(meta, snapshot.meta);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(data, computed, system, input, meta);
+    }
+
+    // ===== 메타데이터 =====
+    /**
+     * SnapshotMeta - Snapshot의 메타정보
+     */
+    public static class SnapshotMeta {
+        private final long version;           // 단조증가 버전
+        private final long timestamp;         // 생성 시각 (ms)
+        private final String randomSeed;      // 결정론적 난수 생성용
+        private final String schemaHash;      // 스키마 해시
+
+        private SnapshotMeta(long version, long timestamp, String randomSeed,
+                            String schemaHash) {
+            this.version = version;
+            this.timestamp = timestamp;
+            this.randomSeed = randomSeed != null ? randomSeed : "";
+            this.schemaHash = schemaHash != null ? schemaHash : "";
+        }
+
+        public static SnapshotMeta create(long version) {
+            return new SnapshotMeta(version, System.currentTimeMillis(), "", "");
+        }
+
+        public static SnapshotMeta create(long version, long timestamp,
+                                         String randomSeed, String schemaHash) {
+            return new SnapshotMeta(version, timestamp, randomSeed, schemaHash);
+        }
+
+        // Getters
+        public long getVersion() { return version; }
+        public long getTimestamp() { return timestamp; }
+        public String getRandomSeed() { return randomSeed; }
+        public String getSchemaHash() { return schemaHash; }
+
+        /**
+         * 버전을 증가시킨 새로운 메타데이터 생성
+         */
+        public SnapshotMeta nextVersion() {
+            return new SnapshotMeta(version + 1, System.currentTimeMillis(),
+                randomSeed, schemaHash);
+        }
+
+        /**
+         * 타임스탬프를 업데이트한 새로운 메타데이터 생성
+         */
+        public SnapshotMeta withTimestamp(long timestamp) {
+            return new SnapshotMeta(version, timestamp, randomSeed, schemaHash);
+        }
+
+        @Override
+        public String toString() {
+            return "SnapshotMeta{" +
+                   "version=" + version +
+                   ", timestamp=" + timestamp +
+                   ", schemaHash='" + schemaHash + '\'' +
+                   '}';
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof SnapshotMeta that)) return false;
+            return version == that.version &&
+                   timestamp == that.timestamp &&
+                   Objects.equals(randomSeed, that.randomSeed) &&
+                   Objects.equals(schemaHash, that.schemaHash);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(version, timestamp, randomSeed, schemaHash);
+        }
+    }
+}
