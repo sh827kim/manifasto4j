@@ -1,0 +1,100 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+}
+
+allprojects {
+    group = 'ai.manifesto'
+    version = '1.0.0'
+
+    repositories {
+        mavenCentral()
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'maven-publish'
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+    }
+
+    dependencies {
+        // JUnit 5 for testing
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.2'
+        testImplementation 'org.junit.jupiter:junit-jupiter-params:5.9.2'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.2'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.9.2'
+    }
+
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+    }
+
+    // Maven Publishing Configuration
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                groupId = project.group
+                artifactId = project.name
+                version = project.version
+
+                // Default jar is automatically included
+
+                pom {
+                    name = project.name
+                    description = "Manifesto LLM Constitution Implementation"
+                    url = 'https://github.com/manifesto-ai/core'
+
+                    licenses {
+                        license {
+                            name = 'MIT'
+                            url = 'https://opensource.org/licenses/MIT'
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            id = 'manifesto'
+                            name = 'Manifesto Team'
+                        }
+                    }
+
+                    scm {
+                        connection = 'scm:git:https://github.com/manifesto-ai/core.git'
+                        developerConnection = 'scm:git:ssh://git@github.com/manifesto-ai/core.git'
+                        url = 'https://github.com/manifesto-ai/core'
+                    }
+                }
+            }
+        }
+
+        repositories {
+            // Local Maven Repository (for local testing)
+            maven {
+                name = 'localRelease'
+                url = layout.buildDirectory.dir('repo')
+            }
+        }
+    }
+
+    // JAR Configuration
+    jar {
+        archiveBaseName = project.name
+        archiveVersion = version
+        manifest {
+            attributes(
+                'Implementation-Title': project.name,
+                'Implementation-Version': version,
+                'Created-By': 'Gradle ' + gradle.gradleVersion,
+                'Built-On': new Date()
+            )
+        }
+    }
+}
