@@ -1,0 +1,30 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+dependencies {
+    implementation project(':manifesto-core')
+}
+
+application {
+    mainClass = 'ai.manifesto.examples.todo.TodoExample'
+}
+
+jar {
+    archiveBaseName = project.name
+    archiveVersion = version
+    manifest {
+        attributes(
+            'Main-Class': 'ai.manifesto.examples.todo.TodoExample',
+            'Implementation-Title': project.name,
+            'Implementation-Version': version
+        )
+    }
+}
+
+// Task to run the example
+task runExample(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'ai.manifesto.examples.todo.TodoExample'
+}
