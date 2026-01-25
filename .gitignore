@@ -1,0 +1,12 @@
+.idea/
+.gradle/
+build/
+**/build/
+*.iml
+
+CHANGES.md
+DEPLOYMENT.md
+GRADLE_SETUP.md
+IMPLEMENTATION_ANALYSIS.md
+IMPLEMENTATION_GUIDE.md
+PORTING_SUMMARY.md
