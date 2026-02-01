@@ -29,6 +29,4 @@
 - `fdr-world.md`
 
 ## Other
-- `IMPLEMENTATION_DETAILS.md`
-- `compiler-architecture.md`
 - `README.md`

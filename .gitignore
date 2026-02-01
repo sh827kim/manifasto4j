@@ -7,4 +7,5 @@ build/
 
 IMPL_*.md
 PORTING_SUMMARY.md
-
+docs/IMPLEMENTATION_DETAILS.md
+docs/compiler-architecture.md
