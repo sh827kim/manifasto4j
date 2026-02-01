@@ -41,6 +41,10 @@ public final class LoweringLite {
         return lowerRuntimePatches(patches, LoweringContext.defaultContext());
     }
 
+    public List<Map<String, Object>> lowerRuntimePatches(List<Map<String, Object>> patches, CompilePatchOptions options) {
+        return lowerRuntimePatches(patches, LoweringContext.fromPatchOptions(options));
+    }
+
     public List<Map<String, Object>> lowerRuntimePatches(List<Map<String, Object>> patches, LoweringContext ctx) {
         List<Map<String, Object>> lowered = new ArrayList<>();
         for (Map<String, Object> patch : patches) {
@@ -60,6 +64,10 @@ public final class LoweringLite {
 
     public List<Map<String, Object>> lowerPatchFragments(List<Map<String, Object>> fragments) {
         return lowerPatchFragments(fragments, LoweringContext.defaultContext());
+    }
+
+    public List<Map<String, Object>> lowerPatchFragments(List<Map<String, Object>> fragments, CompilePatchOptions options) {
+        return lowerPatchFragments(fragments, LoweringContext.fromPatchOptions(options));
     }
 
     public List<Map<String, Object>> lowerPatchFragments(List<Map<String, Object>> fragments, LoweringContext ctx) {

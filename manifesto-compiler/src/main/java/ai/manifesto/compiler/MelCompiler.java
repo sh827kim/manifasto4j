@@ -22,18 +22,30 @@ public final class MelCompiler implements CompilerFacade {
 
     @Override
     public CompilationResult compileDomain(String melText) {
+        return compileDomain(melText, null);
+    }
+
+    @Override
+    public CompilationResult compileDomain(String melText, CompileDomainOptions options) {
         if (melText == null || melText.trim().isEmpty()) {
             return CompilationResult.error("MEL input is empty");
         }
 
         List<Diagnostic> diagnostics = new ArrayList<>();
         List<CompileTrace> trace = new ArrayList<>();
+        String fnTableVersion = options == null ? null : options.fnTableVersion();
 
         long lexStart = System.nanoTime();
         Lexer lexer = new Lexer(melText);
         var lexResult = lexer.tokenize();
         diagnostics.addAll(lexResult.diagnostics());
-        trace.add(CompileTrace.of("lex", elapsedMs(lexStart), java.util.Map.of("tokenCount", lexResult.tokens().size())));
+        trace.add(CompileTrace.of(
+            "lex",
+            elapsedMs(lexStart),
+            fnTableVersion == null
+                ? java.util.Map.of("tokenCount", lexResult.tokens().size())
+                : java.util.Map.of("tokenCount", lexResult.tokens().size(), "fnTableVersion", fnTableVersion)
+        ));
         if (hasErrors(diagnostics)) {
             return CompilationResult.error("Lexer error", diagnostics, trace);
         }

@@ -12,6 +12,14 @@ public interface CompilerFacade {
         return compileDomain(melText);
     }
 
+    default DomainSchema compileDomainOrThrow(String melText, CompileDomainOptions options) {
+        CompilationResult result = compileDomain(melText, options);
+        if (!result.isOk()) {
+            throw new IllegalArgumentException("Compilation failed: " + result.getError());
+        }
+        return result.getSchema();
+    }
+
     default DomainSchema compileDomainOrThrow(String melText) {
         CompilationResult result = compileDomain(melText);
         if (!result.isOk()) {

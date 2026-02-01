@@ -31,6 +31,11 @@ import java.util.Map;
 public final class MelPatchCompiler {
 
     public CompilePatchResult compilePatch(String melText, String actionName) {
+        return compilePatch(melText, new CompilePatchOptions(actionName, null, null));
+    }
+
+    public CompilePatchResult compilePatch(String melText, CompilePatchOptions options) {
+        String actionName = options == null ? null : options.actionName();
         if (melText == null || melText.trim().isEmpty()) {
             return new CompilePatchResult(List.of(), List.of());
         }

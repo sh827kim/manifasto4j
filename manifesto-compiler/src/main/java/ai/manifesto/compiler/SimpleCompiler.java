@@ -26,12 +26,18 @@ public final class SimpleCompiler implements CompilerFacade {
 
     @Override
     public CompilationResult compileDomain(String melText) {
+        return compileDomain(melText, null);
+    }
+
+    @Override
+    public CompilationResult compileDomain(String melText, CompileDomainOptions options) {
         if (melText == null || melText.trim().isEmpty()) {
             return CompilationResult.error("MEL input is empty");
         }
 
         List<CompileTrace> trace = new ArrayList<>();
         long parseStart = System.nanoTime();
+        String fnTableVersion = options == null ? null : options.fnTableVersion();
 
         String id = null;
         String version = null;
@@ -54,7 +60,7 @@ public final class SimpleCompiler implements CompilerFacade {
             switch (parts[0]) {
                 case "schema" -> {
                     if (parts.length < 3) {
-                        trace.add(CompileTrace.of("parse", elapsedMs(parseStart)));
+                        trace.add(traceEntry("parse", parseStart, fnTableVersion));
                         return CompilationResult.error("schema requires id and version", List.of(), trace);
                     }
                     id = parts[1];
@@ -62,7 +68,7 @@ public final class SimpleCompiler implements CompilerFacade {
                 }
                 case "field" -> {
                     if (parts.length < 3) {
-                        trace.add(CompileTrace.of("parse", elapsedMs(parseStart)));
+                        trace.add(traceEntry("parse", parseStart, fnTableVersion));
                         return CompilationResult.error("field requires name and type", List.of(), trace);
                     }
                     String name = parts[1];
@@ -83,12 +89,12 @@ public final class SimpleCompiler implements CompilerFacade {
                 }
                 case "action" -> {
                     if (parts.length < 3) {
-                        trace.add(CompileTrace.of("parse", elapsedMs(parseStart)));
+                        trace.add(traceEntry("parse", parseStart, fnTableVersion));
                         return CompilationResult.error("action requires name and flow", List.of(), trace);
                     }
                     String name = parts[1];
                     if (!"halt".equals(parts[2])) {
-                        trace.add(CompileTrace.of("parse", elapsedMs(parseStart)));
+                        trace.add(traceEntry("parse", parseStart, fnTableVersion));
                         return CompilationResult.error("only 'halt' flow is supported in SimpleCompiler", List.of(), trace);
                     }
                     ActionSpec.Builder actionBuilder = new ActionSpec.Builder(name)
@@ -106,7 +112,7 @@ public final class SimpleCompiler implements CompilerFacade {
                 }
                 case "computed" -> {
                     if (parts.length < 3) {
-                        trace.add(CompileTrace.of("parse", elapsedMs(parseStart)));
+                        trace.add(traceEntry("parse", parseStart, fnTableVersion));
                         return CompilationResult.error("computed requires name and literal", List.of(), trace);
                     }
                     String name = parts[1];
@@ -114,18 +120,18 @@ public final class SimpleCompiler implements CompilerFacade {
                     computedFields.add(ComputedFieldDef.simple(name, new Lit(value)));
                 }
                 default -> {
-                    trace.add(CompileTrace.of("parse", elapsedMs(parseStart)));
+                    trace.add(traceEntry("parse", parseStart, fnTableVersion));
                     return CompilationResult.error("Unknown directive: " + parts[0], List.of(), trace);
                 }
             }
         }
 
         if (id == null || version == null) {
-            trace.add(CompileTrace.of("parse", elapsedMs(parseStart)));
+            trace.add(traceEntry("parse", parseStart, fnTableVersion));
             return CompilationResult.error("schema directive is required", List.of(), trace);
         }
 
-        trace.add(CompileTrace.of("parse", elapsedMs(parseStart)));
+        trace.add(traceEntry("parse", parseStart, fnTableVersion));
         long genStart = System.nanoTime();
 
         DomainSchema.Builder builder = new DomainSchema.Builder(id, version);
@@ -153,12 +159,20 @@ public final class SimpleCompiler implements CompilerFacade {
             finalBuilder.addComputedField(field);
         }
 
-        trace.add(CompileTrace.of("generate", elapsedMs(genStart)));
+        trace.add(traceEntry("generate", genStart, fnTableVersion));
         return CompilationResult.ok(finalBuilder.build(), List.of(), trace);
     }
 
     private long elapsedMs(long startNanos) {
         return (System.nanoTime() - startNanos) / 1_000_000L;
+    }
+
+    private CompileTrace traceEntry(String phase, long startNanos, String fnTableVersion) {
+        long duration = elapsedMs(startNanos);
+        if (fnTableVersion == null) {
+            return CompileTrace.of(phase, duration);
+        }
+        return CompileTrace.of(phase, duration, Map.of("fnTableVersion", fnTableVersion));
     }
 
     private Object parseLiteral(String token) {
