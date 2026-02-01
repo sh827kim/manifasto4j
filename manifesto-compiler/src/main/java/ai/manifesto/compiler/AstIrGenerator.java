@@ -87,8 +87,10 @@ import ai.manifesto.core.expr.type.Typeof;
 import ai.manifesto.core.flow.FlowNode;
 import ai.manifesto.core.schema.ActionSpec;
 import ai.manifesto.core.schema.ComputedFieldDef;
+import ai.manifesto.core.schema.DomainMeta;
 import ai.manifesto.core.schema.DomainSchema;
 import ai.manifesto.core.schema.FieldSpec;
+import ai.manifesto.core.schema.TypeSpec;
 
 import java.util.*;
 
@@ -105,6 +107,7 @@ public final class AstIrGenerator {
 
         collectFieldNames(program.domain(), ctx);
 
+        Map<String, TypeSpec> types = generateTypes(program.domain(), ctx);
         Map<String, FieldSpec> dataFields = generateState(program.domain(), ctx);
         Map<String, ComputedFieldDef> computedFields = generateComputed(program.domain(), ctx);
         Map<String, ActionSpec> actions = generateActions(program.domain(), ctx);
@@ -117,6 +120,8 @@ public final class AstIrGenerator {
         String version = "1.0.0";
 
         DomainSchema.Builder builder = new DomainSchema.Builder(id, version);
+        builder.meta(new DomainMeta(program.domain().name(), null, null));
+        builder.types(types);
         actions.values().forEach(builder::addAction);
         dataFields.values().forEach(builder::addDataField);
         computedFields.values().forEach(builder::addComputedField);
@@ -125,6 +130,8 @@ public final class AstIrGenerator {
         String hash = ValidationUtils.computeSchemaHash(temp);
 
         DomainSchema.Builder finalBuilder = new DomainSchema.Builder(id, version).hash(hash);
+        finalBuilder.meta(new DomainMeta(program.domain().name(), null, null));
+        finalBuilder.types(types);
         actions.values().forEach(finalBuilder::addAction);
         dataFields.values().forEach(finalBuilder::addDataField);
         computedFields.values().forEach(finalBuilder::addComputedField);
@@ -145,6 +152,56 @@ public final class AstIrGenerator {
                 ctx.computedFields.add(computed.name());
             }
         }
+    }
+
+    private Map<String, TypeSpec> generateTypes(DomainNode domain, GeneratorContext ctx) {
+        Map<String, TypeSpec> types = new LinkedHashMap<>();
+        for (TypeDeclNode typeDecl : domain.types()) {
+            Map<String, Object> definition = typeExprToDefinition(typeDecl.typeExpr(), ctx);
+            types.put(typeDecl.name(), new TypeSpec(typeDecl.name(), definition));
+        }
+        return types;
+    }
+
+    private Map<String, Object> typeExprToDefinition(TypeExprNode typeExpr, GeneratorContext ctx) {
+        if (typeExpr instanceof SimpleTypeNode simple) {
+            if ("string".equals(simple.name()) || "number".equals(simple.name())
+                || "boolean".equals(simple.name()) || "null".equals(simple.name())) {
+                return mapOf("kind", "primitive", "type", simple.name());
+            }
+            return mapOf("kind", "ref", "name", simple.name());
+        }
+        if (typeExpr instanceof ArrayTypeNode array) {
+            return mapOf("kind", "array", "element", typeExprToDefinition(array.elementType(), ctx));
+        }
+        if (typeExpr instanceof RecordTypeNode record) {
+            return mapOf(
+                "kind", "record",
+                "key", typeExprToDefinition(record.keyType(), ctx),
+                "value", typeExprToDefinition(record.valueType(), ctx)
+            );
+        }
+        if (typeExpr instanceof ObjectTypeNode objectType) {
+            Map<String, Object> fields = new LinkedHashMap<>();
+            for (TypeFieldNode field : objectType.fields()) {
+                Map<String, Object> fieldDef = new LinkedHashMap<>();
+                fieldDef.put("type", typeExprToDefinition(field.typeExpr(), ctx));
+                fieldDef.put("optional", field.optional());
+                fields.put(field.name(), fieldDef);
+            }
+            return mapOf("kind", "object", "fields", fields);
+        }
+        if (typeExpr instanceof UnionTypeNode union) {
+            List<Map<String, Object>> types = new ArrayList<>();
+            for (TypeExprNode t : union.types()) {
+                types.add(typeExprToDefinition(t, ctx));
+            }
+            return mapOf("kind", "union", "types", types);
+        }
+        if (typeExpr instanceof LiteralTypeNode literal) {
+            return mapOf("kind", "literal", "value", literal.value());
+        }
+        return mapOf("kind", "primitive", "type", "null");
     }
 
     private Map<String, FieldSpec> generateState(DomainNode domain, GeneratorContext ctx) {
@@ -687,6 +744,14 @@ public final class AstIrGenerator {
             return new FieldSpecData("object", true, fields, null, null);
         }
         return new FieldSpecData("object", true, null, null, null);
+    }
+
+    private Map<String, Object> mapOf(Object... entries) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        for (int i = 0; i + 1 < entries.length; i += 2) {
+            map.put(String.valueOf(entries[i]), entries[i + 1]);
+        }
+        return map;
     }
 
     private Set<String> extractDeps(ExprNode expr) {
