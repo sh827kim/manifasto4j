@@ -65,6 +65,8 @@ public final class RuntimePatchEvaluatorLite {
             case "and" -> and(expr, snapshot);
             case "or" -> or(expr, snapshot);
             case "len" -> len(evaluateExpr(castMap(expr.get("arg")), snapshot));
+            case "strLen" -> strLen(evaluateExpr(castMap(expr.get("str")), snapshot));
+            case "toString" -> toStringValue(evaluateExpr(castMap(expr.get("arg")), snapshot));
             case "not" -> !truthy(evaluateExpr(castMap(expr.get("arg")), snapshot));
             case "isNull" -> evaluateExpr(castMap(expr.get("arg")), snapshot) == null;
             case "abs" -> abs(evaluateExpr(castMap(expr.get("arg")), snapshot));
@@ -82,6 +84,9 @@ public final class RuntimePatchEvaluatorLite {
             case "coalesce" -> coalesce(castList(expr.get("args")), snapshot);
             case "min" -> min(castList(expr.get("args")), snapshot);
             case "max" -> max(castList(expr.get("args")), snapshot);
+            case "sumArray" -> sumArray(evaluateExpr(castMap(expr.get("array")), snapshot));
+            case "minArray" -> minArray(evaluateExpr(castMap(expr.get("array")), snapshot));
+            case "maxArray" -> maxArray(evaluateExpr(castMap(expr.get("array")), snapshot));
             case "typeof" -> typeOf(evaluateExpr(castMap(expr.get("arg")), snapshot));
             case "startsWith" -> startsWith(evaluateExpr(castMap(expr.get("left")), snapshot),
                                             evaluateExpr(castMap(expr.get("right")), snapshot));
@@ -633,6 +638,21 @@ public final class RuntimePatchEvaluatorLite {
         }
         return merged;
     }
+
+    private double toNumber(Object value) {
+        if (value == null) return 0.0;
+        if (value instanceof Number n) return n.doubleValue();
+        if (value instanceof Boolean b) return b ? 1.0 : 0.0;
+        if (value instanceof String s) {
+            try {
+                return Double.parseDouble(s);
+            } catch (NumberFormatException e) {
+                return 0.0;
+            }
+        }
+        return 0.0;
+    }
+
     private int len(Object value) {
         if (value instanceof List<?> list) {
             return list.size();
@@ -644,6 +664,47 @@ public final class RuntimePatchEvaluatorLite {
             return s.length();
         }
         return 0;
+    }
+
+    private int strLen(Object value) {
+        return value == null ? 0 : String.valueOf(value).length();
+    }
+
+    private String toStringValue(Object value) {
+        return value == null ? "" : String.valueOf(value);
+    }
+
+    private Object sumArray(Object value) {
+        if (!(value instanceof List<?> list)) {
+            return 0.0;
+        }
+        double sum = 0.0;
+        for (Object item : list) {
+            sum += toNumber(item);
+        }
+        return sum;
+    }
+
+    private Object minArray(Object value) {
+        if (!(value instanceof List<?> list) || list.isEmpty()) {
+            return null;
+        }
+        double min = Double.POSITIVE_INFINITY;
+        for (Object item : list) {
+            min = Math.min(min, toNumber(item));
+        }
+        return min == Double.POSITIVE_INFINITY ? null : min;
+    }
+
+    private Object maxArray(Object value) {
+        if (!(value instanceof List<?> list) || list.isEmpty()) {
+            return null;
+        }
+        double max = Double.NEGATIVE_INFINITY;
+        for (Object item : list) {
+            max = Math.max(max, toNumber(item));
+        }
+        return max == Double.NEGATIVE_INFINITY ? null : max;
     }
 
     @SuppressWarnings("unchecked")

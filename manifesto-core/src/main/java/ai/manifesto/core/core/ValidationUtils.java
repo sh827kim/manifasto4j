@@ -7,12 +7,15 @@ import ai.manifesto.core.expr.arithmetic.Div;
 import ai.manifesto.core.expr.arithmetic.Ceil;
 import ai.manifesto.core.expr.arithmetic.Floor;
 import ai.manifesto.core.expr.arithmetic.Max;
+import ai.manifesto.core.expr.arithmetic.MaxArray;
 import ai.manifesto.core.expr.arithmetic.Min;
+import ai.manifesto.core.expr.arithmetic.MinArray;
 import ai.manifesto.core.expr.arithmetic.Mod;
 import ai.manifesto.core.expr.arithmetic.Mul;
 import ai.manifesto.core.expr.arithmetic.Neg;
 import ai.manifesto.core.expr.arithmetic.Pow;
 import ai.manifesto.core.expr.arithmetic.Round;
+import ai.manifesto.core.expr.arithmetic.SumArray;
 import ai.manifesto.core.expr.arithmetic.Sqrt;
 import ai.manifesto.core.expr.arithmetic.Sub;
 import ai.manifesto.core.expr.collection.Append;
@@ -47,8 +50,10 @@ import ai.manifesto.core.expr.object.Values;
 import ai.manifesto.core.expr.string.Concat;
 import ai.manifesto.core.expr.string.EndsWith;
 import ai.manifesto.core.expr.string.Split;
+import ai.manifesto.core.expr.string.StrLen;
 import ai.manifesto.core.expr.string.StartsWith;
 import ai.manifesto.core.expr.string.Substring;
+import ai.manifesto.core.expr.string.ToString;
 import ai.manifesto.core.expr.string.Trim;
 import ai.manifesto.core.expr.string.ToLowerCase;
 import ai.manifesto.core.expr.string.ToUpperCase;
@@ -684,6 +689,15 @@ public final class ValidationUtils {
         if (expr instanceof Max max) {
             return Map.of("kind", "max", "args", toExprList(max.args()));
         }
+        if (expr instanceof SumArray sumArray) {
+            return Map.of("kind", "sumArray", "array", toExprMap(sumArray.array()));
+        }
+        if (expr instanceof MinArray minArray) {
+            return Map.of("kind", "minArray", "array", toExprMap(minArray.array()));
+        }
+        if (expr instanceof MaxArray maxArray) {
+            return Map.of("kind", "maxArray", "array", toExprMap(maxArray.array()));
+        }
         if (expr instanceof Abs abs) {
             return Map.of("kind", "abs", "arg", toExprMap(abs.arg()));
         }
@@ -827,6 +841,12 @@ public final class ValidationUtils {
         }
         if (expr instanceof ToUpperCase upper) {
             return Map.of("kind", "toUpperCase", "str", toExprMap(upper.str()));
+        }
+        if (expr instanceof StrLen strLen) {
+            return Map.of("kind", "strLen", "str", toExprMap(strLen.str()));
+        }
+        if (expr instanceof ToString toString) {
+            return Map.of("kind", "toString", "arg", toExprMap(toString.arg()));
         }
 
         return Map.of("kind", expr.getClass().getSimpleName().toLowerCase(Locale.ROOT));

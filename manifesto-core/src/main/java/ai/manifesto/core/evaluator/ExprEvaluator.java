@@ -24,7 +24,7 @@ import java.util.Map;
 /**
  * ExprEvaluator - 표현식 평가 엔진
  *
- * 51개의 ExprNode 타입을 평가한다.
+ * 56개의 ExprNode 타입을 평가한다.
  * Pure & Total 함수: 예외를 던지지 않고 항상 Result를 반환한다.
  *
  * 특징:
@@ -126,6 +126,15 @@ public class ExprEvaluator {
         if (expr instanceof Max max) {
             return evaluateMax(max.args(), ctx);
         }
+        if (expr instanceof SumArray sumArray) {
+            return evaluateSumArray(sumArray.array(), ctx);
+        }
+        if (expr instanceof MinArray minArray) {
+            return evaluateMinArray(minArray.array(), ctx);
+        }
+        if (expr instanceof MaxArray maxArray) {
+            return evaluateMaxArray(maxArray.array(), ctx);
+        }
         if (expr instanceof Abs abs) {
             return evaluateAbs(abs.arg(), ctx);
         }
@@ -172,6 +181,12 @@ public class ExprEvaluator {
         }
         if (expr instanceof Split split) {
             return evaluateSplit(split.str(), split.delimiter(), ctx);
+        }
+        if (expr instanceof StrLen strLen) {
+            return evaluateStrLen(strLen.str(), ctx);
+        }
+        if (expr instanceof ToString toString) {
+            return evaluateToString(toString.arg(), ctx);
         }
 
         // ===== Collection =====
@@ -510,6 +525,48 @@ public class ExprEvaluator {
         return Result.ok(max);
     }
 
+    private static Result<Object, ErrorValue> evaluateSumArray(ExprNode arrayExpr, EvalContext ctx) {
+        Result<Object, ErrorValue> result = evaluateExpr(arrayExpr, ctx);
+        if (result.isErr()) return result;
+        Object value = result.unwrap();
+        if (!(value instanceof List<?> list)) {
+            return Result.ok(0.0);
+        }
+        double sum = 0.0;
+        for (Object item : list) {
+            sum += toNumber(item);
+        }
+        return Result.ok(sum);
+    }
+
+    private static Result<Object, ErrorValue> evaluateMinArray(ExprNode arrayExpr, EvalContext ctx) {
+        Result<Object, ErrorValue> result = evaluateExpr(arrayExpr, ctx);
+        if (result.isErr()) return result;
+        Object value = result.unwrap();
+        if (!(value instanceof List<?> list) || list.isEmpty()) {
+            return Result.ok(null);
+        }
+        double min = Double.POSITIVE_INFINITY;
+        for (Object item : list) {
+            min = Math.min(min, toNumber(item));
+        }
+        return Result.ok(min == Double.POSITIVE_INFINITY ? null : min);
+    }
+
+    private static Result<Object, ErrorValue> evaluateMaxArray(ExprNode arrayExpr, EvalContext ctx) {
+        Result<Object, ErrorValue> result = evaluateExpr(arrayExpr, ctx);
+        if (result.isErr()) return result;
+        Object value = result.unwrap();
+        if (!(value instanceof List<?> list) || list.isEmpty()) {
+            return Result.ok(null);
+        }
+        double max = Double.NEGATIVE_INFINITY;
+        for (Object item : list) {
+            max = Math.max(max, toNumber(item));
+        }
+        return Result.ok(max == Double.NEGATIVE_INFINITY ? null : max);
+    }
+
     private static Result<Object, ErrorValue> evaluateAbs(ExprNode arg, EvalContext ctx) {
         Result<Object, ErrorValue> result = evaluateExpr(arg, ctx);
         if (result.isErr()) return result;
@@ -679,6 +736,18 @@ public class ExprEvaluator {
         Result<Object, ErrorValue> result = evaluateExpr(str, ctx);
         if (result.isErr()) return result;
         return Result.ok(toString(result.unwrap()).trim());
+    }
+
+    private static Result<Object, ErrorValue> evaluateStrLen(ExprNode strExpr, EvalContext ctx) {
+        Result<Object, ErrorValue> result = evaluateExpr(strExpr, ctx);
+        if (result.isErr()) return result;
+        return Result.ok(toString(result.unwrap()).length());
+    }
+
+    private static Result<Object, ErrorValue> evaluateToString(ExprNode argExpr, EvalContext ctx) {
+        Result<Object, ErrorValue> result = evaluateExpr(argExpr, ctx);
+        if (result.isErr()) return result;
+        return Result.ok(toString(result.unwrap()));
     }
 
     private static Result<Object, ErrorValue> evaluateToLowerCase(ExprNode str, EvalContext ctx) {

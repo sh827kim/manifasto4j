@@ -104,6 +104,11 @@ public final class LoweringLite {
             Map<String, Object> right = lowerExprNodeStrict(args.get(1), ctx);
             return mapOf("kind", fn, "left", left, "right", right);
         }
+        if ("strLen".equals(fn) || "strlen".equals(fn)) {
+            requireArgs(args, 1, fn);
+            Map<String, Object> arg = lowerExprNodeStrict(args.get(0), ctx);
+            return mapOf("kind", "strLen", "str", arg);
+        }
         if (isUnary(fn)) {
             requireArgs(args, 1, fn);
             Map<String, Object> arg = lowerExprNodeStrict(args.get(0), ctx);
@@ -231,7 +236,17 @@ public final class LoweringLite {
                 "objects", lowerArgs(args, ctx)
             );
         }
-        if ("concat".equals(fn) || "coalesce".equals(fn) || "min".equals(fn) || "max".equals(fn)) {
+        if ("min".equals(fn) || "max".equals(fn)) {
+            if (args.size() == 1) {
+                return mapOf("kind", fn + "Array", "array", lowerExprNodeStrict(args.get(0), ctx));
+            }
+            return mapOf("kind", fn, "args", lowerArgs(args, ctx));
+        }
+        if ("sum".equals(fn)) {
+            requireArgs(args, 1, fn);
+            return mapOf("kind", "sumArray", "array", lowerExprNodeStrict(args.get(0), ctx));
+        }
+        if ("concat".equals(fn) || "coalesce".equals(fn)) {
             return mapOf("kind", fn, "args", lowerArgs(args, ctx));
         }
         throw LoweringError.unknownCallFn(fn);
@@ -342,7 +357,7 @@ public final class LoweringLite {
 
     private boolean isUnary(String fn) {
         return switch (fn) {
-            case "not", "isNull", "len", "abs", "neg", "round", "floor", "ceil", "typeof", "trim", "keys", "values", "entries", "first", "last" -> true;
+            case "not", "isNull", "len", "strLen", "toString", "abs", "neg", "round", "floor", "ceil", "typeof", "trim", "keys", "values", "entries", "first", "last" -> true;
             default -> false;
         };
     }

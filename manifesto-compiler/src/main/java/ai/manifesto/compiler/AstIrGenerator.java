@@ -75,7 +75,9 @@ import ai.manifesto.core.expr.object.Merge;
 import ai.manifesto.core.expr.object.ObjectExpr;
 import ai.manifesto.core.expr.object.Values;
 import ai.manifesto.core.expr.string.Concat;
+import ai.manifesto.core.expr.string.StrLen;
 import ai.manifesto.core.expr.string.Substring;
+import ai.manifesto.core.expr.string.ToString;
 import ai.manifesto.core.expr.string.Trim;
 import ai.manifesto.core.expr.string.ToLowerCase;
 import ai.manifesto.core.expr.string.ToUpperCase;
@@ -497,12 +499,12 @@ public final class AstIrGenerator {
             case "neg" -> new Neg(args.get(0));
             case "abs" -> new Abs(args.get(0));
             case "min" -> args.size() == 1
-                ? new Reduce(args.get(0), new Min(List.of(Get.of("$acc"), Get.of("$item"))), new First(args.get(0)))
+                ? new MinArray(args.get(0))
                 : new Min(args);
             case "max" -> args.size() == 1
-                ? new Reduce(args.get(0), new Max(List.of(Get.of("$acc"), Get.of("$item"))), new First(args.get(0)))
+                ? new MaxArray(args.get(0))
                 : new Max(args);
-            case "sum" -> new Reduce(args.get(0), new Add(Get.of("$acc"), Get.of("$item")), Lit.of(0));
+            case "sum" -> new SumArray(args.get(0));
             case "floor" -> new Floor(args.get(0));
             case "ceil" -> new Ceil(args.get(0));
             case "round" -> new Round(args.get(0));
@@ -527,7 +529,8 @@ public final class AstIrGenerator {
             case "substr", "substring" -> args.size() >= 3
                 ? new Substring(args.get(0), args.get(1), args.get(2))
                 : new Substring(args.get(0), args.get(1), new Len(args.get(0)));
-            case "len", "length", "strLen", "strlen" -> new Len(args.get(0));
+            case "len", "length" -> new Len(args.get(0));
+            case "strLen", "strlen" -> new StrLen(args.get(0));
             case "at" -> new At(args.get(0), args.get(1));
             case "first" -> new First(args.get(0));
             case "last" -> new Last(args.get(0));
@@ -549,7 +552,7 @@ public final class AstIrGenerator {
             case "entries" -> new Entries(args.get(0));
             case "merge" -> new Merge(args);
             case "if", "cond" -> new If(args.get(0), args.get(1), args.get(2));
-            case "toString" -> new Concat(args);
+            case "toString" -> new ToString(args.get(0));
             default -> unsupportedExpr("Unknown function '" + name + "'", location, ctx);
         };
     }
