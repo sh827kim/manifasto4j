@@ -97,6 +97,37 @@ public final class LoweringLite {
                 "else", lowerExprNode(args.get(2))
             );
         }
+        if ("pow".equals(fn)) {
+            return mapOf("kind", "pow",
+                "base", lowerExprNode(args.get(0)),
+                "exponent", lowerExprNode(args.get(1))
+            );
+        }
+        if ("sqrt".equals(fn)) {
+            return mapOf("kind", "sqrt",
+                "arg", lowerExprNode(args.get(0))
+            );
+        }
+        if ("toLowerCase".equals(fn) || "lower".equals(fn)) {
+            return mapOf("kind", "toLowerCase",
+                "str", lowerExprNode(args.get(0))
+            );
+        }
+        if ("toUpperCase".equals(fn) || "upper".equals(fn)) {
+            return mapOf("kind", "toUpperCase",
+                "str", lowerExprNode(args.get(0))
+            );
+        }
+        if ("substring".equals(fn) || "substr".equals(fn)) {
+            Map<String, Object> out = mapOf("kind", "substring",
+                "str", lowerExprNode(args.get(0)),
+                "start", lowerExprNode(args.get(1))
+            );
+            if (args.size() > 2) {
+                out.put("end", lowerExprNode(args.get(2)));
+            }
+            return out;
+        }
         if ("filter".equals(fn)) {
             return mapOf("kind", "filter",
                 "array", lowerExprNode(args.get(0)),
