@@ -27,49 +27,64 @@ public final class MelCompiler implements CompilerFacade {
         }
 
         List<Diagnostic> diagnostics = new ArrayList<>();
+        List<CompileTrace> trace = new ArrayList<>();
 
+        long lexStart = System.nanoTime();
         Lexer lexer = new Lexer(melText);
         var lexResult = lexer.tokenize();
         diagnostics.addAll(lexResult.diagnostics());
+        trace.add(CompileTrace.of("lex", elapsedMs(lexStart), java.util.Map.of("tokenCount", lexResult.tokens().size())));
         if (hasErrors(diagnostics)) {
-            return CompilationResult.error("Lexer error", diagnostics);
+            return CompilationResult.error("Lexer error", diagnostics, trace);
         }
 
+        long parseStart = System.nanoTime();
         Parser parser = new Parser(lexResult.tokens());
         ParseResult parseResult = parser.parse();
         diagnostics.addAll(parseResult.diagnostics());
+        trace.add(CompileTrace.of("parse", elapsedMs(parseStart)));
         if (parseResult.program() == null || hasErrors(diagnostics)) {
-            return CompilationResult.error("Parser error", diagnostics);
+            return CompilationResult.error("Parser error", diagnostics, trace);
         }
 
         ProgramNode program = parseResult.program();
 
+        long scopeStart = System.nanoTime();
         ScopeAnalyzer scopeAnalyzer = new ScopeAnalyzer();
         ScopeAnalysisResult scopeResult = scopeAnalyzer.analyze(program);
         diagnostics.addAll(scopeResult.diagnostics());
+        trace.add(CompileTrace.of("analyze", elapsedMs(scopeStart)));
         if (hasErrors(diagnostics)) {
-            return CompilationResult.error("Scope analysis error", diagnostics);
+            return CompilationResult.error("Scope analysis error", diagnostics, trace);
         }
 
+        long validationStart = System.nanoTime();
         SemanticValidator validator = new SemanticValidator();
         ValidationResult validation = validator.validate(program);
         diagnostics.addAll(validation.diagnostics());
+        trace.add(CompileTrace.of("validate", elapsedMs(validationStart)));
         if (hasErrors(diagnostics)) {
-            return CompilationResult.error("Semantic validation error", diagnostics);
+            return CompilationResult.error("Semantic validation error", diagnostics, trace);
         }
 
+        long genStart = System.nanoTime();
         AstIrGenerator generator = new AstIrGenerator();
         GenerateResult generateResult = generator.generate(program);
         diagnostics.addAll(generateResult.diagnostics());
+        trace.add(CompileTrace.of("generate", elapsedMs(genStart)));
         if (generateResult.schema() == null || hasErrors(diagnostics)) {
-            return CompilationResult.error("IR generation error", diagnostics);
+            return CompilationResult.error("IR generation error", diagnostics, trace);
         }
 
         DomainSchema schema = generateResult.schema();
-        return CompilationResult.ok(schema, diagnostics);
+        return CompilationResult.ok(schema, diagnostics, trace);
     }
 
     private boolean hasErrors(List<Diagnostic> diagnostics) {
         return diagnostics.stream().anyMatch(d -> d.severity() == DiagnosticSeverity.ERROR);
+    }
+
+    private long elapsedMs(long startNanos) {
+        return (System.nanoTime() - startNanos) / 1_000_000L;
     }
 }

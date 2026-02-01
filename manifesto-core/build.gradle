@@ -13,19 +13,7 @@ javadoc {
     options.addStringOption('Xdoclint:none', '-quiet')
 }
 
-// Additional JAR tasks for sources and javadoc
-task sourcesJar(type: Jar) {
-    archiveClassifier = 'sources'
-    from sourceSets.main.allJava
-}
-
-task javadocJar(type: Jar) {
-    archiveClassifier = 'javadoc'
-    from javadoc.destinationDir
-}
-
-// Ensure javadoc is built before javadocJar
-javadocJar.dependsOn javadoc
+// sourcesJar/javadocJar tasks are provided by the root subprojects java configuration.
 
 // Publishing Configuration for manifesto-core
 publishing {

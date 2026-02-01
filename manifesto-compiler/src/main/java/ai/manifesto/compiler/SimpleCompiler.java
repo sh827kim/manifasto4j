@@ -30,6 +30,9 @@ public final class SimpleCompiler implements CompilerFacade {
             return CompilationResult.error("MEL input is empty");
         }
 
+        List<CompileTrace> trace = new ArrayList<>();
+        long parseStart = System.nanoTime();
+
         String id = null;
         String version = null;
         List<ActionSpec> actions = new ArrayList<>();
@@ -51,14 +54,16 @@ public final class SimpleCompiler implements CompilerFacade {
             switch (parts[0]) {
                 case "schema" -> {
                     if (parts.length < 3) {
-                        return CompilationResult.error("schema requires id and version");
+                        trace.add(CompileTrace.of("parse", elapsedMs(parseStart)));
+                        return CompilationResult.error("schema requires id and version", List.of(), trace);
                     }
                     id = parts[1];
                     version = parts[2];
                 }
                 case "field" -> {
                     if (parts.length < 3) {
-                        return CompilationResult.error("field requires name and type");
+                        trace.add(CompileTrace.of("parse", elapsedMs(parseStart)));
+                        return CompilationResult.error("field requires name and type", List.of(), trace);
                     }
                     String name = parts[1];
                     String type = parts[2];
@@ -78,11 +83,13 @@ public final class SimpleCompiler implements CompilerFacade {
                 }
                 case "action" -> {
                     if (parts.length < 3) {
-                        return CompilationResult.error("action requires name and flow");
+                        trace.add(CompileTrace.of("parse", elapsedMs(parseStart)));
+                        return CompilationResult.error("action requires name and flow", List.of(), trace);
                     }
                     String name = parts[1];
                     if (!"halt".equals(parts[2])) {
-                        return CompilationResult.error("only 'halt' flow is supported in SimpleCompiler");
+                        trace.add(CompileTrace.of("parse", elapsedMs(parseStart)));
+                        return CompilationResult.error("only 'halt' flow is supported in SimpleCompiler", List.of(), trace);
                     }
                     ActionSpec.Builder actionBuilder = new ActionSpec.Builder(name)
                         .flow(FlowNode.Halt.of(null));
@@ -99,21 +106,27 @@ public final class SimpleCompiler implements CompilerFacade {
                 }
                 case "computed" -> {
                     if (parts.length < 3) {
-                        return CompilationResult.error("computed requires name and literal");
+                        trace.add(CompileTrace.of("parse", elapsedMs(parseStart)));
+                        return CompilationResult.error("computed requires name and literal", List.of(), trace);
                     }
                     String name = parts[1];
                     Object value = parseLiteral(parts[2]);
                     computedFields.add(ComputedFieldDef.simple(name, new Lit(value)));
                 }
                 default -> {
-                    return CompilationResult.error("Unknown directive: " + parts[0]);
+                    trace.add(CompileTrace.of("parse", elapsedMs(parseStart)));
+                    return CompilationResult.error("Unknown directive: " + parts[0], List.of(), trace);
                 }
             }
         }
 
         if (id == null || version == null) {
-            return CompilationResult.error("schema directive is required");
+            trace.add(CompileTrace.of("parse", elapsedMs(parseStart)));
+            return CompilationResult.error("schema directive is required", List.of(), trace);
         }
+
+        trace.add(CompileTrace.of("parse", elapsedMs(parseStart)));
+        long genStart = System.nanoTime();
 
         DomainSchema.Builder builder = new DomainSchema.Builder(id, version);
         for (ActionSpec action : actions) {
@@ -140,7 +153,12 @@ public final class SimpleCompiler implements CompilerFacade {
             finalBuilder.addComputedField(field);
         }
 
-        return CompilationResult.ok(finalBuilder.build());
+        trace.add(CompileTrace.of("generate", elapsedMs(genStart)));
+        return CompilationResult.ok(finalBuilder.build(), List.of(), trace);
+    }
+
+    private long elapsedMs(long startNanos) {
+        return (System.nanoTime() - startNanos) / 1_000_000L;
     }
 
     private Object parseLiteral(String token) {

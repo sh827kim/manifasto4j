@@ -8,6 +8,10 @@ import ai.manifesto.core.schema.DomainSchema;
 public interface CompilerFacade {
     CompilationResult compileDomain(String melText);
 
+    default CompilationResult compileDomain(String melText, CompileDomainOptions options) {
+        return compileDomain(melText);
+    }
+
     default DomainSchema compileDomainOrThrow(String melText) {
         CompilationResult result = compileDomain(melText);
         if (!result.isOk()) {
