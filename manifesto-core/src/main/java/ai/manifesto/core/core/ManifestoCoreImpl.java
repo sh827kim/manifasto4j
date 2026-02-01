@@ -16,7 +16,7 @@ import java.util.concurrent.CompletableFuture;
  * 각 메서드는 해당 클래스에 위임:
  * - compute() → Compute.compute()
  * - apply() → Apply.apply()
- * - validate() → Validate.validate()
+ * - validate() → Validate.validateSchema()
  *
  * 특징:
  * - 순수 위임 (delegation pattern)
@@ -103,7 +103,7 @@ public final class ManifestoCoreImpl implements ManifestoCore {
         DomainSchema schema,
         Snapshot snapshot
     ) {
-        return Validate.validate(schema, snapshot);
+        return Validate.validateSchema(schema);
     }
 
     /**

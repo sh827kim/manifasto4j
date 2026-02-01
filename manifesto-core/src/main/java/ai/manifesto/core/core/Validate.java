@@ -123,32 +123,42 @@ public class Validate {
      */
     public static ValidationResult validate(DomainSchema schema, Snapshot snapshot) {
         Objects.requireNonNull(schema, "schema is required");
-        Objects.requireNonNull(snapshot, "snapshot is required");
+        return validateSchema(schema);
+    }
+
+    private static void addError(List<ValidationError> errors, String code, String message, String path) {
+        errors.add(new ValidationError(code, message, path));
+    }
+
+    /**
+     * Schema 전용 검증 (TS core validate와 동일)
+     */
+    public static ValidationResult validateSchema(DomainSchema schema) {
+        Objects.requireNonNull(schema, "schema is required");
 
         List<ValidationError> errors = new ArrayList<>();
-
-        // 0. Schema 검증 (정합성/참조/해시)
         validateSchema(schema, errors);
-
-        // 1. Snapshot의 기본 구조 검증
-        validateSnapshotStructure(snapshot, errors);
-
-        // 2. Data 필드 검증
-        validateDataField(snapshot, schema, errors);
-
-        // 3. Input 필드 검증
-        validateInputField(snapshot, schema, errors);
-
-        // 4. System 필드 검증
-        validateSystemField(snapshot, errors);
-
         return errors.isEmpty()
             ? ValidationResult.valid()
             : ValidationResult.invalid(errors);
     }
 
-    private static void addError(List<ValidationError> errors, String code, String message, String path) {
-        errors.add(new ValidationError(code, message, path));
+    /**
+     * Snapshot 검증 (schema 외 추가 검증)
+     */
+    public static ValidationResult validateSnapshot(DomainSchema schema, Snapshot snapshot) {
+        Objects.requireNonNull(schema, "schema is required");
+        Objects.requireNonNull(snapshot, "snapshot is required");
+
+        List<ValidationError> errors = new ArrayList<>();
+        validateSchema(schema, errors);
+        validateSnapshotStructure(snapshot, errors);
+        validateDataField(snapshot, schema, errors);
+        validateInputField(snapshot, schema, errors);
+        validateSystemField(snapshot, errors);
+        return errors.isEmpty()
+            ? ValidationResult.valid()
+            : ValidationResult.invalid(errors);
     }
 
     /**
@@ -327,7 +337,15 @@ public class Validate {
      * @return 검증 성공 여부
      */
     public static boolean isValid(DomainSchema schema, Snapshot snapshot) {
-        return validate(schema, snapshot).isValid();
+        return validateSchema(schema).isValid();
+    }
+
+    public static boolean isSchemaValid(DomainSchema schema) {
+        return validateSchema(schema).isValid();
+    }
+
+    public static boolean isSnapshotValid(DomainSchema schema, Snapshot snapshot) {
+        return validateSnapshot(schema, snapshot).isValid();
     }
 
     /**
@@ -338,7 +356,7 @@ public class Validate {
      * @return 첫 번째 에러, 또는 null (검증 성공)
      */
     public static String getFirstError(DomainSchema schema, Snapshot snapshot) {
-        ValidationResult result = validate(schema, snapshot);
+        ValidationResult result = validateSchema(schema);
         return result.isValid() ? null : result.errors().get(0).message();
     }
 

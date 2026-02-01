@@ -390,7 +390,7 @@ class IntegrationTest {
     }
 
     private void assertValid(DomainSchema schema, Snapshot snapshot) {
-        Validate.ValidationResult result = Validate.validate(schema, snapshot);
+        Validate.ValidationResult result = Validate.validateSnapshot(schema, snapshot);
         assertTrue(result.isValid(), result.errors().toString());
     }
 }

@@ -45,7 +45,7 @@ class ValidateTest {
     @Test
     @DisplayName("유효한 Snapshot 검증 통과")
     void testValidSnapshot() {
-        Validate.ValidationResult result = Validate.validate(schema, snapshot);
+        Validate.ValidationResult result = Validate.validateSchema(schema);
 
         assertTrue(result.isValid(), result.errors().toString());
         assertTrue(result.errors().isEmpty(), result.errors().toString());
@@ -54,7 +54,7 @@ class ValidateTest {
     @Test
     @DisplayName("isValid 편의 메서드")
     void testIsValid() {
-        Validate.ValidationResult result = Validate.validate(schema, snapshot);
+        Validate.ValidationResult result = Validate.validateSchema(schema);
         assertTrue(result.isValid(), result.errors().toString());
     }
 
@@ -62,7 +62,7 @@ class ValidateTest {
     @DisplayName("null Snapshot 검증 실패")
     void testNullSnapshot() {
         assertThrows(NullPointerException.class, () -> {
-            Validate.validate(schema, null);
+            Validate.validateSnapshot(schema, null);
         });
     }
 
@@ -70,7 +70,7 @@ class ValidateTest {
     @DisplayName("null Schema 검증 실패")
     void testNullSchema() {
         assertThrows(NullPointerException.class, () -> {
-            Validate.validate(null, snapshot);
+            Validate.validateSchema(null);
         });
     }
 
@@ -82,7 +82,7 @@ class ValidateTest {
         // 필수 필드인 "name"이 없음
 
         Snapshot invalidSnapshot = snapshot.withData(incompleteData);
-        Validate.ValidationResult result = Validate.validate(schema, invalidSnapshot);
+        Validate.ValidationResult result = Validate.validateSnapshot(schema, invalidSnapshot);
 
         assertFalse(result.isValid());
         assertTrue(result.errors().stream()
@@ -94,7 +94,7 @@ class ValidateTest {
     @DisplayName("Snapshot 구조 검증")
     void testSnapshotStructure() {
         // 모든 필요한 필드가 있는 Snapshot은 유효함
-        Validate.ValidationResult result = Validate.validate(schema, snapshot);
+        Validate.ValidationResult result = Validate.validateSchema(schema);
         assertTrue(result.isValid(), result.errors().toString());
 
         // data가 null인 경우
@@ -106,7 +106,7 @@ class ValidateTest {
             .input(new HashMap<>())
             .meta(Snapshot.SnapshotMeta.create(0, System.currentTimeMillis(), "seed", "hash"))
             .build();
-        assertFalse(Validate.isValid(schema, noDataSnapshot));
+        assertFalse(Validate.isSnapshotValid(schema, noDataSnapshot));
     }
 
     @Test
@@ -126,7 +126,7 @@ class ValidateTest {
             .meta(Snapshot.SnapshotMeta.create(0, System.currentTimeMillis(), "seed", "hash"))
             .build();
 
-        Validate.ValidationResult result = Validate.validate(schema, testSnapshot);
+        Validate.ValidationResult result = Validate.validateSnapshot(schema, testSnapshot);
         assertTrue(result.isValid(), result.errors().toString());
     }
 
@@ -138,7 +138,7 @@ class ValidateTest {
         input.put("another_field", 123);
 
         Snapshot testSnapshot = snapshot.withInput(input);
-        Validate.ValidationResult result = Validate.validate(schema, testSnapshot);
+        Validate.ValidationResult result = Validate.validateSnapshot(schema, testSnapshot);
 
         assertTrue(result.isValid(), result.errors().toString());
     }
@@ -150,7 +150,7 @@ class ValidateTest {
         input.put("invalid-field", "value"); // 하이픈은 유효하지 않음
 
         Snapshot testSnapshot = snapshot.withInput(input);
-        Validate.ValidationResult result = Validate.validate(schema, testSnapshot);
+        Validate.ValidationResult result = Validate.validateSnapshot(schema, testSnapshot);
 
         assertFalse(result.isValid());
         assertTrue(result.errors().stream()
@@ -165,7 +165,7 @@ class ValidateTest {
             Snapshot.SnapshotMeta.create(-1, System.currentTimeMillis(), "seed", "hash")
         );
 
-        Validate.ValidationResult result = Validate.validate(schema, negativeVersionSnapshot);
+        Validate.ValidationResult result = Validate.validateSnapshot(schema, negativeVersionSnapshot);
         assertFalse(result.isValid());
     }
 
@@ -176,14 +176,14 @@ class ValidateTest {
             Snapshot.SnapshotMeta.create(0, 0, "seed", "hash")
         );
 
-        Validate.ValidationResult result = Validate.validate(schema, zeroTimestampSnapshot);
+        Validate.ValidationResult result = Validate.validateSnapshot(schema, zeroTimestampSnapshot);
         assertFalse(result.isValid());
     }
 
     @Test
     @DisplayName("ValidationResult toString")
     void testValidationResultToString() {
-        Validate.ValidationResult validResult = Validate.validate(schema, snapshot);
+        Validate.ValidationResult validResult = Validate.validateSchema(schema);
         String output = validResult.toString();
         assertTrue(output.contains("valid"));
 
@@ -209,7 +209,7 @@ class ValidateTest {
                 .build())
             .build();
 
-        Validate.ValidationResult result = Validate.validate(invalidHashSchema, snapshot);
+        Validate.ValidationResult result = Validate.validateSchema(invalidHashSchema);
 
         assertFalse(result.isValid());
         assertTrue(result.errors().stream().anyMatch(e -> e.code().equals("V-008")));
@@ -231,7 +231,7 @@ class ValidateTest {
             List.of(new ActionSpec.Builder("noop").flow(FlowNode.Halt.of(null)).build())
         );
 
-        Validate.ValidationResult result = Validate.validate(invalidSchema, snapshot);
+        Validate.ValidationResult result = Validate.validateSchema(invalidSchema);
 
         assertFalse(result.isValid());
         assertTrue(result.errors().stream().anyMatch(e ->
@@ -257,7 +257,7 @@ class ValidateTest {
             List.of(new ActionSpec.Builder("noop").flow(FlowNode.Halt.of(null)).build())
         );
 
-        Validate.ValidationResult result = Validate.validate(invalidSchema, snapshot);
+        Validate.ValidationResult result = Validate.validateSchema(invalidSchema);
 
         assertFalse(result.isValid());
         assertTrue(result.errors().stream().anyMatch(e ->
@@ -280,7 +280,7 @@ class ValidateTest {
             List.of(new ActionSpec.Builder("noop").flow(FlowNode.Halt.of(null)).build())
         );
 
-        Validate.ValidationResult result = Validate.validate(invalidSchema, snapshot);
+        Validate.ValidationResult result = Validate.validateSchema(invalidSchema);
 
         assertFalse(result.isValid());
         assertTrue(result.errors().stream().anyMatch(e ->
@@ -306,7 +306,7 @@ class ValidateTest {
             List.of(action)
         );
 
-        Validate.ValidationResult result = Validate.validate(invalidSchema, snapshot);
+        Validate.ValidationResult result = Validate.validateSchema(invalidSchema);
 
         assertTrue(result.isValid(), result.errors().toString());
     }
@@ -328,7 +328,7 @@ class ValidateTest {
             List.of(action)
         );
 
-        Validate.ValidationResult result = Validate.validate(invalidSchema, snapshot);
+        Validate.ValidationResult result = Validate.validateSchema(invalidSchema);
 
         assertFalse(result.isValid());
         assertTrue(result.errors().stream().anyMatch(e -> e.code().equals("V-004")));
@@ -354,7 +354,7 @@ class ValidateTest {
             List.of(actionA, actionB)
         );
 
-        Validate.ValidationResult result = Validate.validate(invalidSchema, snapshot);
+        Validate.ValidationResult result = Validate.validateSchema(invalidSchema);
 
         assertFalse(result.isValid());
         assertTrue(result.errors().stream().anyMatch(e -> e.code().equals("V-005")));
@@ -373,7 +373,7 @@ class ValidateTest {
             List.of(new ActionSpec.Builder("noop").flow(FlowNode.Halt.of(null)).build())
         );
 
-        Validate.ValidationResult result = Validate.validate(invalidSchema, snapshot);
+        Validate.ValidationResult result = Validate.validateSchema(invalidSchema);
 
         assertFalse(result.isValid());
         assertTrue(result.errors().stream().anyMatch(e -> e.message().contains("Schema id")));
