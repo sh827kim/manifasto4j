@@ -11,7 +11,9 @@ import ai.manifesto.core.expr.arithmetic.Min;
 import ai.manifesto.core.expr.arithmetic.Mod;
 import ai.manifesto.core.expr.arithmetic.Mul;
 import ai.manifesto.core.expr.arithmetic.Neg;
+import ai.manifesto.core.expr.arithmetic.Pow;
 import ai.manifesto.core.expr.arithmetic.Round;
+import ai.manifesto.core.expr.arithmetic.Sqrt;
 import ai.manifesto.core.expr.arithmetic.Sub;
 import ai.manifesto.core.expr.collection.Append;
 import ai.manifesto.core.expr.collection.At;
@@ -48,6 +50,8 @@ import ai.manifesto.core.expr.string.Split;
 import ai.manifesto.core.expr.string.StartsWith;
 import ai.manifesto.core.expr.string.Substring;
 import ai.manifesto.core.expr.string.Trim;
+import ai.manifesto.core.expr.string.ToLowerCase;
+import ai.manifesto.core.expr.string.ToUpperCase;
 import ai.manifesto.core.expr.type.Coalesce;
 import ai.manifesto.core.expr.type.IsNull;
 import ai.manifesto.core.expr.type.Typeof;
@@ -574,6 +578,10 @@ public final class ValidationUtils {
         return result;
     }
 
+    public static Map<String, Object> exprToMap(ExprNode expr) {
+        return toExprMap(expr);
+    }
+
     private static Map<String, Object> toExprMap(ExprNode expr) {
         if (expr instanceof Lit lit) {
             Map<String, Object> result = new LinkedHashMap<>();
@@ -631,6 +639,12 @@ public final class ValidationUtils {
         }
         if (expr instanceof Round round) {
             return Map.of("kind", "round", "arg", toExprMap(round.arg()));
+        }
+        if (expr instanceof Pow pow) {
+            return Map.of("kind", "pow", "base", toExprMap(pow.base()), "exponent", toExprMap(pow.exponent()));
+        }
+        if (expr instanceof Sqrt sqrt) {
+            return Map.of("kind", "sqrt", "arg", toExprMap(sqrt.arg()));
         }
         if (expr instanceof Floor floor) {
             return Map.of("kind", "floor", "arg", toExprMap(floor.arg()));
@@ -745,6 +759,12 @@ public final class ValidationUtils {
         }
         if (expr instanceof Trim trim) {
             return Map.of("kind", "trim", "str", toExprMap(trim.str()));
+        }
+        if (expr instanceof ToLowerCase lower) {
+            return Map.of("kind", "toLowerCase", "str", toExprMap(lower.str()));
+        }
+        if (expr instanceof ToUpperCase upper) {
+            return Map.of("kind", "toUpperCase", "str", toExprMap(upper.str()));
         }
 
         return Map.of("kind", expr.getClass().getSimpleName().toLowerCase(Locale.ROOT));

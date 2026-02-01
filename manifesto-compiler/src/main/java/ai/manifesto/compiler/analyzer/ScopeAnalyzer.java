@@ -4,14 +4,27 @@ import ai.manifesto.compiler.diagnostics.Diagnostic;
 import ai.manifesto.compiler.diagnostics.DiagnosticCode;
 import ai.manifesto.compiler.diagnostics.SourceSpan;
 import ai.manifesto.compiler.parser.ActionNode;
+import ai.manifesto.compiler.parser.ArrayLiteralExprNode;
+import ai.manifesto.compiler.parser.BinaryExprNode;
 import ai.manifesto.compiler.parser.ComputedNode;
 import ai.manifesto.compiler.parser.DomainNode;
 import ai.manifesto.compiler.parser.DomainMember;
+import ai.manifesto.compiler.parser.EffectStmtNode;
 import ai.manifesto.compiler.parser.ExprNode;
+import ai.manifesto.compiler.parser.FunctionCallExprNode;
 import ai.manifesto.compiler.parser.IdentifierExprNode;
+import ai.manifesto.compiler.parser.IndexAccessExprNode;
+import ai.manifesto.compiler.parser.InnerStmtNode;
+import ai.manifesto.compiler.parser.ObjectLiteralExprNode;
+import ai.manifesto.compiler.parser.OnceStmtNode;
+import ai.manifesto.compiler.parser.PatchStmtNode;
 import ai.manifesto.compiler.parser.ProgramNode;
+import ai.manifesto.compiler.parser.PropertyAccessExprNode;
 import ai.manifesto.compiler.parser.StateNode;
 import ai.manifesto.compiler.parser.StateFieldNode;
+import ai.manifesto.compiler.parser.TernaryExprNode;
+import ai.manifesto.compiler.parser.UnaryExprNode;
+import ai.manifesto.compiler.parser.WhenStmtNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,6 +67,57 @@ public final class ScopeAnalyzer {
                 if (action.available() != null) {
                     analyzeExpr(action.available(), actionScope);
                 }
+                analyzeActionBody(action, actionScope);
+            }
+        }
+    }
+
+    private void analyzeActionBody(ActionNode action, Scope scope) {
+        for (var stmt : action.body()) {
+            if (stmt instanceof WhenStmtNode whenStmt) {
+                analyzeExpr(whenStmt.condition(), scope);
+                for (InnerStmtNode inner : whenStmt.body()) {
+                    analyzeInnerStmt(inner, scope);
+                }
+            } else if (stmt instanceof OnceStmtNode onceStmt) {
+                if (onceStmt.condition() != null) {
+                    analyzeExpr(onceStmt.condition(), scope);
+                }
+                for (InnerStmtNode inner : onceStmt.body()) {
+                    analyzeInnerStmt(inner, scope);
+                }
+            }
+        }
+    }
+
+    private void analyzeInnerStmt(InnerStmtNode stmt, Scope scope) {
+        if (stmt instanceof PatchStmtNode patchStmt) {
+            if (patchStmt.value() != null) {
+                analyzeExpr(patchStmt.value(), scope);
+            }
+            return;
+        }
+        if (stmt instanceof EffectStmtNode effectStmt) {
+            effectStmt.args().forEach(arg -> {
+                if (!arg.isPath()) {
+                    analyzeExpr((ExprNode) arg.value(), scope);
+                }
+            });
+            return;
+        }
+        if (stmt instanceof WhenStmtNode whenStmt) {
+            analyzeExpr(whenStmt.condition(), scope);
+            for (InnerStmtNode inner : whenStmt.body()) {
+                analyzeInnerStmt(inner, scope);
+            }
+            return;
+        }
+        if (stmt instanceof OnceStmtNode onceStmt) {
+            if (onceStmt.condition() != null) {
+                analyzeExpr(onceStmt.condition(), scope);
+            }
+            for (InnerStmtNode inner : onceStmt.body()) {
+                analyzeInnerStmt(inner, scope);
             }
         }
     }
@@ -72,7 +136,43 @@ public final class ScopeAnalyzer {
             }
             return;
         }
-        // TODO: recursive traversal for other ExprNode types
+        if (expr instanceof PropertyAccessExprNode prop) {
+            analyzeExpr(prop.object(), scope);
+            return;
+        }
+        if (expr instanceof IndexAccessExprNode index) {
+            analyzeExpr(index.object(), scope);
+            analyzeExpr(index.index(), scope);
+            return;
+        }
+        if (expr instanceof FunctionCallExprNode call) {
+            for (ExprNode arg : call.args()) {
+                analyzeExpr(arg, scope);
+            }
+            return;
+        }
+        if (expr instanceof UnaryExprNode unary) {
+            analyzeExpr(unary.operand(), scope);
+            return;
+        }
+        if (expr instanceof BinaryExprNode binary) {
+            analyzeExpr(binary.left(), scope);
+            analyzeExpr(binary.right(), scope);
+            return;
+        }
+        if (expr instanceof TernaryExprNode ternary) {
+            analyzeExpr(ternary.condition(), scope);
+            analyzeExpr(ternary.consequent(), scope);
+            analyzeExpr(ternary.alternate(), scope);
+            return;
+        }
+        if (expr instanceof ObjectLiteralExprNode obj) {
+            obj.properties().forEach(p -> analyzeExpr(p.value(), scope));
+            return;
+        }
+        if (expr instanceof ArrayLiteralExprNode arr) {
+            arr.elements().forEach(e -> analyzeExpr(e, scope));
+        }
     }
 
     private void define(Scope scope, String name, SymbolKind kind, ai.manifesto.compiler.lexer.SourceLocation location) {

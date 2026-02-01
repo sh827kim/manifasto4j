@@ -77,6 +77,8 @@ import ai.manifesto.core.expr.object.Values;
 import ai.manifesto.core.expr.string.Concat;
 import ai.manifesto.core.expr.string.Substring;
 import ai.manifesto.core.expr.string.Trim;
+import ai.manifesto.core.expr.string.ToLowerCase;
+import ai.manifesto.core.expr.string.ToUpperCase;
 import ai.manifesto.core.expr.type.Coalesce;
 import ai.manifesto.core.expr.type.IsNull;
 import ai.manifesto.core.expr.type.Typeof;
@@ -504,6 +506,8 @@ public final class AstIrGenerator {
             case "floor" -> new Floor(args.get(0));
             case "ceil" -> new Ceil(args.get(0));
             case "round" -> new Round(args.get(0));
+            case "sqrt" -> new Sqrt(args.get(0));
+            case "pow" -> new Pow(args.get(0), args.get(1));
             case "eq" -> new Eq(args.get(0), args.get(1));
             case "neq" -> new Neq(args.get(0), args.get(1));
             case "gt" -> new Gt(args.get(0), args.get(1));
@@ -518,6 +522,8 @@ public final class AstIrGenerator {
             case "coalesce" -> new Coalesce(args);
             case "concat" -> new Concat(args);
             case "trim" -> new Trim(args.get(0));
+            case "toLowerCase", "lower" -> new ToLowerCase(args.get(0));
+            case "toUpperCase", "upper" -> new ToUpperCase(args.get(0));
             case "substr", "substring" -> args.size() >= 3
                 ? new Substring(args.get(0), args.get(1), args.get(2))
                 : new Substring(args.get(0), args.get(1), new Len(args.get(0)));

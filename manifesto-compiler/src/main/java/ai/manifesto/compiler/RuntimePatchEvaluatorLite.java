@@ -72,6 +72,9 @@ public final class RuntimePatchEvaluatorLite {
             case "round" -> round(evaluateExpr(castMap(expr.get("arg")), snapshot));
             case "floor" -> floor(evaluateExpr(castMap(expr.get("arg")), snapshot));
             case "ceil" -> ceil(evaluateExpr(castMap(expr.get("arg")), snapshot));
+            case "pow" -> pow(evaluateExpr(castMap(expr.get("base")), snapshot),
+                              evaluateExpr(castMap(expr.get("exponent")), snapshot));
+            case "sqrt" -> sqrt(evaluateExpr(castMap(expr.get("arg")), snapshot));
             case "if" -> truthy(evaluateExpr(castMap(expr.get("cond")), snapshot))
                 ? evaluateExpr(castMap(expr.get("then")), snapshot)
                 : evaluateExpr(castMap(expr.get("else")), snapshot);
@@ -85,6 +88,8 @@ public final class RuntimePatchEvaluatorLite {
             case "endsWith" -> endsWith(evaluateExpr(castMap(expr.get("left")), snapshot),
                                         evaluateExpr(castMap(expr.get("right")), snapshot));
             case "trim" -> trim(evaluateExpr(castMap(expr.get("arg")), snapshot));
+            case "toLowerCase" -> toLowerCase(evaluateExpr(castMap(expr.get("str")), snapshot));
+            case "toUpperCase" -> toUpperCase(evaluateExpr(castMap(expr.get("str")), snapshot));
             case "at" -> at(evaluateExpr(castMap(expr.get("array")), snapshot),
                             evaluateExpr(castMap(expr.get("index")), snapshot));
             case "first" -> first(evaluateExpr(castMap(expr.get("arg")), snapshot));
@@ -381,6 +386,30 @@ public final class RuntimePatchEvaluatorLite {
             return s.trim();
         }
         return value;
+    }
+
+    private Object toLowerCase(Object value) {
+        if (value == null) return null;
+        return String.valueOf(value).toLowerCase();
+    }
+
+    private Object toUpperCase(Object value) {
+        if (value == null) return null;
+        return String.valueOf(value).toUpperCase();
+    }
+
+    private Object pow(Object base, Object exponent) {
+        if (base instanceof Number bn && exponent instanceof Number en) {
+            return Math.pow(bn.doubleValue(), en.doubleValue());
+        }
+        return null;
+    }
+
+    private Object sqrt(Object value) {
+        if (value instanceof Number n) {
+            return Math.sqrt(n.doubleValue());
+        }
+        return null;
     }
 
     private Object at(Object array, Object index) {

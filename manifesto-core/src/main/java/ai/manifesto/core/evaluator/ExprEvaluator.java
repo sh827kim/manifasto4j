@@ -138,6 +138,12 @@ public class ExprEvaluator {
         if (expr instanceof Ceil ceil) {
             return evaluateCeil(ceil.arg(), ctx);
         }
+        if (expr instanceof Pow pow) {
+            return evaluatePow(pow.base(), pow.exponent(), ctx);
+        }
+        if (expr instanceof Sqrt sqrt) {
+            return evaluateSqrt(sqrt.arg(), ctx);
+        }
 
         // ===== String =====
         if (expr instanceof Concat concat) {
@@ -148,6 +154,12 @@ public class ExprEvaluator {
         }
         if (expr instanceof Trim trim) {
             return evaluateTrim(trim.str(), ctx);
+        }
+        if (expr instanceof ToLowerCase lower) {
+            return evaluateToLowerCase(lower.str(), ctx);
+        }
+        if (expr instanceof ToUpperCase upper) {
+            return evaluateToUpperCase(upper.str(), ctx);
         }
         if (expr instanceof StartsWith startsWith) {
             return evaluateStartsWith(startsWith.str(), startsWith.prefix(), ctx);
@@ -529,6 +541,22 @@ public class ExprEvaluator {
         return Result.ok((long) Math.ceil(toNumber(result.unwrap())));
     }
 
+    private static Result<Object, ErrorValue> evaluatePow(ExprNode baseExpr, ExprNode expExpr, EvalContext ctx) {
+        Result<Object, ErrorValue> baseResult = evaluateExpr(baseExpr, ctx);
+        if (baseResult.isErr()) return baseResult;
+        Result<Object, ErrorValue> expResult = evaluateExpr(expExpr, ctx);
+        if (expResult.isErr()) return expResult;
+        double base = toNumber(baseResult.unwrap());
+        double exp = toNumber(expResult.unwrap());
+        return Result.ok(Math.pow(base, exp));
+    }
+
+    private static Result<Object, ErrorValue> evaluateSqrt(ExprNode arg, EvalContext ctx) {
+        Result<Object, ErrorValue> result = evaluateExpr(arg, ctx);
+        if (result.isErr()) return result;
+        return Result.ok(Math.sqrt(toNumber(result.unwrap())));
+    }
+
     private static Result<Object, ErrorValue> evaluateAdd(ExprNode left, ExprNode right, EvalContext ctx) {
         Result<Object, ErrorValue> leftResult = evaluateExpr(left, ctx);
         if (leftResult.isErr()) return leftResult;
@@ -628,6 +656,18 @@ public class ExprEvaluator {
         Result<Object, ErrorValue> result = evaluateExpr(str, ctx);
         if (result.isErr()) return result;
         return Result.ok(toString(result.unwrap()).trim());
+    }
+
+    private static Result<Object, ErrorValue> evaluateToLowerCase(ExprNode str, EvalContext ctx) {
+        Result<Object, ErrorValue> result = evaluateExpr(str, ctx);
+        if (result.isErr()) return result;
+        return Result.ok(toString(result.unwrap()).toLowerCase());
+    }
+
+    private static Result<Object, ErrorValue> evaluateToUpperCase(ExprNode str, EvalContext ctx) {
+        Result<Object, ErrorValue> result = evaluateExpr(str, ctx);
+        if (result.isErr()) return result;
+        return Result.ok(toString(result.unwrap()).toUpperCase());
     }
 
     private static Result<Object, ErrorValue> evaluateStartsWith(ExprNode str, ExprNode prefix, EvalContext ctx) {
