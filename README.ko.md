@@ -13,9 +13,7 @@ Manifesto는 상태 기반 애플리케이션을 위한 결정론적 도메인 �
 - **Compiler/Builder**: MEL/DSL 도구
 
 공식 문서:
-```
 https://docs.manifesto-ai.dev/
-```
 
 ## 저장소 문서 위치
 - `docs/INDEX.md` (spec/fdr 인덱스)

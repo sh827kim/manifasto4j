@@ -1,5 +1,7 @@
 # manifasto4j
 
+[Korean](README.ko.md)
+
 Pure Java port of Manifesto’s TypeScript implementation.
 Goal: provide a Java-first runtime and tooling while keeping output compatibility with the TS reference.
 
@@ -13,9 +15,7 @@ Manifesto is a deterministic domain-runtime stack for stateful apps:
 - **Compiler/Builder** provide MEL/DSL tooling.
 
 Reference docs:
-```
 https://docs.manifesto-ai.dev/
-```
 
 ## Docs in this repo
 - `docs/INDEX.md` (spec/fdr index)
