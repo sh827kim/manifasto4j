@@ -2,7 +2,6 @@ package ai.manifesto.core.evaluator;
 
 import ai.manifesto.core.*;
 import ai.manifesto.core.expr.arithmetic.*;
-import ai.manifesto.core.expr.collection.Reduce;
 import ai.manifesto.core.expr.comparison.*;
 import ai.manifesto.core.expr.literal.*;
 import ai.manifesto.core.expr.logical.*;
@@ -304,18 +303,4 @@ class ExprEvaluatorTest {
         assertEquals(List.of("a", "b", "", "c"), result.unwrap());
     }
 
-    @Test
-    @DisplayName("reduce 표현식")
-    void testReduceExpression() {
-        Reduce reduceExpr = Reduce.of(
-            new Lit(List.of(1, 2, 3)),
-            Add.of(new Get("$acc"), new Get("$item")),
-            new Lit(0)
-        );
-
-        Result<Object, ErrorValue> result = ExprEvaluator.evaluate(reduceExpr, context);
-
-        assertTrue(result.isOk());
-        assertEquals(6, result.unwrap());
-    }
 }

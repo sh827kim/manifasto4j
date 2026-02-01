@@ -14,7 +14,7 @@ package ai.manifesto.core.expr;
  * - Conditional: If
  * - Arithmetic: Add, Sub, Mul, Div, Mod, Min, Max, SumArray, MinArray, MaxArray, Abs, Neg, Round, Floor, Ceil, Pow, Sqrt
  * - String: Concat, Substring, Trim, StartsWith, EndsWith, Split, ToLowerCase, ToUpperCase, StrLen, ToString
- * - Collection: Len, At, First, Last, Slice, Includes, Filter, Map, Find, Every, Some, Append, Reduce
+ * - Collection: Len, At, First, Last, Slice, Includes, Filter, Map, Find, Every, Some, Append
  * - Object: ObjectExpr, Keys, Values, Entries, Merge
  * - Type: Typeof, IsNull, Coalesce
  *

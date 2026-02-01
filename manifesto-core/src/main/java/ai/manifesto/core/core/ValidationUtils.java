@@ -27,7 +27,6 @@ import ai.manifesto.core.expr.collection.First;
 import ai.manifesto.core.expr.collection.Includes;
 import ai.manifesto.core.expr.collection.Last;
 import ai.manifesto.core.expr.collection.Len;
-import ai.manifesto.core.expr.collection.Reduce;
 import ai.manifesto.core.expr.collection.Some;
 import ai.manifesto.core.expr.collection.Slice;
 import ai.manifesto.core.expr.comparison.Eq;
@@ -333,12 +332,6 @@ public final class ValidationUtils {
             }
             return;
         }
-        if (expr instanceof Reduce reduce) {
-            collectGetPathsFromExpr(reduce.array(), paths);
-            collectGetPathsFromExpr(reduce.reducer(), paths);
-            collectGetPathsFromExpr(reduce.initial(), paths);
-            return;
-        }
 
         if (expr instanceof ObjectExpr objectExpr) {
             for (ExprNode value : objectExpr.fields().values()) {
@@ -452,7 +445,8 @@ public final class ValidationUtils {
         if (segments.length > 0 && "$host".equals(segments[0])) {
             return true;
         }
-        return stateFields.containsKey(segments[0]);
+        FieldSpec root = new FieldSpec("state", "object", true, null, stateFields, null, null, null);
+        return pathExistsInFieldSpec(root, normalized);
     }
 
     public static boolean pathExistsInComputedSpec(Map<String, ComputedFieldDef> computedFields, String path) {
@@ -474,8 +468,54 @@ public final class ValidationUtils {
         if (normalized.isEmpty()) {
             return true;
         }
-        String[] segments = normalized.split("\\.");
-        return inputFields.containsKey(segments[0]);
+        FieldSpec root = new FieldSpec("input", "object", true, null, inputFields, null, null, null);
+        return pathExistsInFieldSpec(root, normalized);
+    }
+
+    public static boolean pathExistsInFieldSpec(FieldSpec spec, String path) {
+        if (path == null || path.isEmpty()) {
+            return true;
+        }
+        String[] segments = path.split("\\.");
+        FieldSpec current = spec;
+        for (String segment : segments) {
+            if (current == null) {
+                return false;
+            }
+            String type = current.getType();
+            if ("object".equals(type)) {
+                Map<String, FieldSpec> fields = current.getFields();
+                if (fields == null) {
+                    return true;
+                }
+                if (!fields.containsKey(segment)) {
+                    return false;
+                }
+                current = fields.get(segment);
+                continue;
+            }
+            if ("array".equals(type)) {
+                if (!isNumericSegment(segment)) {
+                    return false;
+                }
+                current = current.getItems();
+                continue;
+            }
+            return false;
+        }
+        return true;
+    }
+
+    private static boolean isNumericSegment(String segment) {
+        if (segment == null || segment.isEmpty()) {
+            return false;
+        }
+        for (int i = 0; i < segment.length(); i++) {
+            if (!Character.isDigit(segment.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static String normalizeComputedPath(String path) {
@@ -618,7 +658,8 @@ public final class ValidationUtils {
         if (spec.getEnumValues() != null && !spec.getEnumValues().isEmpty()) {
             result.put("type", Map.of("enum", spec.getEnumValues()));
         } else {
-            result.put("type", spec.getType());
+            String type = spec.getType();
+            result.put("type", "integer".equals(type) ? "number" : type);
         }
         result.put("required", spec.isRequired());
         if (spec.getDefaultValue() != null) {
@@ -791,14 +832,6 @@ public final class ValidationUtils {
         }
         if (expr instanceof Append append) {
             return Map.of("kind", "append", "array", toExprMap(append.array()), "items", toExprList(append.items()));
-        }
-        if (expr instanceof Reduce reduce) {
-            return Map.of(
-                "kind", "reduce",
-                "array", toExprMap(reduce.array()),
-                "reducer", toExprMap(reduce.reducer()),
-                "initial", toExprMap(reduce.initial())
-            );
         }
         if (expr instanceof ObjectExpr objectExpr) {
             return Map.of("kind", "object", "fields", toExprFieldMap(objectExpr.fields()));

@@ -413,7 +413,6 @@ public class Compute {
         return switch (spec.getType()) {
             case "string" -> value instanceof String ? null : "Expected string for " + path;
             case "number" -> value instanceof Number ? null : "Expected number for " + path;
-            case "integer" -> (value instanceof Integer || value instanceof Long) ? null : "Expected integer for " + path;
             case "boolean" -> value instanceof Boolean ? null : "Expected boolean for " + path;
             case "array" -> {
                 if (!(value instanceof List<?> list)) {

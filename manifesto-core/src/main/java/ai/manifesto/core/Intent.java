@@ -69,7 +69,8 @@ public class Intent {
         }
 
         public Intent build() {
-            return new Intent(type, input, intentId);
+            String resolvedIntentId = intentId == null ? "" : intentId;
+            return new Intent(type, input, resolvedIntentId);
         }
     }
 
@@ -80,8 +81,16 @@ public class Intent {
     /**
      * TS createIntent 대응 헬퍼
      */
+    public static Intent createIntent(String type) {
+        return new Intent(type, Map.of(), "");
+    }
+
     public static Intent createIntent(String type, String intentId) {
         return new Intent(type, intentId);
+    }
+
+    public static Intent createIntent(String type, Map<String, Object> input) {
+        return new Intent(type, input, "");
     }
 
     public static Intent createIntent(String type, Map<String, Object> input, String intentId) {

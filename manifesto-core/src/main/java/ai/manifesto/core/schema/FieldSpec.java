@@ -59,7 +59,7 @@ public final class FieldSpec {
         String description
     ) {
         this.fieldName = Objects.requireNonNull(fieldName, "fieldName required");
-        this.type = Objects.requireNonNull(type, "type required");
+        this.type = normalizeType(Objects.requireNonNull(type, "type required"));
         this.required = required;
         this.defaultValue = defaultValue;
         this.fields = fields != null ? Map.copyOf(fields) : null;
@@ -98,6 +98,13 @@ public final class FieldSpec {
 
     public String getDescription() {
         return description;
+    }
+
+    private static String normalizeType(String type) {
+        if ("integer".equals(type)) {
+            return "number";
+        }
+        return type;
     }
 
     /**

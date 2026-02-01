@@ -347,33 +347,33 @@ public class Validate {
      */
     private static void validateSchema(DomainSchema schema, List<ValidationError> errors) {
         if (!ValidationUtils.isValidSchemaId(schema.getId())) {
-            addError(errors, "SCHEMA_ERROR", "Schema id must be a valid URI or UUID", "schema.id");
+            addError(errors, "SCHEMA_ERROR", "Schema id must be a valid URI or UUID", "id");
         }
 
         if (!ValidationUtils.isValidSemver(schema.getVersion())) {
-            addError(errors, "SCHEMA_ERROR", "Schema version must follow Semantic Versioning 2.0", "schema.version");
+            addError(errors, "SCHEMA_ERROR", "Schema version must follow Semantic Versioning 2.0", "version");
         }
 
         String schemaHash = schema.getHash();
         if (schemaHash == null || schemaHash.isEmpty()) {
-            addError(errors, "SCHEMA_ERROR", "Schema hash is required", "schema.hash");
+            addError(errors, "SCHEMA_ERROR", "Schema hash is required", "hash");
         } else {
             String expectedHash = ValidationUtils.computeSchemaHash(schema);
             if (!schemaHash.equals(expectedHash)) {
-                addError(errors, "V-008", "Schema hash mismatch: expected " + expectedHash + ", got " + schemaHash, "schema.hash");
+                addError(errors, "V-008", "Schema hash mismatch: expected " + expectedHash + ", got " + schemaHash, "hash");
             }
         }
 
         if (schema.getDataFields().isEmpty()) {
-            addError(errors, "SCHEMA_ERROR", "State fields must not be empty", "schema.state");
+            addError(errors, "SCHEMA_ERROR", "State fields must not be empty", "state.fields");
         }
 
         if (schema.getComputedFields().isEmpty()) {
-            addError(errors, "SCHEMA_ERROR", "Computed fields must not be empty", "schema.computed");
+            addError(errors, "SCHEMA_ERROR", "Computed fields must not be empty", "computed.fields");
         }
 
         if (schema.getActions().isEmpty()) {
-            addError(errors, "SCHEMA_ERROR", "actions must not be empty", "schema.actions");
+            addError(errors, "SCHEMA_ERROR", "actions must not be empty", "actions");
         }
 
         validateStateDefaults(schema, errors);
@@ -395,7 +395,7 @@ public class Validate {
             if (!spec.isRequired() && spec.getDefaultValue() == null) {
                 addError(errors, "SCHEMA_ERROR",
                     "Optional fields must define a default value: " + entry.getKey(),
-                    "schema.state." + entry.getKey());
+                    "state.fields." + entry.getKey());
             }
         }
     }
@@ -412,8 +412,8 @@ public class Validate {
                     || ValidationUtils.pathExistsInStateSpec(schema.getDataFields(), dep);
                 if (!exists) {
                     addError(errors, "V-001",
-                        "Unknown dependency path: " + dep + " (computed." + fieldName + ")",
-                        "computed." + fieldName + ".deps");
+                        "Unknown dependency path: " + dep,
+                        "computed.fields." + fieldName);
                 }
             }
         }
@@ -435,27 +435,27 @@ public class Validate {
                 if (exprPath.startsWith("computed.")) {
                     if (!ValidationUtils.pathExistsInComputedSpec(schema.getComputedFields(), exprPath)) {
                         addError(errors, "V-003",
-                            "Unknown computed path in expression: " + exprPath + " (computed." + fieldName + ")",
-                            "computed." + fieldName + ".expr");
+                            "Unknown computed path in expression: " + exprPath,
+                            "computed.fields." + fieldName);
                     }
                     continue;
                 }
                 if (exprPath.startsWith("input.")) {
                     addError(errors, "V-003",
-                        "input path is not allowed in computed expression: " + exprPath + " (computed." + fieldName + ")",
-                        "computed." + fieldName + ".expr");
+                        "input path is not allowed in computed expression: " + exprPath,
+                        "computed.fields." + fieldName);
                     continue;
                 }
                 if (exprPath.startsWith("system.")) {
                     addError(errors, "V-003",
-                        "system path is not allowed in computed expression: " + exprPath + " (computed." + fieldName + ")",
-                        "computed." + fieldName + ".expr");
+                        "system path is not allowed in computed expression: " + exprPath,
+                        "computed.fields." + fieldName);
                     continue;
                 }
                 if (!ValidationUtils.pathExistsInStateSpec(schema.getDataFields(), exprPath)) {
                     addError(errors, "V-003",
-                        "Unknown state path in expression: " + exprPath + " (computed." + fieldName + ")",
-                        "computed." + fieldName + ".expr");
+                        "Unknown state path in expression: " + exprPath,
+                        "computed.fields." + fieldName);
                 }
             }
         }
@@ -499,8 +499,8 @@ public class Validate {
             for (String exprPath : relevantPaths) {
                 if (!hasDependency(deps, exprPath)) {
                     addError(errors, "V-001",
-                        "Missing dependency for computed expression path: " + exprPath + " (computed." + fieldName + ")",
-                        "computed." + fieldName + ".deps");
+                        "Missing dependency for computed expression path: " + exprPath,
+                        "computed.fields." + fieldName);
                 }
             }
         }
@@ -543,15 +543,15 @@ public class Validate {
                 if (exprPath.equals("input") || exprPath.startsWith("input.")) {
                     if (action.getInputFields().isEmpty()) {
                         addError(errors, "V-003",
-                            "Unknown input path: " + exprPath + " (actions." + actionName + ")",
-                            "actions." + actionName + ".input");
+                            "Unknown input path: " + exprPath,
+                            "actions." + actionName);
                         continue;
                     }
                     String subPath = exprPath.equals("input") ? "" : exprPath.substring(6);
                     if (!ValidationUtils.pathExistsInFieldSpec(action.getInputFields(), subPath)) {
                         addError(errors, "V-003",
-                            "Unknown input path: " + exprPath + " (actions." + actionName + ")",
-                            "actions." + actionName + ".input");
+                            "Unknown input path: " + exprPath,
+                            "actions." + actionName);
                     }
                     continue;
                 }
@@ -559,8 +559,8 @@ public class Validate {
                 if (exprPath.startsWith("computed.")) {
                     if (!ValidationUtils.pathExistsInComputedSpec(schema.getComputedFields(), exprPath)) {
                         addError(errors, "V-003",
-                            "Unknown computed path: " + exprPath + " (actions." + actionName + ")",
-                            "actions." + actionName + ".expr");
+                            "Unknown computed path: " + exprPath,
+                            "actions." + actionName);
                     }
                     continue;
                 }
@@ -575,8 +575,8 @@ public class Validate {
 
                 if (!ValidationUtils.pathExistsInStateSpec(schema.getDataFields(), exprPath)) {
                     addError(errors, "V-003",
-                        "Unknown state path: " + exprPath + " (actions." + actionName + ")",
-                        "actions." + actionName + ".expr");
+                        "Unknown state path: " + exprPath,
+                        "actions." + actionName);
                 }
             }
         }
@@ -594,7 +594,7 @@ public class Validate {
                 if (!actionNames.contains(callName)) {
                     addError(errors, "V-004",
                         "Unknown flow reference: \"" + callName + "\" in action \"" + actionName + "\"",
-                        "actions." + actionName + ".flow");
+                        "actions." + actionName);
                 }
             }
         }

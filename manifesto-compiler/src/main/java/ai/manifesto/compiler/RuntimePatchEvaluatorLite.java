@@ -107,7 +107,6 @@ public final class RuntimePatchEvaluatorLite {
             case "some" -> some(expr, snapshot);
             case "every" -> every(expr, snapshot);
             case "includes" -> includes(expr, snapshot);
-            case "reduce" -> reduce(expr, snapshot);
             case "object" -> object(expr, snapshot);
             case "merge" -> merge(expr, snapshot);
             default -> null;
@@ -595,23 +594,6 @@ public final class RuntimePatchEvaluatorLite {
             return list.contains(value);
         }
         return false;
-    }
-
-    private Object reduce(Map<String, Object> expr, SnapshotContext snapshot) {
-        Object arrayValue = evaluateExpr(castMap(expr.get("array")), snapshot);
-        if (!(arrayValue instanceof List<?> list)) {
-            return null;
-        }
-        Object acc = expr.containsKey("initial")
-            ? evaluateExpr(castMap(expr.get("initial")), snapshot)
-            : (list.isEmpty() ? null : list.get(0));
-        int start = expr.containsKey("initial") ? 0 : 1;
-        for (int i = start; i < list.size(); i++) {
-            Object item = list.get(i);
-            SnapshotContext ctx = snapshot.withReducer(acc, item, i, list);
-            acc = evaluateExpr(castMap(expr.get("reducer")), ctx);
-        }
-        return acc;
     }
 
     private Object object(Map<String, Object> expr, SnapshotContext snapshot) {

@@ -193,17 +193,6 @@ public final class LoweringLite {
                 "item", lowerExprNodeStrict(args.get(1), ctx)
             );
         }
-        if ("reduce".equals(fn)) {
-            requireArgs(args, 2, fn);
-            Map<String, Object> out = mapOf("kind", "reduce",
-                "array", lowerExprNodeStrict(args.get(0), ctx),
-                "reducer", lowerExprNodeStrict(args.get(1), ctx)
-            );
-            if (args.size() > 2) {
-                out.put("initial", lowerExprNodeStrict(args.get(2), ctx));
-            }
-            return out;
-        }
         if ("at".equals(fn)) {
             requireArgs(args, 2, fn);
             return mapOf("kind", "at",

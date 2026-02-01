@@ -59,7 +59,6 @@ import ai.manifesto.core.expr.collection.First;
 import ai.manifesto.core.expr.collection.Includes;
 import ai.manifesto.core.expr.collection.Last;
 import ai.manifesto.core.expr.collection.Len;
-import ai.manifesto.core.expr.collection.Reduce;
 import ai.manifesto.core.expr.collection.Slice;
 import ai.manifesto.core.expr.collection.Some;
 import ai.manifesto.core.expr.comparison.*;
@@ -601,9 +600,6 @@ public final class AstIrGenerator {
             case "every" -> new Every(args.get(0), args.get(1));
             case "some" -> new Some(args.get(0), args.get(1));
             case "append" -> new Append(args.get(0), args.subList(1, args.size()));
-            case "reduce" -> args.size() >= 3
-                ? new Reduce(args.get(0), args.get(1), args.get(2))
-                : new Reduce(args.get(0), args.get(1), new First(args.get(0)));
             case "keys" -> new Keys(args.get(0));
             case "values" -> new Values(args.get(0));
             case "entries" -> new Entries(args.get(0));
@@ -804,7 +800,6 @@ public final class AstIrGenerator {
         if (expr instanceof Every every) { visitExpr(every.array(), deps); visitExpr(every.predicate(), deps); return; }
         if (expr instanceof Some some) { visitExpr(some.array(), deps); visitExpr(some.predicate(), deps); return; }
         if (expr instanceof Append append) { visitExpr(append.array(), deps); append.items().forEach(i -> visitExpr(i, deps)); return; }
-        if (expr instanceof Reduce reduce) { visitExpr(reduce.array(), deps); visitExpr(reduce.reducer(), deps); visitExpr(reduce.initial(), deps); return; }
         if (expr instanceof Keys keys) { visitExpr(keys.obj(), deps); return; }
         if (expr instanceof Values values) { visitExpr(values.obj(), deps); return; }
         if (expr instanceof Entries entries) { visitExpr(entries.obj(), deps); return; }

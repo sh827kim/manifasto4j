@@ -226,9 +226,6 @@ public class ExprEvaluator {
         if (expr instanceof Append append) {
             return evaluateAppend(append.array(), append.items(), ctx);
         }
-        if (expr instanceof Reduce reduce) {
-            return evaluateReduce(reduce.array(), reduce.reducer(), reduce.initial(), ctx);
-        }
 
         // ===== Object =====
         if (expr instanceof ObjectExpr obj) {
@@ -364,14 +361,6 @@ public class ExprEvaluator {
             if (path.equals("$item")) return Result.ok(item);
             String subPath = path.substring(6); // "$item." 제거
             return Result.ok(PathUtils.getByPath(item, subPath));
-        }
-
-        if (path.startsWith("$acc")) {
-            Object acc = ctx.get$acc();
-            if (acc == null) return Result.ok(null);
-            if (path.equals("$acc")) return Result.ok(acc);
-            String subPath = path.substring(5); // "$acc." 제거
-            return Result.ok(PathUtils.getByPath(acc, subPath));
         }
 
         // $index - 컬렉션 필터링 중 현재 인덱스
@@ -1047,38 +1036,6 @@ public class ExprEvaluator {
         }
 
         return Result.ok(result);
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Result<Object, ErrorValue> evaluateReduce(
-        ExprNode arrayExpr,
-        ExprNode reducerExpr,
-        ExprNode initialExpr,
-        EvalContext ctx
-    ) {
-        Result<Object, ErrorValue> arrayResult = evaluateExpr(arrayExpr, ctx);
-        if (arrayResult.isErr()) return arrayResult;
-
-        Result<Object, ErrorValue> initialResult = evaluateExpr(initialExpr, ctx);
-        if (initialResult.isErr()) return initialResult;
-
-        Object value = arrayResult.unwrap();
-        Object acc = initialResult.unwrap();
-        if (!(value instanceof List<?>)) {
-            return Result.ok(acc);
-        }
-
-        List<?> list = (List<?>) value;
-        for (int i = 0; i < list.size(); i++) {
-            Object item = list.get(i);
-            EvalContext itemCtx = ctx.withReduceContext(acc, item, i, (List<Object>) list);
-
-            Result<Object, ErrorValue> reducerResult = evaluateExpr(reducerExpr, itemCtx);
-            if (reducerResult.isErr()) return reducerResult;
-            acc = reducerResult.unwrap();
-        }
-
-        return Result.ok(acc);
     }
 
     // ===== Object Operations =====
