@@ -13,7 +13,6 @@ public record Slice(ExprNode array, ExprNode start, ExprNode end) implements Exp
     public Slice {
         Objects.requireNonNull(array, "array is required");
         Objects.requireNonNull(start, "start is required");
-        Objects.requireNonNull(end, "end is required");
     }
 
     public static Slice of(ExprNode array, ExprNode start, ExprNode end) {

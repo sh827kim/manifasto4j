@@ -77,6 +77,17 @@ public class Intent {
         return new Builder();
     }
 
+    /**
+     * TS createIntent 대응 헬퍼
+     */
+    public static Intent createIntent(String type, String intentId) {
+        return new Intent(type, intentId);
+    }
+
+    public static Intent createIntent(String type, Map<String, Object> input, String intentId) {
+        return new Intent(type, input, intentId);
+    }
+
     @Override
     public String toString() {
         return "Intent{" +

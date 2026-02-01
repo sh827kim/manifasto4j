@@ -112,6 +112,23 @@ public class Snapshot {
         return new Snapshot(data, computed, system, input, meta);
     }
 
+    /**
+     * TS createSnapshot 대응 헬퍼
+     */
+    @SuppressWarnings("unchecked")
+    public static Snapshot createSnapshot(Object data, String schemaHash, HostContext context) {
+        Map<String, Object> dataMap = data instanceof Map<?, ?> map
+            ? new HashMap<>((Map<String, Object>) map)
+            : new HashMap<>();
+        SnapshotMeta meta = SnapshotMeta.create(
+            0,
+            context.getNow(),
+            context.getRandomSeed(),
+            schemaHash
+        );
+        return new Snapshot(dataMap, new HashMap<>(), SystemState.initial(), new HashMap<>(), meta);
+    }
+
     // ===== 빌더 =====
     public static class Builder {
         private Map<String, Object> data = new HashMap<>();

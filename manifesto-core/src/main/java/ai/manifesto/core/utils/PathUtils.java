@@ -224,4 +224,64 @@ public class PathUtils {
 
         return setByPath(obj, path, merged);
     }
+
+    /**
+     * 경로 존재 여부 확인
+     */
+    public static boolean hasPath(Object obj, String path) {
+        if (path == null || path.isEmpty()) {
+            return obj != null;
+        }
+
+        String[] parts = path.split("\\.");
+        Object current = obj;
+        for (String part : parts) {
+            if (current == null) {
+                return false;
+            }
+            if (current instanceof Map<?, ?> map) {
+                if (!map.containsKey(part)) {
+                    return false;
+                }
+                current = map.get(part);
+                continue;
+            }
+            if (current instanceof List<?> list) {
+                try {
+                    int index = Integer.parseInt(part);
+                    if (index < 0 || index >= list.size()) {
+                        return false;
+                    }
+                    current = list.get(index);
+                    continue;
+                } catch (NumberFormatException e) {
+                    return false;
+                }
+            }
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 부모 경로 반환
+     */
+    public static String parentPath(String path) {
+        if (path == null || path.isEmpty()) {
+            return "";
+        }
+        int idx = path.lastIndexOf('.');
+        return idx >= 0 ? path.substring(0, idx) : "";
+    }
+
+    /**
+     * 마지막 세그먼트 반환
+     */
+    public static String lastSegment(String path) {
+        if (path == null || path.isEmpty()) {
+            return "";
+        }
+        int idx = path.lastIndexOf('.');
+        return idx >= 0 ? path.substring(idx + 1) : path;
+    }
 }

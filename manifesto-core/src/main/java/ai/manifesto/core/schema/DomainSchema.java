@@ -24,6 +24,8 @@ public final class DomainSchema {
     private final String id;
     private final String version;
     private final String hash;
+    private final Map<String, TypeSpec> types;
+    private final DomainMeta meta;
     private final Map<String, ActionSpec> actions;
     private final Map<String, ComputedFieldDef> computedFields;
     private final Map<String, FieldSpec> dataFields;
@@ -32,6 +34,8 @@ public final class DomainSchema {
         String id,
         String version,
         String hash,
+        Map<String, TypeSpec> types,
+        DomainMeta meta,
         Map<String, ActionSpec> actions,
         Map<String, ComputedFieldDef> computedFields,
         Map<String, FieldSpec> dataFields
@@ -39,6 +43,10 @@ public final class DomainSchema {
         this.id = Objects.requireNonNull(id, "id required");
         this.version = Objects.requireNonNull(version, "version required");
         this.hash = Objects.requireNonNull(hash, "hash required");
+        this.types = Collections.unmodifiableMap(
+            new HashMap<>(types != null ? types : new HashMap<>())
+        );
+        this.meta = meta;
         this.actions = Collections.unmodifiableMap(
             new HashMap<>(actions != null ? actions : new HashMap<>())
         );
@@ -60,6 +68,14 @@ public final class DomainSchema {
 
     public String getHash() {
         return hash;
+    }
+
+    public Map<String, TypeSpec> getTypes() {
+        return types;
+    }
+
+    public DomainMeta getMeta() {
+        return meta;
     }
 
     /**
@@ -144,6 +160,8 @@ public final class DomainSchema {
         private final String id;
         private final String version;
         private String hash;
+        private final Map<String, TypeSpec> types = new HashMap<>();
+        private DomainMeta meta;
         private final Map<String, ActionSpec> actions = new HashMap<>();
         private final Map<String, ComputedFieldDef> computedFields = new HashMap<>();
         private final Map<String, FieldSpec> dataFields = new HashMap<>();
@@ -156,6 +174,24 @@ public final class DomainSchema {
 
         public Builder hash(String hash) {
             this.hash = hash;
+            return this;
+        }
+
+        public Builder meta(DomainMeta meta) {
+            this.meta = meta;
+            return this;
+        }
+
+        public Builder addType(TypeSpec typeSpec) {
+            this.types.put(typeSpec.getName(), typeSpec);
+            return this;
+        }
+
+        public Builder types(Map<String, TypeSpec> types) {
+            this.types.clear();
+            if (types != null) {
+                this.types.putAll(types);
+            }
             return this;
         }
 
@@ -175,7 +211,7 @@ public final class DomainSchema {
         }
 
         public DomainSchema build() {
-            return new DomainSchema(id, version, hash, actions, computedFields, dataFields);
+            return new DomainSchema(id, version, hash, types, meta, actions, computedFields, dataFields);
         }
     }
 
@@ -193,6 +229,7 @@ public final class DomainSchema {
         return "DomainSchema{" +
                "id='" + id + '\'' +
                ", version='" + version + '\'' +
+               ", types=" + types.size() +
                ", actions=" + actions.size() +
                ", computedFields=" + computedFields.size() +
                ", dataFields=" + dataFields.size() +

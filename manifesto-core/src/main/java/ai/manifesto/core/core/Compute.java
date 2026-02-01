@@ -114,7 +114,7 @@ public class Compute {
             Map<String, Object> intentInput = intent.getInput() != null
                 ? intent.getInput()
                 : new HashMap<>();
-            String inputError = validateInput(action.getInputFields(), intentInput);
+            String inputError = validateInput(action, intentInput);
             if (inputError != null) {
                 return CompletableFuture.completedFuture(
                     createErrorResult(currentSnapshot, intent, "INVALID_INPUT", inputError, startTime, context)
@@ -353,6 +353,14 @@ public class Compute {
             case HALTED -> TraceGraph.TraceTermination.HALT;
             case ERROR -> TraceGraph.TraceTermination.ERROR;
         };
+    }
+
+    private static String validateInput(ActionSpec action, Map<String, Object> input) {
+        FieldSpec inputSpec = action.getInputSpec();
+        if (inputSpec != null && "object".equals(inputSpec.getType()) && inputSpec.getFields() != null) {
+            return validateInput(inputSpec.getFields(), input);
+        }
+        return validateInput(action.getInputFields(), input);
     }
 
     private static String validateInput(Map<String, FieldSpec> inputSpec, Map<String, Object> input) {

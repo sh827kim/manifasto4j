@@ -232,7 +232,8 @@ class ExprEvaluatorTest {
 
         Result<Object, ErrorValue> result = ExprEvaluator.evaluate(divExpr, context);
 
-        assertTrue(result.isErr());
+        assertTrue(result.isOk());
+        assertNull(result.unwrap());
     }
 
     @Test

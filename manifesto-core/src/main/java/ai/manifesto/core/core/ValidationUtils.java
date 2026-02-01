@@ -58,8 +58,10 @@ import ai.manifesto.core.expr.type.Typeof;
 import ai.manifesto.core.flow.FlowNode;
 import ai.manifesto.core.schema.ActionSpec;
 import ai.manifesto.core.schema.ComputedFieldDef;
+import ai.manifesto.core.schema.DomainMeta;
 import ai.manifesto.core.schema.DomainSchema;
 import ai.manifesto.core.schema.FieldSpec;
+import ai.manifesto.core.schema.TypeSpec;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -520,10 +522,36 @@ public final class ValidationUtils {
         Map<String, Object> root = new LinkedHashMap<>();
         root.put("id", schema.getId());
         root.put("version", schema.getVersion());
+        root.put("types", toTypeMap(schema.getTypes()));
         root.put("state", Map.of("fields", toFieldMap(schema.getDataFields())));
         root.put("computed", Map.of("fields", toComputedMap(schema.getComputedFields())));
         root.put("actions", toActionMap(schema.getActions()));
+        if (schema.getMeta() != null) {
+            root.put("meta", toMetaMap(schema.getMeta()));
+        }
         return root;
+    }
+
+    private static Map<String, Object> toTypeMap(Map<String, TypeSpec> types) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        for (Map.Entry<String, TypeSpec> entry : types.entrySet()) {
+            result.put(entry.getKey(), entry.getValue().getDefinition());
+        }
+        return result;
+    }
+
+    private static Map<String, Object> toMetaMap(DomainMeta meta) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (meta.getName() != null) {
+            result.put("name", meta.getName());
+        }
+        if (meta.getDescription() != null) {
+            result.put("description", meta.getDescription());
+        }
+        if (meta.getAuthors() != null) {
+            result.put("authors", meta.getAuthors());
+        }
+        return result;
     }
 
     private static Map<String, Object> toActionMap(Map<String, ActionSpec> actions) {
@@ -536,7 +564,9 @@ public final class ValidationUtils {
 
     private static Map<String, Object> toActionSpecMap(ActionSpec action) {
         Map<String, Object> result = new LinkedHashMap<>();
-        if (!action.getInputFields().isEmpty()) {
+        if (action.getInputSpec() != null) {
+            result.put("input", toFieldSpecMap(action.getInputSpec()));
+        } else if (!action.getInputFields().isEmpty()) {
             Map<String, Object> inputSpec = new LinkedHashMap<>();
             inputSpec.put("type", "object");
             inputSpec.put("required", true);
@@ -545,6 +575,9 @@ public final class ValidationUtils {
         }
         if (action.getAvailable() != null) {
             result.put("available", toExprMap(action.getAvailable()));
+        }
+        if (action.getDescription() != null) {
+            result.put("description", action.getDescription());
         }
         result.put("flow", toFlowMap(action.getFlow()));
         return result;
@@ -585,6 +618,9 @@ public final class ValidationUtils {
         result.put("required", spec.isRequired());
         if (spec.getDefaultValue() != null) {
             result.put("default", spec.getDefaultValue());
+        }
+        if (spec.getDescription() != null) {
+            result.put("description", spec.getDescription());
         }
         if (spec.getFields() != null && !spec.getFields().isEmpty()) {
             result.put("fields", toFieldMap(spec.getFields()));
@@ -712,7 +748,14 @@ public final class ValidationUtils {
             return Map.of("kind", "at", "array", toExprMap(at.array()), "index", toExprMap(at.index()));
         }
         if (expr instanceof Slice slice) {
-            return Map.of("kind", "slice", "array", toExprMap(slice.array()), "start", toExprMap(slice.start()), "end", toExprMap(slice.end()));
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("kind", "slice");
+            result.put("array", toExprMap(slice.array()));
+            result.put("start", toExprMap(slice.start()));
+            if (slice.end() != null) {
+                result.put("end", toExprMap(slice.end()));
+            }
+            return result;
         }
         if (expr instanceof Includes includes) {
             return Map.of("kind", "includes", "array", toExprMap(includes.array()), "item", toExprMap(includes.item()));
@@ -767,12 +810,14 @@ public final class ValidationUtils {
             return result;
         }
         if (expr instanceof Substring substring) {
-            return Map.of(
-                "kind", "substring",
-                "str", toExprMap(substring.str()),
-                "start", toExprMap(substring.start()),
-                "end", toExprMap(substring.end())
-            );
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("kind", "substring");
+            result.put("str", toExprMap(substring.str()));
+            result.put("start", toExprMap(substring.start()));
+            if (substring.end() != null) {
+                result.put("end", toExprMap(substring.end()));
+            }
+            return result;
         }
         if (expr instanceof Trim trim) {
             return Map.of("kind", "trim", "str", toExprMap(trim.str()));
@@ -869,7 +914,7 @@ public final class ValidationUtils {
         return result;
     }
 
-    private static String toCanonicalJson(Object value) {
+    public static String toCanonicalJson(Object value) {
         if (value == null) {
             return "null";
         }

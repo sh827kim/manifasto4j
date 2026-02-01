@@ -15,6 +15,9 @@ import ai.manifesto.core.expr.string.*;
 import ai.manifesto.core.expr.type.*;
 import ai.manifesto.core.utils.PathUtils;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.Map;
 
@@ -373,8 +376,10 @@ public class ExprEvaluator {
 
         // $system.timestamp - 타임스탐프
         if (path.equals("$system.timestamp")) {
-            long timestamp = ctx.getTrace().getTimestamp();
-            return Result.ok(timestamp);
+            long timestamp = ctx.getSnapshot().getMeta().getTimestamp();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+                .withZone(ZoneOffset.UTC);
+            return Result.ok(formatter.format(Instant.ofEpochMilli(timestamp)));
         }
 
         return Result.ok(null);
@@ -445,13 +450,7 @@ public class ExprEvaluator {
         Object rightVal = rightResult.unwrap();
         double divisor = toNumber(rightVal);
         if (divisor == 0) {
-            return Result.err(ErrorValue.create(
-                "DIVIDE_BY_ZERO",
-                "Cannot divide by zero",
-                ctx.getCurrentAction() != null ? ctx.getCurrentAction() : "",
-                ctx.getNodePath(),
-                ctx.getTrace().getTimestamp()
-            ));
+            return Result.ok(null);
         }
         double result = toNumber(leftVal) / divisor;
         if (isWholeNumber(result)) {
@@ -622,11 +621,33 @@ public class ExprEvaluator {
     // ===== String Operations =====
 
     private static Result<Object, ErrorValue> evaluateConcat(List<ExprNode> args, EvalContext ctx) {
-        StringBuilder sb = new StringBuilder();
+        List<Object> values = new ArrayList<>();
+        boolean hasArray = false;
         for (ExprNode arg : args) {
             Result<Object, ErrorValue> result = evaluateExpr(arg, ctx);
             if (result.isErr()) return result;
-            sb.append(toString(result.unwrap()));
+            Object value = result.unwrap();
+            if (value instanceof List<?>) {
+                hasArray = true;
+            }
+            values.add(value);
+        }
+
+        if (hasArray) {
+            List<Object> combined = new ArrayList<>();
+            for (Object value : values) {
+                if (value instanceof List<?> list) {
+                    combined.addAll(list);
+                } else if (value != null) {
+                    combined.add(value);
+                }
+            }
+            return Result.ok(combined);
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (Object value : values) {
+            sb.append(toString(value));
         }
         return Result.ok(sb.toString());
     }
@@ -638,18 +659,20 @@ public class ExprEvaluator {
         Result<Object, ErrorValue> startResult = evaluateExpr(substring.start(), ctx);
         if (startResult.isErr()) return startResult;
 
-        Result<Object, ErrorValue> endResult = evaluateExpr(substring.end(), ctx);
-        if (endResult.isErr()) return endResult;
-
         String str = toString(strResult.unwrap());
         int start = (int) toNumber(startResult.unwrap());
-        int end = (int) toNumber(endResult.unwrap());
-
         if (start < 0) start = 0;
-        if (end > str.length()) end = str.length();
-        if (start > end) return Result.ok("");
 
-        return Result.ok(str.substring(start, end));
+        if (substring.end() != null) {
+            Result<Object, ErrorValue> endResult = evaluateExpr(substring.end(), ctx);
+            if (endResult.isErr()) return endResult;
+            int end = (int) toNumber(endResult.unwrap());
+            if (end > str.length()) end = str.length();
+            if (start > end) return Result.ok("");
+            return Result.ok(str.substring(start, end));
+        }
+
+        return Result.ok(str.substring(start));
     }
 
     private static Result<Object, ErrorValue> evaluateTrim(ExprNode str, EvalContext ctx) {
@@ -783,21 +806,24 @@ public class ExprEvaluator {
         Result<Object, ErrorValue> startResult = evaluateExpr(startExpr, ctx);
         if (startResult.isErr()) return startResult;
 
-        Result<Object, ErrorValue> endResult = evaluateExpr(endExpr, ctx);
-        if (endResult.isErr()) return endResult;
-
         Object value = arrayResult.unwrap();
         if (!(value instanceof List<?>)) return Result.ok(List.of());
 
         int start = (int) toNumber(startResult.unwrap());
-        int end = (int) toNumber(endResult.unwrap());
         List<?> list = (List<?>) value;
 
         if (start < 0) start = 0;
-        if (end > list.size()) end = list.size();
-        if (start > end) return Result.ok(List.of());
+        if (endExpr != null) {
+            Result<Object, ErrorValue> endResult = evaluateExpr(endExpr, ctx);
+            if (endResult.isErr()) return endResult;
+            int end = (int) toNumber(endResult.unwrap());
+            if (end > list.size()) end = list.size();
+            if (start > end) return Result.ok(List.of());
+            return Result.ok(new ArrayList<>(list.subList(start, end)));
+        }
 
-        return Result.ok(new ArrayList<>(list.subList(start, end)));
+        if (start > list.size()) return Result.ok(List.of());
+        return Result.ok(new ArrayList<>(list.subList(start, list.size())));
     }
 
     private static Result<Object, ErrorValue> evaluateIncludes(ExprNode arrayExpr, ExprNode itemExpr, EvalContext ctx) {

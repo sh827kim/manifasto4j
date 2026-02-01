@@ -86,7 +86,7 @@ class ValidateTest {
 
         assertFalse(result.isValid());
         assertTrue(result.errors().stream()
-            .anyMatch(e -> e.contains("name"))
+            .anyMatch(e -> e.message().contains("name"))
         );
     }
 
@@ -154,7 +154,7 @@ class ValidateTest {
 
         assertFalse(result.isValid());
         assertTrue(result.errors().stream()
-            .anyMatch(e -> e.contains("invalid-field") || e.contains("identifier"))
+            .anyMatch(e -> e.message().contains("invalid-field") || e.message().contains("identifier"))
         );
     }
 
@@ -187,7 +187,9 @@ class ValidateTest {
         String output = validResult.toString();
         assertTrue(output.contains("valid"));
 
-        Validate.ValidationResult invalidResult = Validate.ValidationResult.invalid("test error");
+        Validate.ValidationResult invalidResult = Validate.ValidationResult.invalid(
+            new Validate.ValidationError("TEST", "test error", "test.path")
+        );
         String errorOutput = invalidResult.toString();
         assertTrue(errorOutput.contains("error") || errorOutput.contains("invalid"));
     }
@@ -210,7 +212,7 @@ class ValidateTest {
         Validate.ValidationResult result = Validate.validate(invalidHashSchema, snapshot);
 
         assertFalse(result.isValid());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("V-008")));
+        assertTrue(result.errors().stream().anyMatch(e -> e.code().equals("V-008")));
     }
 
     @Test
@@ -232,7 +234,9 @@ class ValidateTest {
         Validate.ValidationResult result = Validate.validate(invalidSchema, snapshot);
 
         assertFalse(result.isValid());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("V-001") && e.contains("Unknown dependency")));
+        assertTrue(result.errors().stream().anyMatch(e ->
+            e.code().equals("V-001") && e.message().contains("Unknown dependency")
+        ));
     }
 
     @Test
@@ -256,7 +260,9 @@ class ValidateTest {
         Validate.ValidationResult result = Validate.validate(invalidSchema, snapshot);
 
         assertFalse(result.isValid());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("V-002") && e.contains("a")));
+        assertTrue(result.errors().stream().anyMatch(e ->
+            e.code().equals("V-002") && e.message().contains("a")
+        ));
     }
 
     @Test
@@ -277,7 +283,9 @@ class ValidateTest {
         Validate.ValidationResult result = Validate.validate(invalidSchema, snapshot);
 
         assertFalse(result.isValid());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("V-003") && e.contains("input path")));
+        assertTrue(result.errors().stream().anyMatch(e ->
+            e.code().equals("V-003") && e.message().contains("input path")
+        ));
     }
 
     @Test
@@ -301,7 +309,9 @@ class ValidateTest {
         Validate.ValidationResult result = Validate.validate(invalidSchema, snapshot);
 
         assertFalse(result.isValid());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("V-003") && e.contains("Unknown input path")));
+        assertTrue(result.errors().stream().anyMatch(e ->
+            e.code().equals("V-003") && e.message().contains("Unknown input path")
+        ));
     }
 
     @Test
@@ -324,7 +334,7 @@ class ValidateTest {
         Validate.ValidationResult result = Validate.validate(invalidSchema, snapshot);
 
         assertFalse(result.isValid());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("V-004")));
+        assertTrue(result.errors().stream().anyMatch(e -> e.code().equals("V-004")));
     }
 
     @Test
@@ -350,7 +360,7 @@ class ValidateTest {
         Validate.ValidationResult result = Validate.validate(invalidSchema, snapshot);
 
         assertFalse(result.isValid());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("V-005")));
+        assertTrue(result.errors().stream().anyMatch(e -> e.code().equals("V-005")));
     }
 
     @Test
@@ -369,8 +379,8 @@ class ValidateTest {
         Validate.ValidationResult result = Validate.validate(invalidSchema, snapshot);
 
         assertFalse(result.isValid());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("Schema id")));
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("Schema version")));
+        assertTrue(result.errors().stream().anyMatch(e -> e.message().contains("Schema id")));
+        assertTrue(result.errors().stream().anyMatch(e -> e.message().contains("Schema version")));
     }
 
     private DomainSchema createBaseSchema() {

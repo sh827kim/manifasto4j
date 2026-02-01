@@ -162,10 +162,17 @@ public final class RuntimePatchEvaluatorLite {
         for (Map<String, Object> patch : patches) {
             String op = String.valueOf(patch.get("op"));
             String path = String.valueOf(patch.get("path"));
-            if (!"set".equals(op)) {
+            if ("set".equals(op)) {
+                setByPath(data, path, patch.get("value"));
                 continue;
             }
-            setByPath(data, path, patch.get("value"));
+            if ("unset".equals(op)) {
+                unsetByPath(data, path);
+                continue;
+            }
+            if ("merge".equals(op)) {
+                mergeByPath(data, path, patch.get("value"));
+            }
         }
         return new SnapshotContext(data, snapshot.computed, snapshot.meta, snapshot.input);
     }
@@ -186,6 +193,36 @@ public final class RuntimePatchEvaluatorLite {
             }
         }
         current.put(parts[parts.length - 1], value);
+    }
+
+    private void unsetByPath(Map<String, Object> data, String path) {
+        String[] parts = path.split("\\.");
+        Map<String, Object> current = data;
+        for (int i = 0; i < parts.length - 1; i++) {
+            Object next = current.get(parts[i]);
+            if (!(next instanceof Map<?, ?>)) {
+                return;
+            }
+            @SuppressWarnings("unchecked")
+            Map<String, Object> cast = (Map<String, Object>) next;
+            current = cast;
+        }
+        current.remove(parts[parts.length - 1]);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void mergeByPath(Map<String, Object> data, String path, Object value) {
+        Object current = getMapValue(data, path);
+        if (value instanceof Map<?, ?> mapValue) {
+            Map<String, Object> merged = new LinkedHashMap<>();
+            if (current instanceof Map<?, ?> currentMap) {
+                merged.putAll((Map<String, Object>) currentMap);
+            }
+            merged.putAll((Map<String, Object>) mapValue);
+            setByPath(data, path, merged);
+            return;
+        }
+        setByPath(data, path, value);
     }
 
     private boolean truthy(Object value) {

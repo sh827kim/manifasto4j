@@ -25,6 +25,7 @@ public final class FieldSpec {
     private final Map<String, FieldSpec> fields;
     private final FieldSpec items;
     private final List<Object> enumValues;
+    private final String description;
 
     public FieldSpec(
         String fieldName,
@@ -32,7 +33,7 @@ public final class FieldSpec {
         boolean required,
         Object defaultValue
     ) {
-        this(fieldName, type, required, defaultValue, null, null, null);
+        this(fieldName, type, required, defaultValue, null, null, null, null);
     }
 
     public FieldSpec(
@@ -44,6 +45,19 @@ public final class FieldSpec {
         FieldSpec items,
         List<Object> enumValues
     ) {
+        this(fieldName, type, required, defaultValue, fields, items, enumValues, null);
+    }
+
+    public FieldSpec(
+        String fieldName,
+        String type,
+        boolean required,
+        Object defaultValue,
+        Map<String, FieldSpec> fields,
+        FieldSpec items,
+        List<Object> enumValues,
+        String description
+    ) {
         this.fieldName = Objects.requireNonNull(fieldName, "fieldName required");
         this.type = Objects.requireNonNull(type, "type required");
         this.required = required;
@@ -51,6 +65,7 @@ public final class FieldSpec {
         this.fields = fields != null ? Map.copyOf(fields) : null;
         this.items = items;
         this.enumValues = enumValues != null ? new java.util.ArrayList<>(enumValues) : null;
+        this.description = description;
     }
 
     public String getFieldName() {
@@ -81,6 +96,10 @@ public final class FieldSpec {
         return enumValues;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
     /**
      * 필드 빌더
      */
@@ -92,6 +111,7 @@ public final class FieldSpec {
         private Map<String, FieldSpec> fields = null;
         private FieldSpec items = null;
         private List<Object> enumValues = null;
+        private String description = null;
 
         public Builder(String fieldName, String type) {
             this.fieldName = Objects.requireNonNull(fieldName);
@@ -123,8 +143,13 @@ public final class FieldSpec {
             return this;
         }
 
+        public Builder description(String description) {
+            this.description = description;
+            return this;
+        }
+
         public FieldSpec build() {
-            return new FieldSpec(fieldName, type, required, defaultValue, fields, items, enumValues);
+            return new FieldSpec(fieldName, type, required, defaultValue, fields, items, enumValues, description);
         }
     }
 
@@ -151,6 +176,7 @@ public final class FieldSpec {
                ", fields=" + (fields != null ? fields.keySet() : null) +
                ", items=" + (items != null ? items.fieldName : null) +
                ", enumValues=" + enumValues +
+               ", description=" + description +
                '}';
     }
 
@@ -164,11 +190,12 @@ public final class FieldSpec {
                Objects.equals(defaultValue, that.defaultValue) &&
                Objects.equals(fields, that.fields) &&
                Objects.equals(items, that.items) &&
-               Objects.equals(enumValues, that.enumValues);
+               Objects.equals(enumValues, that.enumValues) &&
+               Objects.equals(description, that.description);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(fieldName, type, required, defaultValue, fields, items, enumValues);
+        return Objects.hash(fieldName, type, required, defaultValue, fields, items, enumValues, description);
     }
 }

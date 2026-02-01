@@ -13,7 +13,6 @@ public record Substring(ExprNode str, ExprNode start, ExprNode end) implements E
     public Substring {
         Objects.requireNonNull(str, "str is required");
         Objects.requireNonNull(start, "start is required");
-        Objects.requireNonNull(end, "end is required");
     }
 
     public static Substring of(ExprNode str, ExprNode start, ExprNode end) {

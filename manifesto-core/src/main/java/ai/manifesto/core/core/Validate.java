@@ -42,7 +42,7 @@ public class Validate {
      */
     public record ValidationResult(
         boolean isValid,
-        List<String> errors
+        List<ValidationError> errors
     ) {
         public ValidationResult {
             Objects.requireNonNull(errors, "errors list is required");
@@ -69,15 +69,44 @@ public class Validate {
         /**
          * 에러 결과 생성
          */
-        public static ValidationResult invalid(List<String> errors) {
+        public static ValidationResult invalid(List<ValidationError> errors) {
             return new ValidationResult(false, new ArrayList<>(errors));
         }
 
         /**
          * 단일 에러로 결과 생성
          */
-        public static ValidationResult invalid(String error) {
+        public static ValidationResult invalid(ValidationError error) {
             return new ValidationResult(false, List.of(error));
+        }
+
+        /**
+         * 레거시 메시지 목록 (문자열) 반환
+         */
+        public List<String> messages() {
+            List<String> messages = new ArrayList<>();
+            for (ValidationError error : errors) {
+                messages.add(error.message());
+            }
+            return messages;
+        }
+    }
+
+    /**
+     * 검증 에러
+     *
+     * @param code 에러 코드
+     * @param message 에러 메시지
+     * @param path 문제 위치 (semantic path)
+     */
+    public record ValidationError(
+        String code,
+        String message,
+        String path
+    ) {
+        public ValidationError {
+            Objects.requireNonNull(code, "code is required");
+            Objects.requireNonNull(message, "message is required");
         }
     }
 
@@ -96,7 +125,7 @@ public class Validate {
         Objects.requireNonNull(schema, "schema is required");
         Objects.requireNonNull(snapshot, "snapshot is required");
 
-        List<String> errors = new ArrayList<>();
+        List<ValidationError> errors = new ArrayList<>();
 
         // 0. Schema 검증 (정합성/참조/해시)
         validateSchema(schema, errors);
@@ -118,53 +147,57 @@ public class Validate {
             : ValidationResult.invalid(errors);
     }
 
+    private static void addError(List<ValidationError> errors, String code, String message, String path) {
+        errors.add(new ValidationError(code, message, path));
+    }
+
     /**
      * Snapshot의 기본 구조 검증
      *
      * 필수 필드: data, computed, system, input, meta
      */
-    private static void validateSnapshotStructure(Snapshot snapshot, List<String> errors) {
+    private static void validateSnapshotStructure(Snapshot snapshot, List<ValidationError> errors) {
         // data 필드 검증
         if (snapshot.getData() == null) {
-            errors.add("Snapshot.data must not be null");
+            addError(errors, "INVALID_SNAPSHOT", "Snapshot.data must not be null", "snapshot.data");
         } else if (!(snapshot.getData() instanceof Map)) {
-            errors.add("Snapshot.data must be a Map");
+            addError(errors, "INVALID_SNAPSHOT", "Snapshot.data must be a Map", "snapshot.data");
         }
 
         // computed 필드 검증
         if (snapshot.getComputed() == null) {
-            errors.add("Snapshot.computed must not be null");
+            addError(errors, "INVALID_SNAPSHOT", "Snapshot.computed must not be null", "snapshot.computed");
         } else if (!(snapshot.getComputed() instanceof Map)) {
-            errors.add("Snapshot.computed must be a Map");
+            addError(errors, "INVALID_SNAPSHOT", "Snapshot.computed must be a Map", "snapshot.computed");
         }
 
         // system 필드 검증
         if (snapshot.getSystem() == null) {
-            errors.add("Snapshot.system must not be null");
+            addError(errors, "INVALID_SNAPSHOT", "Snapshot.system must not be null", "snapshot.system");
         }
 
         // input 필드 검증
         if (snapshot.getInput() == null) {
-            errors.add("Snapshot.input must not be null");
+            addError(errors, "INVALID_SNAPSHOT", "Snapshot.input must not be null", "snapshot.input");
         } else if (!(snapshot.getInput() instanceof Map)) {
-            errors.add("Snapshot.input must be a Map");
+            addError(errors, "INVALID_SNAPSHOT", "Snapshot.input must be a Map", "snapshot.input");
         }
 
         // meta 필드 검증
         if (snapshot.getMeta() == null) {
-            errors.add("Snapshot.meta must not be null");
+            addError(errors, "INVALID_SNAPSHOT", "Snapshot.meta must not be null", "snapshot.meta");
         } else {
             // version은 0 이상
             if (snapshot.getMeta().getVersion() < 0) {
-                errors.add("Snapshot.meta.version must be >= 0");
+                addError(errors, "INVALID_SNAPSHOT", "Snapshot.meta.version must be >= 0", "snapshot.meta.version");
             }
             // timestamp는 유효해야 함
             if (snapshot.getMeta().getTimestamp() <= 0) {
-                errors.add("Snapshot.meta.timestamp must be > 0");
+                addError(errors, "INVALID_SNAPSHOT", "Snapshot.meta.timestamp must be > 0", "snapshot.meta.timestamp");
             }
             // schemaHash는 존재해야 함 (빈 문자열 가능)
             if (snapshot.getMeta().getSchemaHash() == null) {
-                errors.add("Snapshot.meta.schemaHash must not be null");
+                addError(errors, "INVALID_SNAPSHOT", "Snapshot.meta.schemaHash must not be null", "snapshot.meta.schemaHash");
             }
         }
     }
@@ -179,7 +212,7 @@ public class Validate {
     private static void validateDataField(
         Snapshot snapshot,
         DomainSchema schema,
-        List<String> errors
+        List<ValidationError> errors
     ) {
         Map<String, Object> data = snapshot.getData();
 
@@ -193,7 +226,7 @@ public class Validate {
 
             if (spec.isRequired()) {
                 if (data == null || !data.containsKey(fieldName)) {
-                    errors.add("Data field '" + fieldName + "' is required");
+                    addError(errors, "INVALID_DATA", "Data field '" + fieldName + "' is required", "data." + fieldName);
                 }
             }
         }
@@ -208,7 +241,7 @@ public class Validate {
     private static void validateInputField(
         Snapshot snapshot,
         DomainSchema schema,
-        List<String> errors
+        List<ValidationError> errors
     ) {
         Map<String, Object> input = snapshot.getInput();
 
@@ -219,7 +252,7 @@ public class Validate {
 
                 // 키는 영문자, 숫자, 언더스코어만 허용
                 if (!key.matches("^[a-zA-Z_][a-zA-Z0-9_]*$")) {
-                    errors.add("Input key '" + key + "' is not a valid identifier");
+                    addError(errors, "INVALID_INPUT", "Input key '" + key + "' is not a valid identifier", "input." + key);
                 }
             }
         }
@@ -233,7 +266,7 @@ public class Validate {
      */
     private static void validateComputedField(
         DomainSchema schema,
-        List<String> errors
+        List<ValidationError> errors
     ) {
         Map<String, ComputedFieldDef> computedFields = schema.getComputedFields();
 
@@ -246,8 +279,12 @@ public class Validate {
 
         if (!cycles.isEmpty()) {
             for (List<String> cycle : cycles) {
-                errors.add("V-002: Cyclic dependency detected in computed fields: "
-                    + String.join(" -> ", cycle));
+                addError(
+                    errors,
+                    "V-002",
+                    "Cyclic dependency detected in computed fields: " + String.join(" -> ", cycle),
+                    "computed"
+                );
             }
         }
     }
@@ -257,26 +294,26 @@ public class Validate {
      *
      * System 필드는 내부용이므로 기본 구조만 검증
      */
-    private static void validateSystemField(Snapshot snapshot, List<String> errors) {
+    private static void validateSystemField(Snapshot snapshot, List<ValidationError> errors) {
         var system = snapshot.getSystem();
 
         if (system != null) {
             // Status가 유효해야 함
             if (system.getStatus() == null) {
-                errors.add("Snapshot.system.status must not be null");
+                addError(errors, "INVALID_SNAPSHOT", "Snapshot.system.status must not be null", "snapshot.system.status");
             }
 
             // pendingRequirements는 리스트여야 함
             if (system.getPendingRequirements() != null) {
                 if (!(system.getPendingRequirements() instanceof List)) {
-                    errors.add("Snapshot.system.pendingRequirements must be a List");
+                    addError(errors, "INVALID_SNAPSHOT", "Snapshot.system.pendingRequirements must be a List", "snapshot.system.pendingRequirements");
                 }
             }
 
             // errors는 리스트여야 함
             if (system.getErrors() != null) {
                 if (!(system.getErrors() instanceof List)) {
-                    errors.add("Snapshot.system.errors must be a List");
+                    addError(errors, "INVALID_SNAPSHOT", "Snapshot.system.errors must be a List", "snapshot.system.errors");
                 }
             }
         }
@@ -302,41 +339,41 @@ public class Validate {
      */
     public static String getFirstError(DomainSchema schema, Snapshot snapshot) {
         ValidationResult result = validate(schema, snapshot);
-        return result.isValid() ? null : result.errors().get(0);
+        return result.isValid() ? null : result.errors().get(0).message();
     }
 
     /**
      * Schema 자체 검증
      */
-    private static void validateSchema(DomainSchema schema, List<String> errors) {
+    private static void validateSchema(DomainSchema schema, List<ValidationError> errors) {
         if (!ValidationUtils.isValidSchemaId(schema.getId())) {
-            errors.add("SCHEMA_ERROR: Schema id must be a valid URI or UUID");
+            addError(errors, "SCHEMA_ERROR", "Schema id must be a valid URI or UUID", "schema.id");
         }
 
         if (!ValidationUtils.isValidSemver(schema.getVersion())) {
-            errors.add("SCHEMA_ERROR: Schema version must follow Semantic Versioning 2.0");
+            addError(errors, "SCHEMA_ERROR", "Schema version must follow Semantic Versioning 2.0", "schema.version");
         }
 
         String schemaHash = schema.getHash();
         if (schemaHash == null || schemaHash.isEmpty()) {
-            errors.add("SCHEMA_ERROR: Schema hash is required");
+            addError(errors, "SCHEMA_ERROR", "Schema hash is required", "schema.hash");
         } else {
             String expectedHash = ValidationUtils.computeSchemaHash(schema);
             if (!schemaHash.equals(expectedHash)) {
-                errors.add("V-008: Schema hash mismatch: expected " + expectedHash + ", got " + schemaHash);
+                addError(errors, "V-008", "Schema hash mismatch: expected " + expectedHash + ", got " + schemaHash, "schema.hash");
             }
         }
 
         if (schema.getDataFields().isEmpty()) {
-            errors.add("SCHEMA_ERROR: State fields must not be empty");
+            addError(errors, "SCHEMA_ERROR", "State fields must not be empty", "schema.state");
         }
 
         if (schema.getComputedFields().isEmpty()) {
-            errors.add("SCHEMA_ERROR: Computed fields must not be empty");
+            addError(errors, "SCHEMA_ERROR", "Computed fields must not be empty", "schema.computed");
         }
 
         if (schema.getActions().isEmpty()) {
-            errors.add("SCHEMA_ERROR: actions must not be empty");
+            addError(errors, "SCHEMA_ERROR", "actions must not be empty", "schema.actions");
         }
 
         validateStateDefaults(schema, errors);
@@ -352,11 +389,13 @@ public class Validate {
     /**
      * 선택 필드는 기본값 필수
      */
-    private static void validateStateDefaults(DomainSchema schema, List<String> errors) {
+    private static void validateStateDefaults(DomainSchema schema, List<ValidationError> errors) {
         for (Map.Entry<String, FieldSpec> entry : schema.getDataFields().entrySet()) {
             FieldSpec spec = entry.getValue();
             if (!spec.isRequired() && spec.getDefaultValue() == null) {
-                errors.add("SCHEMA_ERROR: Optional fields must define a default value: " + entry.getKey());
+                addError(errors, "SCHEMA_ERROR",
+                    "Optional fields must define a default value: " + entry.getKey(),
+                    "schema.state." + entry.getKey());
             }
         }
     }
@@ -364,7 +403,7 @@ public class Validate {
     /**
      * Computed deps 경로 존재 검증
      */
-    private static void validateComputedDeps(DomainSchema schema, List<String> errors) {
+    private static void validateComputedDeps(DomainSchema schema, List<ValidationError> errors) {
         for (Map.Entry<String, ComputedFieldDef> entry : schema.getComputedFields().entrySet()) {
             String fieldName = entry.getKey();
             ComputedFieldDef spec = entry.getValue();
@@ -372,7 +411,9 @@ public class Validate {
                 boolean exists = ValidationUtils.pathExistsInComputedSpec(schema.getComputedFields(), dep)
                     || ValidationUtils.pathExistsInStateSpec(schema.getDataFields(), dep);
                 if (!exists) {
-                    errors.add("V-001: Unknown dependency path: " + dep + " (computed." + fieldName + ")");
+                    addError(errors, "V-001",
+                        "Unknown dependency path: " + dep + " (computed." + fieldName + ")",
+                        "computed." + fieldName + ".deps");
                 }
             }
         }
@@ -381,7 +422,7 @@ public class Validate {
     /**
      * Computed 표현식 내 get 경로 검증
      */
-    private static void validateComputedExprPaths(DomainSchema schema, List<String> errors) {
+    private static void validateComputedExprPaths(DomainSchema schema, List<ValidationError> errors) {
         for (Map.Entry<String, ComputedFieldDef> entry : schema.getComputedFields().entrySet()) {
             String fieldName = entry.getKey();
             ComputedFieldDef spec = entry.getValue();
@@ -393,20 +434,28 @@ public class Validate {
                 }
                 if (exprPath.startsWith("computed.")) {
                     if (!ValidationUtils.pathExistsInComputedSpec(schema.getComputedFields(), exprPath)) {
-                        errors.add("V-003: Unknown computed path in expression: " + exprPath + " (computed." + fieldName + ")");
+                        addError(errors, "V-003",
+                            "Unknown computed path in expression: " + exprPath + " (computed." + fieldName + ")",
+                            "computed." + fieldName + ".expr");
                     }
                     continue;
                 }
                 if (exprPath.startsWith("input.")) {
-                    errors.add("V-003: input path is not allowed in computed expression: " + exprPath + " (computed." + fieldName + ")");
+                    addError(errors, "V-003",
+                        "input path is not allowed in computed expression: " + exprPath + " (computed." + fieldName + ")",
+                        "computed." + fieldName + ".expr");
                     continue;
                 }
                 if (exprPath.startsWith("system.")) {
-                    errors.add("V-003: system path is not allowed in computed expression: " + exprPath + " (computed." + fieldName + ")");
+                    addError(errors, "V-003",
+                        "system path is not allowed in computed expression: " + exprPath + " (computed." + fieldName + ")",
+                        "computed." + fieldName + ".expr");
                     continue;
                 }
                 if (!ValidationUtils.pathExistsInStateSpec(schema.getDataFields(), exprPath)) {
-                    errors.add("V-003: Unknown state path in expression: " + exprPath + " (computed." + fieldName + ")");
+                    addError(errors, "V-003",
+                        "Unknown state path in expression: " + exprPath + " (computed." + fieldName + ")",
+                        "computed." + fieldName + ".expr");
                 }
             }
         }
@@ -415,7 +464,7 @@ public class Validate {
     /**
      * Computed deps 커버리지 검증
      */
-    private static void validateComputedDepsCoverage(DomainSchema schema, List<String> errors) {
+    private static void validateComputedDepsCoverage(DomainSchema schema, List<ValidationError> errors) {
         for (Map.Entry<String, ComputedFieldDef> entry : schema.getComputedFields().entrySet()) {
             String fieldName = entry.getKey();
             ComputedFieldDef spec = entry.getValue();
@@ -449,7 +498,9 @@ public class Validate {
 
             for (String exprPath : relevantPaths) {
                 if (!hasDependency(deps, exprPath)) {
-                    errors.add("V-001: Missing dependency for computed expression path: " + exprPath + " (computed." + fieldName + ")");
+                    addError(errors, "V-001",
+                        "Missing dependency for computed expression path: " + exprPath + " (computed." + fieldName + ")",
+                        "computed." + fieldName + ".deps");
                 }
             }
         }
@@ -473,7 +524,7 @@ public class Validate {
     /**
      * Action 표현식 경로 검증
      */
-    private static void validateActionExprPaths(DomainSchema schema, List<String> errors) {
+    private static void validateActionExprPaths(DomainSchema schema, List<ValidationError> errors) {
         for (Map.Entry<String, ActionSpec> entry : schema.getActions().entrySet()) {
             String actionName = entry.getKey();
             ActionSpec action = entry.getValue();
@@ -491,19 +542,25 @@ public class Validate {
 
                 if (exprPath.equals("input") || exprPath.startsWith("input.")) {
                     if (action.getInputFields().isEmpty()) {
-                        errors.add("V-003: Unknown input path: " + exprPath + " (actions." + actionName + ")");
+                        addError(errors, "V-003",
+                            "Unknown input path: " + exprPath + " (actions." + actionName + ")",
+                            "actions." + actionName + ".input");
                         continue;
                     }
                     String subPath = exprPath.equals("input") ? "" : exprPath.substring(6);
                     if (!ValidationUtils.pathExistsInFieldSpec(action.getInputFields(), subPath)) {
-                        errors.add("V-003: Unknown input path: " + exprPath + " (actions." + actionName + ")");
+                        addError(errors, "V-003",
+                            "Unknown input path: " + exprPath + " (actions." + actionName + ")",
+                            "actions." + actionName + ".input");
                     }
                     continue;
                 }
 
                 if (exprPath.startsWith("computed.")) {
                     if (!ValidationUtils.pathExistsInComputedSpec(schema.getComputedFields(), exprPath)) {
-                        errors.add("V-003: Unknown computed path: " + exprPath + " (actions." + actionName + ")");
+                        addError(errors, "V-003",
+                            "Unknown computed path: " + exprPath + " (actions." + actionName + ")",
+                            "actions." + actionName + ".expr");
                     }
                     continue;
                 }
@@ -517,7 +574,9 @@ public class Validate {
                 }
 
                 if (!ValidationUtils.pathExistsInStateSpec(schema.getDataFields(), exprPath)) {
-                    errors.add("V-003: Unknown state path: " + exprPath + " (actions." + actionName + ")");
+                    addError(errors, "V-003",
+                        "Unknown state path: " + exprPath + " (actions." + actionName + ")",
+                        "actions." + actionName + ".expr");
                 }
             }
         }
@@ -526,14 +585,16 @@ public class Validate {
     /**
      * Flow call 참조 존재 여부 검증
      */
-    private static void validateCallReferences(DomainSchema schema, List<String> errors) {
+    private static void validateCallReferences(DomainSchema schema, List<ValidationError> errors) {
         Set<String> actionNames = schema.getActions().keySet();
         for (Map.Entry<String, ActionSpec> entry : schema.getActions().entrySet()) {
             String actionName = entry.getKey();
             Set<String> calls = collectCalls(entry.getValue().getFlow());
             for (String callName : calls) {
                 if (!actionNames.contains(callName)) {
-                    errors.add("V-004: Unknown flow reference: \"" + callName + "\" in action \"" + actionName + "\"");
+                    addError(errors, "V-004",
+                        "Unknown flow reference: \"" + callName + "\" in action \"" + actionName + "\"",
+                        "actions." + actionName + ".flow");
                 }
             }
         }
@@ -542,7 +603,7 @@ public class Validate {
     /**
      * Flow call 그래프 순환 검증
      */
-    private static void validateCallGraph(DomainSchema schema, List<String> errors) {
+    private static void validateCallGraph(DomainSchema schema, List<ValidationError> errors) {
         Map<String, List<String>> edges = new HashMap<>();
         for (Map.Entry<String, ActionSpec> entry : schema.getActions().entrySet()) {
             edges.put(entry.getKey(), new ArrayList<>(collectCalls(entry.getValue().getFlow())));
@@ -566,7 +627,7 @@ public class Validate {
         Set<String> visited,
         Set<String> recursionStack,
         List<String> path,
-        List<String> errors
+        List<ValidationError> errors
     ) {
         visited.add(node);
         recursionStack.add(node);
@@ -582,7 +643,7 @@ public class Validate {
             } else if (recursionStack.contains(dep)) {
                 List<String> cycle = new ArrayList<>(path);
                 cycle.add(dep);
-                errors.add("V-005: Cyclic call detected: " + String.join(" -> ", cycle));
+                addError(errors, "V-005", "Cyclic call detected: " + String.join(" -> ", cycle), "actions");
                 return true;
             }
         }
