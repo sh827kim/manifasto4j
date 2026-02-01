@@ -71,14 +71,18 @@ final class TypeExprParser {
             token = token.substring(0, token.length() - 1).trim();
         }
 
-        if (token.startsWith("array<") && token.endsWith(">")) {
+        if ((token.startsWith("array<") || token.startsWith("Array<")) && token.endsWith(">")) {
             String inner = token.substring(6, token.length() - 1).trim();
             TypeParseResult items = parseTypeExpr(inner);
             FieldSpec itemSpec = new FieldSpec("item", items.type, !items.nullable, null, items.fields, items.items, items.enumValues);
             return new TypeParseResult("array", nullable || items.nullable, null, itemSpec, null);
         }
 
-        if (token.startsWith("object{") && token.endsWith("}")) {
+        if ((token.startsWith("record<") || token.startsWith("Record<")) && token.endsWith(">")) {
+            return new TypeParseResult("object", nullable, null, null, null);
+        }
+
+        if ((token.startsWith("object{") || token.startsWith("Object{")) && token.endsWith("}")) {
             String inner = token.substring(7, token.length() - 1).trim();
             Map<String, FieldSpec> fields = new HashMap<>();
             if (!inner.isEmpty()) {
@@ -110,7 +114,7 @@ final class TypeExprParser {
             return new TypeParseResult("object", nullable, fields, null, null);
         }
 
-        if (token.startsWith("enum(") && token.endsWith(")")) {
+        if ((token.startsWith("enum(") || token.startsWith("Enum(")) && token.endsWith(")")) {
             String inner = token.substring(5, token.length() - 1);
             List<Object> values = new ArrayList<>();
             boolean hasNull = false;

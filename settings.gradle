@@ -1,4 +1,4 @@
-rootProject.name = 'manifesto'
+rootProject.name = 'manifasto4j'
 
 include ':manifesto-core'
 include ':manifesto-examples'

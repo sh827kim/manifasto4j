@@ -67,6 +67,7 @@ public final class SemanticValidator {
             } else if (member instanceof ActionNode action) {
                 if (action.available() != null) {
                     validateExpr(action.available(), ExprContext.AVAILABLE);
+                    warnIfNonBoolCondition(action.available());
                 }
                 validateActionBody(action);
             }
@@ -75,13 +76,22 @@ public final class SemanticValidator {
 
     private void validateActionBody(ActionNode action) {
         for (var stmt : action.body()) {
-            validateGuardedStmt(stmt);
+            if (stmt instanceof WhenStmtNode || stmt instanceof OnceStmtNode) {
+                validateGuardedStmt(stmt);
+            } else {
+                diagnostics.add(Diagnostic.error(
+                    DiagnosticCode.E_UNGUARDED_STMT,
+                    "Statement must be inside a guard (when or once)",
+                    spanOf(stmt.location())
+                ));
+            }
         }
     }
 
     private void validateGuardedStmt(Object stmt) {
         if (stmt instanceof WhenStmtNode whenStmt) {
             validateExpr(whenStmt.condition(), ExprContext.GENERAL);
+            warnIfNonBoolCondition(whenStmt.condition());
             for (InnerStmtNode inner : whenStmt.body()) {
                 validateInnerStmt(inner);
             }
@@ -90,6 +100,7 @@ public final class SemanticValidator {
         if (stmt instanceof OnceStmtNode onceStmt) {
             if (onceStmt.condition() != null) {
                 validateExpr(onceStmt.condition(), ExprContext.GENERAL);
+                warnIfNonBoolCondition(onceStmt.condition());
             }
             for (InnerStmtNode inner : onceStmt.body()) {
                 validateInnerStmt(inner);
@@ -120,6 +131,15 @@ public final class SemanticValidator {
             return;
         }
         if (stmt instanceof StopStmtNode) {
+            StopStmtNode stopStmt = (StopStmtNode) stmt;
+            String reason = stopStmt.reason() == null ? "" : stopStmt.reason().toLowerCase();
+            if (reason.contains("wait") || reason.contains("pending") || reason.contains("processing")) {
+                diagnostics.add(Diagnostic.error(
+                    DiagnosticCode.E008,
+                    "stop message suggests waiting/pending - use 'Already processed' style instead",
+                    spanOf(stopStmt.location())
+                ));
+            }
             return;
         }
         if (stmt instanceof WhenStmtNode || stmt instanceof OnceStmtNode) {
@@ -244,6 +264,26 @@ public final class SemanticValidator {
             for (var field : objectType.fields()) {
                 checkAnonymousObjectType(field.typeExpr(), field.location());
             }
+        }
+    }
+
+    private void warnIfNonBoolCondition(ExprNode expr) {
+        if (expr instanceof LiteralExprNode literal) {
+            if (!(literal.value() instanceof Boolean)) {
+                diagnostics.add(Diagnostic.warning(
+                    DiagnosticCode.W_NON_BOOL_COND,
+                    "Condition may not be boolean",
+                    spanOf(literal.location())
+                ));
+            }
+            return;
+        }
+        if (expr instanceof ObjectLiteralExprNode || expr instanceof ArrayLiteralExprNode) {
+            diagnostics.add(Diagnostic.warning(
+                DiagnosticCode.W_NON_BOOL_COND,
+                "Condition may not be boolean",
+                spanOf(expr.location())
+            ));
         }
     }
 

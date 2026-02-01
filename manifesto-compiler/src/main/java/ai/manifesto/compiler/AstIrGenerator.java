@@ -157,7 +157,7 @@ public final class AstIrGenerator {
                     FieldSpec fieldSpec = new FieldSpec(
                         field.name(),
                         spec.type(),
-                        true,
+                        spec.required(),
                         defaultValue,
                         spec.fields(),
                         spec.items(),

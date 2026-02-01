@@ -14,6 +14,7 @@ import java.util.Map;
  */
 public final class Lexer {
     private static final Map<String, TokenKind> KEYWORDS = createKeywords();
+    private static final java.util.Set<String> RESERVED_KEYWORDS = createReservedKeywords();
 
     private final String source;
     private final List<Token> tokens = new ArrayList<>();
@@ -132,7 +133,19 @@ public final class Lexer {
             }
             if (c == '\\' && !isAtEnd()) {
                 char next = advance();
-                value.append(next);
+                switch (next) {
+                    case 'n' -> value.append('\n');
+                    case 'r' -> value.append('\r');
+                    case 't' -> value.append('\t');
+                    case '\\' -> value.append('\\');
+                    case '\'' -> value.append('\'');
+                    case '"' -> value.append('"');
+                    case '0' -> value.append('\0');
+                    default -> {
+                        error("Invalid escape sequence '\\" + next + "'");
+                        value.append(next);
+                    }
+                }
                 continue;
             }
             value.append(c);
@@ -148,6 +161,22 @@ public final class Lexer {
     }
 
     private void number() {
+        if (source.charAt(start) == '0' && (peek() == 'x' || peek() == 'X')) {
+            advance();
+            while (isHexDigit(peek())) {
+                advance();
+            }
+            String hexStr = source.substring(start + 2, current);
+            Object value;
+            try {
+                value = Integer.parseInt(hexStr, 16);
+            } catch (NumberFormatException e) {
+                value = hexStr;
+            }
+            addToken(TokenKind.NUMBER, value);
+            return;
+        }
+
         while (isDigit(peek())) {
             advance();
         }
@@ -159,14 +188,24 @@ public final class Lexer {
             }
         }
 
+        if (peek() == 'e' || peek() == 'E') {
+            advance();
+            if (peek() == '+' || peek() == '-') {
+                advance();
+            }
+            if (!isDigit(peek())) {
+                error("Invalid number: expected digits after exponent");
+                return;
+            }
+            while (isDigit(peek())) {
+                advance();
+            }
+        }
+
         String lexeme = source.substring(start, current);
         Object value;
         try {
-            if (lexeme.contains(".")) {
-                value = Double.parseDouble(lexeme);
-            } else {
-                value = Integer.parseInt(lexeme);
-            }
+            value = Double.parseDouble(lexeme);
         } catch (NumberFormatException e) {
             value = lexeme;
         }
@@ -174,26 +213,63 @@ public final class Lexer {
     }
 
     private void identifier() {
-        while (isAlphaNumeric(peek())) {
+        while (isAlphaNumeric(peek()) || peek() == '$') {
+            if (peek() == '$') {
+                advance();
+                error("'$' is forbidden in identifiers (MEL A17)");
+                continue;
+            }
             advance();
         }
 
         String text = source.substring(start, current);
-        TokenKind kind = KEYWORDS.get(text);
-        if (kind == null) {
-            kind = TokenKind.IDENTIFIER;
+
+        if (text.startsWith("__sys__")) {
+            error("'__sys__' prefix is reserved for compiler-generated identifiers (MEL A26)");
+            addToken(TokenKind.ERROR);
+            return;
         }
-        addToken(kind);
+
+        if (RESERVED_KEYWORDS.contains(text)) {
+            error("'" + text + "' is a reserved keyword and cannot be used");
+            addToken(TokenKind.ERROR);
+            return;
+        }
+
+        TokenKind kind = KEYWORDS.get(text);
+        addToken(kind == null ? TokenKind.IDENTIFIER : kind);
     }
 
     private void systemIdentifier() {
-        while (isAlphaNumeric(peek()) || peek() == '.') {
+        if (!isAlpha(peek())) {
+            error("Expected identifier after '$'");
+            addToken(TokenKind.ERROR);
+            return;
+        }
+
+        while (isAlphaNumeric(peek())) {
             advance();
         }
 
-        String lexeme = source.substring(start, current);
-        TokenKind kind = "$item".equals(lexeme) ? TokenKind.ITEM : TokenKind.SYSTEM_IDENT;
-        addToken(kind);
+        String initialLexeme = source.substring(start, current);
+        if ("$item".equals(initialLexeme)) {
+            addToken(TokenKind.ITEM);
+            return;
+        }
+
+        if ("$system".equals(initialLexeme) || "$meta".equals(initialLexeme) || "$input".equals(initialLexeme)) {
+            while (peek() == '.' && isAlpha(peekNext())) {
+                advance();
+                while (isAlphaNumeric(peek())) {
+                    advance();
+                }
+            }
+            addToken(TokenKind.SYSTEM_IDENT);
+            return;
+        }
+
+        error("Invalid system identifier '" + initialLexeme + "'. Expected $system.*, $meta.*, $input.*, or $item");
+        addToken(TokenKind.ERROR);
     }
 
     private boolean match(char expected) {
@@ -240,6 +316,12 @@ public final class Lexer {
 
     private boolean isDigit(char c) {
         return c >= '0' && c <= '9';
+    }
+
+    private boolean isHexDigit(char c) {
+        return isDigit(c)
+            || (c >= 'a' && c <= 'f')
+            || (c >= 'A' && c <= 'F');
     }
 
     private boolean isAlpha(char c) {
@@ -304,6 +386,48 @@ public final class Lexer {
         keywords.put("from", TokenKind.FROM);
         keywords.put("export", TokenKind.EXPORT);
         return keywords;
+    }
+
+    private static java.util.Set<String> createReservedKeywords() {
+        java.util.Set<String> reserved = new java.util.HashSet<>();
+        reserved.add("function");
+        reserved.add("var");
+        reserved.add("let");
+        reserved.add("const");
+        reserved.add("if");
+        reserved.add("else");
+        reserved.add("for");
+        reserved.add("while");
+        reserved.add("do");
+        reserved.add("switch");
+        reserved.add("case");
+        reserved.add("break");
+        reserved.add("continue");
+        reserved.add("return");
+        reserved.add("throw");
+        reserved.add("try");
+        reserved.add("catch");
+        reserved.add("finally");
+        reserved.add("new");
+        reserved.add("delete");
+        reserved.add("typeof");
+        reserved.add("instanceof");
+        reserved.add("void");
+        reserved.add("debugger");
+        reserved.add("this");
+        reserved.add("super");
+        reserved.add("arguments");
+        reserved.add("eval");
+        reserved.add("async");
+        reserved.add("await");
+        reserved.add("yield");
+        reserved.add("class");
+        reserved.add("extends");
+        reserved.add("interface");
+        reserved.add("enum");
+        reserved.add("namespace");
+        reserved.add("module");
+        return reserved;
     }
 
     public record LexResult(List<Token> tokens, List<Diagnostic> diagnostics) {}

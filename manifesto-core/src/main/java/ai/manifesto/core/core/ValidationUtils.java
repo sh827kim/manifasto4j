@@ -202,6 +202,15 @@ public final class ValidationUtils {
             collectGetPathsFromExpr(round.arg(), paths);
             return;
         }
+        if (expr instanceof Pow pow) {
+            collectGetPathsFromExpr(pow.base(), paths);
+            collectGetPathsFromExpr(pow.exponent(), paths);
+            return;
+        }
+        if (expr instanceof Sqrt sqrt) {
+            collectGetPathsFromExpr(sqrt.arg(), paths);
+            return;
+        }
         if (expr instanceof Floor floor) {
             collectGetPathsFromExpr(floor.arg(), paths);
             return;
@@ -227,6 +236,14 @@ public final class ValidationUtils {
             for (ExprNode arg : concat.args()) {
                 collectGetPathsFromExpr(arg, paths);
             }
+            return;
+        }
+        if (expr instanceof ToLowerCase lower) {
+            collectGetPathsFromExpr(lower.str(), paths);
+            return;
+        }
+        if (expr instanceof ToUpperCase upper) {
+            collectGetPathsFromExpr(upper.str(), paths);
             return;
         }
         if (expr instanceof Coalesce coalesce) {

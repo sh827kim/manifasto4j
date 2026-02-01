@@ -27,7 +27,9 @@ import ai.manifesto.compiler.parser.UnaryExprNode;
 import ai.manifesto.compiler.parser.WhenStmtNode;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * ScopeAnalyzer - 기본 스코프 분석 (중복/미정의 체크)
@@ -60,69 +62,79 @@ public final class ScopeAnalyzer {
 
         for (DomainMember member : domain.members()) {
             if (member instanceof ComputedNode computed) {
-                analyzeExpr(computed.expression(), domainScope);
+                analyzeExpr(computed.expression(), domainScope, null);
             } else if (member instanceof ActionNode action) {
                 Scope actionScope = new Scope("action", domainScope);
                 action.params().forEach(param -> define(actionScope, param.name(), SymbolKind.PARAM, param.location()));
                 if (action.available() != null) {
-                    analyzeExpr(action.available(), actionScope);
+                    analyzeExpr(action.available(), actionScope, null);
                 }
-                analyzeActionBody(action, actionScope);
+                Set<String> usedParams = new HashSet<>();
+                analyzeActionBody(action, actionScope, usedParams);
+                action.params().forEach(param -> {
+                    if (!usedParams.contains(param.name())) {
+                        diagnostics.add(Diagnostic.warning(
+                            DiagnosticCode.W_UNUSED,
+                            "Unused identifier: " + param.name(),
+                            spanOf(param.location())
+                        ));
+                    }
+                });
             }
         }
     }
 
-    private void analyzeActionBody(ActionNode action, Scope scope) {
+    private void analyzeActionBody(ActionNode action, Scope scope, Set<String> usedParams) {
         for (var stmt : action.body()) {
             if (stmt instanceof WhenStmtNode whenStmt) {
-                analyzeExpr(whenStmt.condition(), scope);
+                analyzeExpr(whenStmt.condition(), scope, usedParams);
                 for (InnerStmtNode inner : whenStmt.body()) {
-                    analyzeInnerStmt(inner, scope);
+                    analyzeInnerStmt(inner, scope, usedParams);
                 }
             } else if (stmt instanceof OnceStmtNode onceStmt) {
                 if (onceStmt.condition() != null) {
-                    analyzeExpr(onceStmt.condition(), scope);
+                    analyzeExpr(onceStmt.condition(), scope, usedParams);
                 }
                 for (InnerStmtNode inner : onceStmt.body()) {
-                    analyzeInnerStmt(inner, scope);
+                    analyzeInnerStmt(inner, scope, usedParams);
                 }
             }
         }
     }
 
-    private void analyzeInnerStmt(InnerStmtNode stmt, Scope scope) {
+    private void analyzeInnerStmt(InnerStmtNode stmt, Scope scope, Set<String> usedParams) {
         if (stmt instanceof PatchStmtNode patchStmt) {
             if (patchStmt.value() != null) {
-                analyzeExpr(patchStmt.value(), scope);
+                analyzeExpr(patchStmt.value(), scope, usedParams);
             }
             return;
         }
         if (stmt instanceof EffectStmtNode effectStmt) {
             effectStmt.args().forEach(arg -> {
                 if (!arg.isPath()) {
-                    analyzeExpr((ExprNode) arg.value(), scope);
+                    analyzeExpr((ExprNode) arg.value(), scope, usedParams);
                 }
             });
             return;
         }
         if (stmt instanceof WhenStmtNode whenStmt) {
-            analyzeExpr(whenStmt.condition(), scope);
+            analyzeExpr(whenStmt.condition(), scope, usedParams);
             for (InnerStmtNode inner : whenStmt.body()) {
-                analyzeInnerStmt(inner, scope);
+                analyzeInnerStmt(inner, scope, usedParams);
             }
             return;
         }
         if (stmt instanceof OnceStmtNode onceStmt) {
             if (onceStmt.condition() != null) {
-                analyzeExpr(onceStmt.condition(), scope);
+                analyzeExpr(onceStmt.condition(), scope, usedParams);
             }
             for (InnerStmtNode inner : onceStmt.body()) {
-                analyzeInnerStmt(inner, scope);
+                analyzeInnerStmt(inner, scope, usedParams);
             }
         }
     }
 
-    private void analyzeExpr(ExprNode expr, Scope scope) {
+    private void analyzeExpr(ExprNode expr, Scope scope, Set<String> usedParams) {
         if (expr == null) {
             return;
         }
@@ -133,45 +145,47 @@ public final class ScopeAnalyzer {
                     "Undefined identifier: " + ident.name(),
                     spanOf(ident.location())
                 ));
+            } else if (usedParams != null) {
+                usedParams.add(ident.name());
             }
             return;
         }
         if (expr instanceof PropertyAccessExprNode prop) {
-            analyzeExpr(prop.object(), scope);
+            analyzeExpr(prop.object(), scope, usedParams);
             return;
         }
         if (expr instanceof IndexAccessExprNode index) {
-            analyzeExpr(index.object(), scope);
-            analyzeExpr(index.index(), scope);
+            analyzeExpr(index.object(), scope, usedParams);
+            analyzeExpr(index.index(), scope, usedParams);
             return;
         }
         if (expr instanceof FunctionCallExprNode call) {
             for (ExprNode arg : call.args()) {
-                analyzeExpr(arg, scope);
+                analyzeExpr(arg, scope, usedParams);
             }
             return;
         }
         if (expr instanceof UnaryExprNode unary) {
-            analyzeExpr(unary.operand(), scope);
+            analyzeExpr(unary.operand(), scope, usedParams);
             return;
         }
         if (expr instanceof BinaryExprNode binary) {
-            analyzeExpr(binary.left(), scope);
-            analyzeExpr(binary.right(), scope);
+            analyzeExpr(binary.left(), scope, usedParams);
+            analyzeExpr(binary.right(), scope, usedParams);
             return;
         }
         if (expr instanceof TernaryExprNode ternary) {
-            analyzeExpr(ternary.condition(), scope);
-            analyzeExpr(ternary.consequent(), scope);
-            analyzeExpr(ternary.alternate(), scope);
+            analyzeExpr(ternary.condition(), scope, usedParams);
+            analyzeExpr(ternary.consequent(), scope, usedParams);
+            analyzeExpr(ternary.alternate(), scope, usedParams);
             return;
         }
         if (expr instanceof ObjectLiteralExprNode obj) {
-            obj.properties().forEach(p -> analyzeExpr(p.value(), scope));
+            obj.properties().forEach(p -> analyzeExpr(p.value(), scope, usedParams));
             return;
         }
         if (expr instanceof ArrayLiteralExprNode arr) {
-            arr.elements().forEach(e -> analyzeExpr(e, scope));
+            arr.elements().forEach(e -> analyzeExpr(e, scope, usedParams));
         }
     }
 

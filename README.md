@@ -1,4 +1,4 @@
-# Manifesto4J
+# manifasto4j
 
 TypeScript 구현을 순수 Java로 포팅하는 저장소입니다.
 

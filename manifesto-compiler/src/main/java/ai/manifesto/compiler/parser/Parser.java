@@ -449,6 +449,13 @@ public final class Parser {
     }
 
     private ExprNode parsePrimary() {
+        if (check(TokenKind.ERROR)) {
+            error("Unexpected token '" + peek().lexeme() + "'");
+            advance();
+            Token fallback = previous();
+            return new LiteralExprNode(null, "null", fallback.location());
+        }
+
         if (check(TokenKind.BANG) || (check(TokenKind.MINUS) && isUnaryContext())) {
             Token op = advance();
             ExprNode operand = parsePrimary();
@@ -652,7 +659,7 @@ public final class Parser {
     }
 
     private void error(String message) {
-        Token token = previous();
+        Token token = peek();
         diagnostics.add(Diagnostic.error(
             DiagnosticCode.MEL_PARSER,
             message,

@@ -5,7 +5,9 @@ import ai.manifesto.compiler.analyzer.ScopeAnalysisResult;
 import ai.manifesto.compiler.analyzer.SemanticValidator;
 import ai.manifesto.compiler.analyzer.ValidationResult;
 import ai.manifesto.compiler.diagnostics.Diagnostic;
+import ai.manifesto.compiler.diagnostics.DiagnosticCode;
 import ai.manifesto.compiler.diagnostics.DiagnosticSeverity;
+import ai.manifesto.compiler.diagnostics.SourceSpan;
 import ai.manifesto.compiler.lexer.Lexer;
 import ai.manifesto.compiler.parser.ParseResult;
 import ai.manifesto.compiler.parser.Parser;
@@ -32,10 +34,18 @@ public final class MelPatchCompiler {
         if (melText == null || melText.trim().isEmpty()) {
             return new CompilePatchResult(List.of(), List.of());
         }
+        String source = melText;
+        if (!containsDomain(source)) {
+            if (containsAction(source)) {
+                source = wrapAsDomainWithAction(source);
+            } else {
+                source = wrapAsDomainPatch(source, actionName);
+            }
+        }
 
         List<Diagnostic> diagnostics = new ArrayList<>();
 
-        Lexer lexer = new Lexer(melText);
+        Lexer lexer = new Lexer(source);
         var lex = lexer.tokenize();
         diagnostics.addAll(lex.diagnostics());
         if (hasErrors(diagnostics)) {
@@ -73,8 +83,19 @@ public final class MelPatchCompiler {
             return new CompilePatchResult(List.of(), diagnostics);
         }
 
-        ActionSpec action = schema.getAction(actionName);
+        ActionSpec action = null;
+        if (actionName != null && !actionName.isBlank()) {
+            action = schema.getAction(actionName);
+        }
         if (action == null) {
+            action = firstAction(schema);
+        }
+        if (action == null) {
+            diagnostics.add(Diagnostic.error(
+                DiagnosticCode.E_UNDEFINED,
+                "Unknown action: " + (actionName == null ? "(none)" : actionName),
+                SourceSpan.of(1, 1, 1)
+            ));
             return new CompilePatchResult(List.of(), diagnostics);
         }
 
@@ -114,10 +135,84 @@ public final class MelPatchCompiler {
                 map.put("value", ValidationUtils.exprToMap(patch.getValue()));
             }
             out.add(map);
+            return;
+        }
+        if (flow instanceof FlowNode.Effect effect) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            if (guard != null) {
+                map.put("condition", ValidationUtils.exprToMap(guard));
+            }
+            map.put("kind", "effect");
+            map.put("type", effect.getType());
+            Map<String, Object> params = new LinkedHashMap<>();
+            for (Map.Entry<String, ExprNode> entry : effect.getParams().entrySet()) {
+                params.put(entry.getKey(), ValidationUtils.exprToMap(entry.getValue()));
+            }
+            map.put("params", params);
+            out.add(map);
+            return;
+        }
+        if (flow instanceof FlowNode.Fail fail) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            if (guard != null) {
+                map.put("condition", ValidationUtils.exprToMap(guard));
+            }
+            map.put("kind", "fail");
+            map.put("code", fail.getCode());
+            if (fail.getMessage() != null) {
+                map.put("message", ValidationUtils.exprToMap(fail.getMessage()));
+            }
+            out.add(map);
+            return;
+        }
+        if (flow instanceof FlowNode.Halt halt) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            if (guard != null) {
+                map.put("condition", ValidationUtils.exprToMap(guard));
+            }
+            map.put("kind", "halt");
+            if (halt.getReason() != null) {
+                map.put("reason", halt.getReason());
+            }
+            out.add(map);
         }
     }
 
     private boolean hasErrors(List<Diagnostic> diagnostics) {
         return diagnostics.stream().anyMatch(d -> d.severity() == DiagnosticSeverity.ERROR);
+    }
+
+    private boolean containsDomain(String source) {
+        return source.contains("domain");
+    }
+
+    private boolean containsAction(String source) {
+        return source.contains("action");
+    }
+
+    private String wrapAsDomainPatch(String patchBody, String actionName) {
+        String safeAction = (actionName == null || actionName.isBlank()) ? "action" : actionName;
+        return "domain PatchDomain {\n" +
+            "  state { }\n" +
+            "  action " + safeAction + "() {\n" +
+            "    when true {\n" +
+            "      " + patchBody + "\n" +
+            "    }\n" +
+            "  }\n" +
+            "}\n";
+    }
+
+    private String wrapAsDomainWithAction(String actionSource) {
+        return "domain PatchDomain {\n" +
+            "  state { }\n" +
+            "  " + actionSource + "\n" +
+            "}\n";
+    }
+
+    private ActionSpec firstAction(DomainSchema schema) {
+        if (schema == null || schema.getActions().isEmpty()) {
+            return null;
+        }
+        return schema.getActions().values().iterator().next();
     }
 }

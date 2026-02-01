@@ -10,40 +10,50 @@ import java.util.StringJoiner;
 public final class MelRenderer {
 
     public static String renderProgram(ProgramNode program) {
+        return renderProgram(program, RenderOptions.defaults());
+    }
+
+    public static String renderProgram(ProgramNode program, RenderOptions options) {
         if (program == null) {
             return "";
         }
-        return renderDomain(program.domain());
+        return renderDomain(program.domain(), options);
     }
 
     public static String renderDomain(DomainNode domain) {
+        return renderDomain(domain, RenderOptions.defaults());
+    }
+
+    public static String renderDomain(DomainNode domain, RenderOptions options) {
+        String indent = options.indent();
+        String newline = options.newline();
         StringBuilder sb = new StringBuilder();
-        sb.append("domain ").append(domain.name()).append(" {\n");
+        sb.append("domain ").append(domain.name()).append(" {").append(newline);
 
         for (TypeDeclNode typeDecl : domain.types()) {
-            sb.append("  type ").append(typeDecl.name())
+            sb.append(indent).append("type ").append(typeDecl.name())
               .append(" = ").append(renderTypeExpr(typeDecl.typeExpr()))
-              .append("\n");
+              .append(newline);
         }
 
         for (DomainMember member : domain.members()) {
             if (member instanceof StateNode state) {
-                sb.append("  state {\n");
+                sb.append(indent).append("state {").append(newline);
                 for (StateFieldNode field : state.fields()) {
-                    sb.append("    ").append(field.name()).append(": ")
+                    sb.append(indent).append(indent).append(field.name()).append(": ")
                       .append(renderTypeExpr(field.typeExpr()));
                     if (field.initializer() != null) {
                         sb.append(" = ").append(renderExpr(field.initializer()));
                     }
-                    sb.append("\n");
+                    sb.append(newline);
                 }
-                sb.append("  }\n");
+                sb.append(indent).append("}").append(newline);
             } else if (member instanceof ComputedNode computed) {
-                sb.append("  computed ").append(computed.name())
+                sb.append(indent).append("computed ").append(computed.name())
                   .append(" = ").append(renderExpr(computed.expression()))
-                  .append("\n");
+                  .append(newline);
             } else if (member instanceof ActionNode action) {
-                sb.append("  action ").append(action.name()).append("(");
+                sb.append(indent).append("action ").append(action.name()).append("(");
                 StringJoiner params = new StringJoiner(", ");
                 for (ParamNode param : action.params()) {
                     params.add(param.name() + ": " + renderTypeExpr(param.typeExpr()));
@@ -52,25 +62,25 @@ public final class MelRenderer {
                 if (action.available() != null) {
                     sb.append(" available when ").append(renderExpr(action.available()));
                 }
-                sb.append(" {\n");
+                sb.append(" {").append(newline);
                 for (GuardedStmtNode stmt : action.body()) {
-                    renderStmt(sb, stmt, "    ");
+                    renderStmt(sb, stmt, indent + indent, indent, newline);
                 }
-                sb.append("  }\n");
+                sb.append(indent).append("}").append(newline);
             }
         }
 
-        sb.append("}\n");
+        sb.append("}").append(newline);
         return sb.toString();
     }
 
-    private static void renderStmt(StringBuilder sb, AstNode stmt, String indent) {
+    private static void renderStmt(StringBuilder sb, AstNode stmt, String indent, String indentUnit, String newline) {
         if (stmt instanceof WhenStmtNode whenStmt) {
-            sb.append(indent).append("when ").append(renderExpr(whenStmt.condition())).append(" {\n");
+            sb.append(indent).append("when ").append(renderExpr(whenStmt.condition())).append(" {").append(newline);
             for (InnerStmtNode inner : whenStmt.body()) {
-                renderStmt(sb, inner, indent + "  ");
+                renderStmt(sb, inner, indent + indentUnit, indentUnit, newline);
             }
-            sb.append(indent).append("}\n");
+            sb.append(indent).append("}").append(newline);
             return;
         }
         if (stmt instanceof OnceStmtNode onceStmt) {
@@ -78,11 +88,11 @@ public final class MelRenderer {
             if (onceStmt.condition() != null) {
                 sb.append(" when ").append(renderExpr(onceStmt.condition()));
             }
-            sb.append(" {\n");
+            sb.append(" {").append(newline);
             for (InnerStmtNode inner : onceStmt.body()) {
-                renderStmt(sb, inner, indent + "  ");
+                renderStmt(sb, inner, indent + indentUnit, indentUnit, newline);
             }
-            sb.append(indent).append("}\n");
+            sb.append(indent).append("}").append(newline);
             return;
         }
         if (stmt instanceof PatchStmtNode patchStmt) {
@@ -94,7 +104,7 @@ public final class MelRenderer {
             } else {
                 sb.append("= ").append(renderExpr(patchStmt.value()));
             }
-            sb.append("\n");
+            sb.append(newline);
             return;
         }
         if (stmt instanceof EffectStmtNode effectStmt) {
@@ -106,7 +116,7 @@ public final class MelRenderer {
                     : renderExpr((ExprNode) arg.value());
                 args.add(arg.name() + ": " + value);
             }
-            sb.append(args).append("})\n");
+            sb.append(args).append("})").append(newline);
             return;
         }
         if (stmt instanceof FailStmtNode failStmt) {
@@ -114,11 +124,17 @@ public final class MelRenderer {
             if (failStmt.message() != null) {
                 sb.append(" with ").append(renderExpr(failStmt.message()));
             }
-            sb.append("\n");
+            sb.append(newline);
             return;
         }
         if (stmt instanceof StopStmtNode stopStmt) {
-            sb.append(indent).append("stop ").append(renderValue(stopStmt.reason())).append("\n");
+            sb.append(indent).append("stop ").append(renderValue(stopStmt.reason())).append(newline);
+        }
+    }
+
+    public record RenderOptions(String indent, String newline) {
+        public static RenderOptions defaults() {
+            return new RenderOptions("  ", "\n");
         }
     }
 
