@@ -58,9 +58,9 @@ class DagUtilsTest {
     void testBuildDependencyGraph_SimpleGraph() {
         // given
         Map<String, ComputedFieldDef> fields = createFieldMap(
-                "a", new String[]{"b"},
-                "b", new String[]{"c"},
-                "c", new String[]{}
+                "computed.a", new String[]{"computed.b"},
+                "computed.b", new String[]{"computed.c"},
+                "computed.c", new String[]{}
         );
 
         // when
@@ -68,12 +68,12 @@ class DagUtilsTest {
 
         // then
         assertEquals(3, graph.getNodes().size());
-        assertTrue(graph.getNodes().containsAll(Arrays.asList("a", "b", "c")));
+        assertTrue(graph.getNodes().containsAll(Arrays.asList("computed.a", "computed.b", "computed.c")));
 
         // 의존성 검증: a → [b], b → [c], c → []
-        assertEquals(Collections.singletonList("b"), graph.getDepsFor("a"));
-        assertEquals(Collections.singletonList("c"), graph.getDepsFor("b"));
-        assertEquals(Collections.emptyList(), graph.getDepsFor("c"));
+        assertEquals(Collections.singletonList("computed.b"), graph.getDepsFor("computed.a"));
+        assertEquals(Collections.singletonList("computed.c"), graph.getDepsFor("computed.b"));
+        assertEquals(Collections.emptyList(), graph.getDepsFor("computed.c"));
     }
 
     @Test
@@ -81,35 +81,18 @@ class DagUtilsTest {
     void testBuildDependencyGraph_FilterNonComputedDeps() {
         // given
         Map<String, ComputedFieldDef> fields = createFieldMap(
-                "computed.a", new String[]{"computed.b", "state.x", "data.y"},
+                "computed.a", new String[]{"computed.b", "x", "y"},
                 "computed.b", new String[]{}
         );
 
         // when
         DagUtils.DependencyGraph graph = DagUtils.buildDependencyGraph(fields);
 
-        // then - state.x, data.y는 computed 필드가 아니므로 제외됨
+        // then - x, y는 computed 필드가 아니므로 제외됨
         assertEquals(
                 Collections.singletonList("computed.b"),
                 graph.getDepsFor("computed.a")
         );
-    }
-
-    @Test
-    @DisplayName("buildDependencyGraph: computed 접두사 의존성 정규화")
-    void testBuildDependencyGraph_NormalizeComputedPrefix() {
-        // given: 필드명은 접두사 없이, deps는 computed.* 형태
-        Map<String, ComputedFieldDef> fields = createFieldMap(
-                "a", new String[]{"computed.b"},
-                "b", new String[]{}
-        );
-
-        // when
-        DagUtils.DependencyGraph graph = DagUtils.buildDependencyGraph(fields);
-
-        // then
-        assertEquals(Collections.singletonList("b"), graph.getDepsFor("a"));
-        assertTrue(graph.getDepsFor("b").isEmpty());
     }
 
     @Test

@@ -102,11 +102,11 @@ class SnapshotTest {
     @DisplayName("Computed 필드 설정")
     void testComputedField() {
         Map<String, Object> computed = new HashMap<>();
-        computed.put("total", 100);
-        computed.put("average", 50.0);
+        computed.put("computed.total", 100);
+        computed.put("computed.average", 50.0);
 
         Snapshot updated = snapshot.withComputed(computed);
-        assertEquals(100, updated.getComputed().get("total"));
-        assertEquals(50.0, updated.getComputed().get("average"));
+        assertEquals(100, updated.getComputed().get("computed.total"));
+        assertEquals(50.0, updated.getComputed().get("computed.average"));
     }
 }

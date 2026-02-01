@@ -14,18 +14,18 @@ class PatchTest {
     @Test
     @DisplayName("SET Patch 생성")
     void testSetPatch() {
-        Patch patch = Patch.set("data.count", 42);
+        Patch patch = Patch.set("count", 42);
         assertNotNull(patch);
-        assertEquals("data.count", patch.getPath());
+        assertEquals("count", patch.getPath());
         assertInstanceOf(Patch.Set.class, patch);
     }
 
     @Test
     @DisplayName("UNSET Patch 생성")
     void testUnsetPatch() {
-        Patch patch = Patch.unset("data.user");
+        Patch patch = Patch.unset("user");
         assertNotNull(patch);
-        assertEquals("data.user", patch.getPath());
+        assertEquals("user", patch.getPath());
         assertInstanceOf(Patch.Unset.class, patch);
     }
 
@@ -36,41 +36,41 @@ class PatchTest {
         values.put("updated", true);
         values.put("timestamp", System.currentTimeMillis());
 
-        Patch patch = Patch.merge("data.metadata", values);
+        Patch patch = Patch.merge("metadata", values);
         assertNotNull(patch);
-        assertEquals("data.metadata", patch.getPath());
+        assertEquals("metadata", patch.getPath());
         assertInstanceOf(Patch.Merge.class, patch);
     }
 
     @Test
     @DisplayName("여러 Patch 조합")
     void testMultiplePatches() {
-        Patch patch1 = Patch.set("data.count", 1);
-        Patch patch2 = Patch.set("data.name", "test");
-        Patch patch3 = Patch.unset("data.old");
+        Patch patch1 = Patch.set("count", 1);
+        Patch patch2 = Patch.set("name", "test");
+        Patch patch3 = Patch.unset("old");
 
         assertNotNull(patch1);
         assertNotNull(patch2);
         assertNotNull(patch3);
 
-        assertEquals("data.count", patch1.getPath());
-        assertEquals("data.name", patch2.getPath());
-        assertEquals("data.old", patch3.getPath());
+        assertEquals("count", patch1.getPath());
+        assertEquals("name", patch2.getPath());
+        assertEquals("old", patch3.getPath());
     }
 
     @Test
     @DisplayName("SET Patch with null value")
     void testSetPatchWithNull() {
-        Patch patch = Patch.set("data.value", null);
+        Patch patch = Patch.set("value", null);
         assertNotNull(patch);
-        assertEquals("data.value", patch.getPath());
+        assertEquals("value", patch.getPath());
     }
 
     @Test
     @DisplayName("경로 유효성 검증")
     void testPathValidation() {
         // 정상 경로
-        assertDoesNotThrow(() -> Patch.set("data.field", "value"));
+        assertDoesNotThrow(() -> Patch.set("field", "value"));
         assertDoesNotThrow(() -> Patch.set("computed.result", 42));
         assertDoesNotThrow(() -> Patch.set("system.status", "idle"));
     }
@@ -79,8 +79,8 @@ class PatchTest {
     @DisplayName("MERGE Patch with empty map")
     void testMergePatchWithEmptyMap() {
         Map<String, Object> values = new HashMap<>();
-        Patch patch = Patch.merge("data.config", values);
+        Patch patch = Patch.merge("config", values);
         assertNotNull(patch);
-        assertEquals("data.config", patch.getPath());
+        assertEquals("config", patch.getPath());
     }
 }

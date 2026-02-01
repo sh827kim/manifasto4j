@@ -24,7 +24,7 @@ import java.util.Map;
 /**
  * ExprEvaluator - 표현식 평가 엔진
  *
- * 56개의 ExprNode 타입을 평가한다.
+ * core expr 타입을 평가한다.
  * Pure & Total 함수: 예외를 던지지 않고 항상 Result를 반환한다.
  *
  * 특징:
@@ -126,35 +126,11 @@ public class ExprEvaluator {
         if (expr instanceof Max max) {
             return evaluateMax(max.args(), ctx);
         }
-        if (expr instanceof SumArray sumArray) {
-            return evaluateSumArray(sumArray.array(), ctx);
-        }
-        if (expr instanceof MinArray minArray) {
-            return evaluateMinArray(minArray.array(), ctx);
-        }
-        if (expr instanceof MaxArray maxArray) {
-            return evaluateMaxArray(maxArray.array(), ctx);
-        }
         if (expr instanceof Abs abs) {
             return evaluateAbs(abs.arg(), ctx);
         }
         if (expr instanceof Neg neg) {
             return evaluateNeg(neg.arg(), ctx);
-        }
-        if (expr instanceof Round round) {
-            return evaluateRound(round.arg(), ctx);
-        }
-        if (expr instanceof Floor floor) {
-            return evaluateFloor(floor.arg(), ctx);
-        }
-        if (expr instanceof Ceil ceil) {
-            return evaluateCeil(ceil.arg(), ctx);
-        }
-        if (expr instanceof Pow pow) {
-            return evaluatePow(pow.base(), pow.exponent(), ctx);
-        }
-        if (expr instanceof Sqrt sqrt) {
-            return evaluateSqrt(sqrt.arg(), ctx);
         }
 
         // ===== String =====
@@ -166,27 +142,6 @@ public class ExprEvaluator {
         }
         if (expr instanceof Trim trim) {
             return evaluateTrim(trim.str(), ctx);
-        }
-        if (expr instanceof ToLowerCase lower) {
-            return evaluateToLowerCase(lower.str(), ctx);
-        }
-        if (expr instanceof ToUpperCase upper) {
-            return evaluateToUpperCase(upper.str(), ctx);
-        }
-        if (expr instanceof StartsWith startsWith) {
-            return evaluateStartsWith(startsWith.str(), startsWith.prefix(), ctx);
-        }
-        if (expr instanceof EndsWith endsWith) {
-            return evaluateEndsWith(endsWith.str(), endsWith.suffix(), ctx);
-        }
-        if (expr instanceof Split split) {
-            return evaluateSplit(split.str(), split.delimiter(), ctx);
-        }
-        if (expr instanceof StrLen strLen) {
-            return evaluateStrLen(strLen.str(), ctx);
-        }
-        if (expr instanceof ToString toString) {
-            return evaluateToString(toString.arg(), ctx);
         }
 
         // ===== Collection =====
@@ -309,48 +264,39 @@ public class ExprEvaluator {
         if (path.startsWith("$")) {
             return evaluateSpecialPath(path, ctx);
         }
-
-        // 경로에서 첫 부분 추출 (data., input., computed., system., meta.)
-        String[] parts = path.split("\\.", 2);
-        String field = parts[0];
-        String subPath = parts.length > 1 ? parts[1] : "";
-
-        Object fieldValue = null;
-
-        if ("data".equals(field)) {
-            fieldValue = ctx.getSnapshot().getData();
-        } else if ("input".equals(field)) {
-            fieldValue = ctx.getSnapshot().getInput();
-        } else if ("computed".equals(field)) {
-            fieldValue = ctx.getSnapshot().getComputed();
-        } else if ("system".equals(field)) {
-            fieldValue = ctx.getSnapshot().getSystem();
-        } else if ("meta".equals(field)) {
-            fieldValue = ctx.getSnapshot().getMeta();
-        } else {
-            // 필드 지정 없이 경로만 있으면, data에서 찾기
-            Object value = PathUtils.getByPath(ctx.getSnapshot().getData(), path);
-            if (value != null) {
-                return Result.ok(value);
+        if (path.startsWith("meta.")) {
+            String subPath = path.substring(5);
+            if ("intentId".equals(subPath)) {
+                return Result.ok(ctx.getIntentId());
             }
-            value = PathUtils.getByPath(ctx.getSnapshot().getInput(), path);
-            if (value != null) {
-                return Result.ok(value);
+            if ("actionName".equals(subPath)) {
+                return Result.ok(ctx.getCurrentAction());
             }
-            value = PathUtils.getByPath(ctx.getSnapshot().getComputed(), path);
-            if (value != null) {
-                return Result.ok(value);
-            }
-            return Result.ok(null);
+            return Result.ok(PathUtils.getByPath(ctx.getSnapshot().getMeta(), subPath));
         }
 
-        // 필드가 지정된 경우, subPath로 접근
-        if (subPath.isEmpty()) {
-            return Result.ok(fieldValue);
+        if (path.equals("input") || path.startsWith("input.")) {
+            String subPath = path.equals("input") ? "" : path.substring(6);
+            if (subPath.isEmpty()) {
+                return Result.ok(ctx.getSnapshot().getInput());
+            }
+            return Result.ok(PathUtils.getByPath(ctx.getSnapshot().getInput(), subPath));
         }
 
-        Object value = PathUtils.getByPath(fieldValue, subPath);
-        return Result.ok(value);
+        if (path.startsWith("computed.")) {
+            Map<String, Object> computed = ctx.getSnapshot().getComputed();
+            if (computed == null) {
+                return Result.ok(null);
+            }
+            return Result.ok(computed.get(path));
+        }
+
+        if (path.startsWith("system.")) {
+            String subPath = path.substring(7);
+            return Result.ok(PathUtils.getByPath(ctx.getSnapshot().getSystem(), subPath));
+        }
+
+        return Result.ok(PathUtils.getByPath(ctx.getSnapshot().getData(), path));
     }
 
     private static Result<Object, ErrorValue> evaluateSpecialPath(String path, EvalContext ctx) {
@@ -514,48 +460,6 @@ public class ExprEvaluator {
         return Result.ok(max);
     }
 
-    private static Result<Object, ErrorValue> evaluateSumArray(ExprNode arrayExpr, EvalContext ctx) {
-        Result<Object, ErrorValue> result = evaluateExpr(arrayExpr, ctx);
-        if (result.isErr()) return result;
-        Object value = result.unwrap();
-        if (!(value instanceof List<?> list)) {
-            return Result.ok(0.0);
-        }
-        double sum = 0.0;
-        for (Object item : list) {
-            sum += toNumber(item);
-        }
-        return Result.ok(sum);
-    }
-
-    private static Result<Object, ErrorValue> evaluateMinArray(ExprNode arrayExpr, EvalContext ctx) {
-        Result<Object, ErrorValue> result = evaluateExpr(arrayExpr, ctx);
-        if (result.isErr()) return result;
-        Object value = result.unwrap();
-        if (!(value instanceof List<?> list) || list.isEmpty()) {
-            return Result.ok(null);
-        }
-        double min = Double.POSITIVE_INFINITY;
-        for (Object item : list) {
-            min = Math.min(min, toNumber(item));
-        }
-        return Result.ok(min == Double.POSITIVE_INFINITY ? null : min);
-    }
-
-    private static Result<Object, ErrorValue> evaluateMaxArray(ExprNode arrayExpr, EvalContext ctx) {
-        Result<Object, ErrorValue> result = evaluateExpr(arrayExpr, ctx);
-        if (result.isErr()) return result;
-        Object value = result.unwrap();
-        if (!(value instanceof List<?> list) || list.isEmpty()) {
-            return Result.ok(null);
-        }
-        double max = Double.NEGATIVE_INFINITY;
-        for (Object item : list) {
-            max = Math.max(max, toNumber(item));
-        }
-        return Result.ok(max == Double.NEGATIVE_INFINITY ? null : max);
-    }
-
     private static Result<Object, ErrorValue> evaluateAbs(ExprNode arg, EvalContext ctx) {
         Result<Object, ErrorValue> result = evaluateExpr(arg, ctx);
         if (result.isErr()) return result;
@@ -566,40 +470,6 @@ public class ExprEvaluator {
         Result<Object, ErrorValue> result = evaluateExpr(arg, ctx);
         if (result.isErr()) return result;
         return Result.ok(-toNumber(result.unwrap()));
-    }
-
-    private static Result<Object, ErrorValue> evaluateRound(ExprNode arg, EvalContext ctx) {
-        Result<Object, ErrorValue> result = evaluateExpr(arg, ctx);
-        if (result.isErr()) return result;
-        return Result.ok(Math.round(toNumber(result.unwrap())));
-    }
-
-    private static Result<Object, ErrorValue> evaluateFloor(ExprNode arg, EvalContext ctx) {
-        Result<Object, ErrorValue> result = evaluateExpr(arg, ctx);
-        if (result.isErr()) return result;
-        return Result.ok((long) Math.floor(toNumber(result.unwrap())));
-    }
-
-    private static Result<Object, ErrorValue> evaluateCeil(ExprNode arg, EvalContext ctx) {
-        Result<Object, ErrorValue> result = evaluateExpr(arg, ctx);
-        if (result.isErr()) return result;
-        return Result.ok((long) Math.ceil(toNumber(result.unwrap())));
-    }
-
-    private static Result<Object, ErrorValue> evaluatePow(ExprNode baseExpr, ExprNode expExpr, EvalContext ctx) {
-        Result<Object, ErrorValue> baseResult = evaluateExpr(baseExpr, ctx);
-        if (baseResult.isErr()) return baseResult;
-        Result<Object, ErrorValue> expResult = evaluateExpr(expExpr, ctx);
-        if (expResult.isErr()) return expResult;
-        double base = toNumber(baseResult.unwrap());
-        double exp = toNumber(expResult.unwrap());
-        return Result.ok(Math.pow(base, exp));
-    }
-
-    private static Result<Object, ErrorValue> evaluateSqrt(ExprNode arg, EvalContext ctx) {
-        Result<Object, ErrorValue> result = evaluateExpr(arg, ctx);
-        if (result.isErr()) return result;
-        return Result.ok(Math.sqrt(toNumber(result.unwrap())));
     }
 
     private static Result<Object, ErrorValue> evaluateAdd(ExprNode left, ExprNode right, EvalContext ctx) {
@@ -725,78 +595,6 @@ public class ExprEvaluator {
         Result<Object, ErrorValue> result = evaluateExpr(str, ctx);
         if (result.isErr()) return result;
         return Result.ok(toString(result.unwrap()).trim());
-    }
-
-    private static Result<Object, ErrorValue> evaluateStrLen(ExprNode strExpr, EvalContext ctx) {
-        Result<Object, ErrorValue> result = evaluateExpr(strExpr, ctx);
-        if (result.isErr()) return result;
-        return Result.ok(toString(result.unwrap()).length());
-    }
-
-    private static Result<Object, ErrorValue> evaluateToString(ExprNode argExpr, EvalContext ctx) {
-        Result<Object, ErrorValue> result = evaluateExpr(argExpr, ctx);
-        if (result.isErr()) return result;
-        return Result.ok(toString(result.unwrap()));
-    }
-
-    private static Result<Object, ErrorValue> evaluateToLowerCase(ExprNode str, EvalContext ctx) {
-        Result<Object, ErrorValue> result = evaluateExpr(str, ctx);
-        if (result.isErr()) return result;
-        return Result.ok(toString(result.unwrap()).toLowerCase());
-    }
-
-    private static Result<Object, ErrorValue> evaluateToUpperCase(ExprNode str, EvalContext ctx) {
-        Result<Object, ErrorValue> result = evaluateExpr(str, ctx);
-        if (result.isErr()) return result;
-        return Result.ok(toString(result.unwrap()).toUpperCase());
-    }
-
-    private static Result<Object, ErrorValue> evaluateStartsWith(ExprNode str, ExprNode prefix, EvalContext ctx) {
-        Result<Object, ErrorValue> strResult = evaluateExpr(str, ctx);
-        if (strResult.isErr()) return strResult;
-
-        Result<Object, ErrorValue> prefixResult = evaluateExpr(prefix, ctx);
-        if (prefixResult.isErr()) return prefixResult;
-
-        String value = toString(strResult.unwrap());
-        String needle = toString(prefixResult.unwrap());
-        return Result.ok(value.startsWith(needle));
-    }
-
-    private static Result<Object, ErrorValue> evaluateEndsWith(ExprNode str, ExprNode suffix, EvalContext ctx) {
-        Result<Object, ErrorValue> strResult = evaluateExpr(str, ctx);
-        if (strResult.isErr()) return strResult;
-
-        Result<Object, ErrorValue> suffixResult = evaluateExpr(suffix, ctx);
-        if (suffixResult.isErr()) return suffixResult;
-
-        String value = toString(strResult.unwrap());
-        String needle = toString(suffixResult.unwrap());
-        return Result.ok(value.endsWith(needle));
-    }
-
-    private static Result<Object, ErrorValue> evaluateSplit(ExprNode str, ExprNode delimiter, EvalContext ctx) {
-        Result<Object, ErrorValue> strResult = evaluateExpr(str, ctx);
-        if (strResult.isErr()) return strResult;
-
-        Result<Object, ErrorValue> delimiterResult = evaluateExpr(delimiter, ctx);
-        if (delimiterResult.isErr()) return delimiterResult;
-
-        String value = toString(strResult.unwrap());
-        String token = toString(delimiterResult.unwrap());
-
-        if (token.isEmpty()) {
-            List<Object> chars = new ArrayList<>();
-            for (int i = 0; i < value.length(); i++) {
-                chars.add(String.valueOf(value.charAt(i)));
-            }
-            return Result.ok(chars);
-        }
-
-        String[] parts = value.split(java.util.regex.Pattern.quote(token), -1);
-        List<Object> result = new ArrayList<>(parts.length);
-        Collections.addAll(result, parts);
-        return Result.ok(result);
     }
 
     // ===== Collection Operations =====

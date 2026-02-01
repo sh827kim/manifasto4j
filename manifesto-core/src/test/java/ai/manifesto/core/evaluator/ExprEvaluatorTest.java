@@ -69,7 +69,7 @@ class ExprEvaluatorTest {
     @Test
     @DisplayName("GET 표현식 평가")
     void testGetExpression() {
-        Get getExpr = new Get("data.count");
+        Get getExpr = new Get("count");
         Result<Object, ErrorValue> result = ExprEvaluator.evaluate(getExpr, context);
 
         assertTrue(result.isOk());
@@ -251,56 +251,11 @@ class ExprEvaluatorTest {
     @Test
     @DisplayName("존재하지 않는 경로 GET")
     void testGetNonExistentPath() {
-        Get getExpr = new Get("data.nonexistent");
+        Get getExpr = new Get("nonexistent");
         Result<Object, ErrorValue> result = ExprEvaluator.evaluate(getExpr, context);
 
         // 존재하지 않는 경로는 null을 반환하거나 에러를 반환할 수 있음
         assertTrue(result.isOk() || result.isErr());
-    }
-
-    @Test
-    @DisplayName("반올림/내림/올림 표현식")
-    void testRoundingExpressions() {
-        Round roundExpr = Round.of(new Lit(2.6));
-        Floor floorExpr = Floor.of(new Lit(2.6));
-        Ceil ceilExpr = Ceil.of(new Lit(2.1));
-
-        Result<Object, ErrorValue> roundResult = ExprEvaluator.evaluate(roundExpr, context);
-        Result<Object, ErrorValue> floorResult = ExprEvaluator.evaluate(floorExpr, context);
-        Result<Object, ErrorValue> ceilResult = ExprEvaluator.evaluate(ceilExpr, context);
-
-        assertTrue(roundResult.isOk());
-        assertTrue(floorResult.isOk());
-        assertTrue(ceilResult.isOk());
-        assertEquals(3L, roundResult.unwrap());
-        assertEquals(2L, floorResult.unwrap());
-        assertEquals(3L, ceilResult.unwrap());
-    }
-
-    @Test
-    @DisplayName("startsWith/endsWith 표현식")
-    void testStringPrefixSuffixExpressions() {
-        StartsWith startsWithExpr = StartsWith.of(new Lit("hello"), new Lit("he"));
-        EndsWith endsWithExpr = EndsWith.of(new Lit("hello"), new Lit("lo"));
-
-        Result<Object, ErrorValue> startsWithResult = ExprEvaluator.evaluate(startsWithExpr, context);
-        Result<Object, ErrorValue> endsWithResult = ExprEvaluator.evaluate(endsWithExpr, context);
-
-        assertTrue(startsWithResult.isOk());
-        assertTrue(endsWithResult.isOk());
-        assertEquals(true, startsWithResult.unwrap());
-        assertEquals(true, endsWithResult.unwrap());
-    }
-
-    @Test
-    @DisplayName("split 표현식")
-    void testSplitExpression() {
-        Split splitExpr = Split.of(new Lit("a,b,,c"), new Lit(","));
-
-        Result<Object, ErrorValue> result = ExprEvaluator.evaluate(splitExpr, context);
-
-        assertTrue(result.isOk());
-        assertEquals(List.of("a", "b", "", "c"), result.unwrap());
     }
 
 }

@@ -13,7 +13,7 @@ import java.util.Objects;
  */
 public sealed class Patch {
 
-    protected final String path;    // 경로 (예: "data.todos.0.completed")
+    protected final String path;    // 경로 (예: "todos.0.completed")
 
     protected Patch(String path) {
         this.path = path;
@@ -23,8 +23,8 @@ public sealed class Patch {
 
     /**
      * SetPatch - 경로의 값을 교체한다 (없으면 생성)
-     * data.count = 5
-     * data.todos = [...]
+     * count = 5
+     * todos = [...]
      */
     public static final class Set extends Patch {
         private final Object value;
@@ -60,7 +60,7 @@ public sealed class Patch {
 
     /**
      * UnsetPatch - 경로의 속성을 제거한다
-     * unset data.user.email
+     * unset user.email
      */
     public static final class Unset extends Patch {
 
@@ -90,7 +90,7 @@ public sealed class Patch {
 
     /**
      * MergePatch - 경로에서 얕은 병합을 수행한다
-     * merge data.user { "name": "Alice", "updated": true }
+     * merge user { "name": "Alice", "updated": true }
      * 기존 { "name": "Bob", "email": "bob@example.com" } →
      * 결과 { "name": "Alice", "email": "bob@example.com", "updated": true }
      */

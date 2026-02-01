@@ -8,8 +8,8 @@ import java.util.Objects;
  * PathUtils - 경로 문자열을 사용해 객체의 값을 조회/설정
  *
  * 경로 형식:
- * - "data.count" → data 맵의 count 키
- * - "data.todos.0.title" → data의 todos 배열의 첫 요소의 title
+ * - "count" → data 맵의 count 키
+ * - "todos.0.title" → data의 todos 배열의 첫 요소의 title
  * - "nested.array.0.field" → 중첩 구조
  *
  * 숫자는 배열 인덱스로 해석됨
@@ -21,7 +21,7 @@ public class PathUtils {
      * 경로가 존재하지 않으면 null 반환
      *
      * @param obj 루트 객체
-     * @param path 경로 (점 구분, 예: "data.user.name")
+     * @param path 경로 (점 구분, 예: "user.name")
      * @return 경로의 값, 또는 null
      */
     public static Object getByPath(Object obj, String path) {

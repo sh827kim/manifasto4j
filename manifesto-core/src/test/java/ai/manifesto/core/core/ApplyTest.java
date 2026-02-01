@@ -51,7 +51,7 @@ class ApplyTest {
     @Test
     @DisplayName("단일 SET Patch 적용")
     void testApplySingleSetPatch() {
-        Patch patch = Patch.set("data.count", 42);
+        Patch patch = Patch.set("count", 42);
 
         Result<Snapshot, ErrorValue> result = Apply.apply(schema, snapshot, patch);
 
@@ -64,8 +64,8 @@ class ApplyTest {
     @Test
     @DisplayName("여러 SET Patch 적용")
     void testApplyMultiplePatches() {
-        Patch patch1 = Patch.set("data.count", 10);
-        Patch patch2 = Patch.set("data.name", "updated");
+        Patch patch1 = Patch.set("count", 10);
+        Patch patch2 = Patch.set("name", "updated");
 
         Result<Snapshot, ErrorValue> result = Apply.apply(schema, snapshot, patch1, patch2);
 
@@ -79,14 +79,14 @@ class ApplyTest {
     @Test
     @DisplayName("UNSET Patch 적용")
     void testApplyUnsetPatch() {
-        Patch setPatch = Patch.set("data.temp", "temporary");
+        Patch setPatch = Patch.set("temp", "temporary");
         Result<Snapshot, ErrorValue> setResult = Apply.apply(schema, snapshot, setPatch);
 
         assertTrue(setResult.isOk());
         Snapshot withTemp = setResult.unwrap();
         assertTrue(withTemp.getData().containsKey("temp"));
 
-        Patch unsetPatch = Patch.unset("data.temp");
+        Patch unsetPatch = Patch.unset("temp");
         Result<Snapshot, ErrorValue> unsetResult = Apply.apply(schema, withTemp, unsetPatch);
 
         assertTrue(unsetResult.isOk());
@@ -101,7 +101,7 @@ class ApplyTest {
         metadata.put("created", true);
         metadata.put("timestamp", 12345);
 
-        Patch mergePatch = Patch.merge("data.metadata", metadata);
+        Patch mergePatch = Patch.merge("metadata", metadata);
         Result<Snapshot, ErrorValue> result = Apply.apply(schema, snapshot, mergePatch);
 
         assertTrue(result.isOk());
@@ -114,11 +114,11 @@ class ApplyTest {
     void testVersionIncrement() {
         assertEquals(0, snapshot.getMeta().getVersion());
 
-        Patch patch1 = Patch.set("data.count", 1);
+        Patch patch1 = Patch.set("count", 1);
         Result<Snapshot, ErrorValue> result1 = Apply.apply(schema, snapshot, patch1);
         assertEquals(1, result1.unwrap().getMeta().getVersion());
 
-        Patch patch2 = Patch.set("data.count", 2);
+        Patch patch2 = Patch.set("count", 2);
         Result<Snapshot, ErrorValue> result2 = Apply.apply(schema, result1.unwrap(), patch2);
         assertEquals(2, result2.unwrap().getMeta().getVersion());
     }
@@ -129,7 +129,7 @@ class ApplyTest {
         int originalCount = (int) snapshot.getData().get("count");
         long originalVersion = snapshot.getMeta().getVersion();
 
-        Patch patch = Patch.set("data.count", 999);
+        Patch patch = Patch.set("count", 999);
         Apply.apply(schema, snapshot, patch);
 
         // 원본은 변경되지 않음
@@ -140,7 +140,7 @@ class ApplyTest {
     @Test
     @DisplayName("nested path에 값 설정")
     void testNestedPathSet() {
-        Patch patch = Patch.set("data.user.profile.name", "John");
+        Patch patch = Patch.set("user.profile.name", "John");
 
         Result<Snapshot, ErrorValue> result = Apply.apply(schema, snapshot, patch);
 
@@ -163,7 +163,7 @@ class ApplyTest {
     @Test
     @DisplayName("null Snapshot 처리")
     void testNullSnapshot() {
-        Patch patch = Patch.set("data.count", 42);
+        Patch patch = Patch.set("count", 42);
         assertThrows(NullPointerException.class, () -> Apply.apply(schema, null, patch));
     }
 
@@ -171,10 +171,10 @@ class ApplyTest {
     @DisplayName("Patch 체이닝")
     void testPatchChaining() {
         Result<Snapshot, ErrorValue> result = Apply.apply(schema, snapshot,
-            Patch.set("data.count", 1),
-            Patch.set("data.name", "first"),
-            Patch.set("data.count", 2),
-            Patch.set("data.name", "second")
+            Patch.set("count", 1),
+            Patch.set("name", "first"),
+            Patch.set("count", 2),
+            Patch.set("name", "second")
         );
 
         assertTrue(result.isOk());

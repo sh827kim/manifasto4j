@@ -35,14 +35,14 @@ class ComputeComputedFieldTest {
         Map<String, ComputedFieldDef> computedFields = new HashMap<>();
 
         // computed.total = 100
-        computedFields.put("total", ComputedFieldDef.simple("total", new Lit(100)));
+        computedFields.put("computed.total", ComputedFieldDef.simple("computed.total", new Lit(100)));
 
         // computed.isValid = total > 50
-        computedFields.put("isValid", new ComputedFieldDef.Builder(
-            "isValid",
+        computedFields.put("computed.isValid", new ComputedFieldDef.Builder(
+            "computed.isValid",
             new Gt(new Get("computed.total"), new Lit(50))
         )
-            .addDependency("total")
+            .addDependency("computed.total")
             .build());
 
         // action.test: available 조건에서 computed 필드 참조
@@ -99,8 +99,8 @@ class ComputeComputedFieldTest {
 
         Snapshot resultSnapshot = result.getSnapshot();
         assertNotNull(resultSnapshot.getComputed(), "Computed should not be null");
-        assertEquals(100, resultSnapshot.getComputed().get("total"), "computed.total should be 100");
-        assertTrue((Boolean) resultSnapshot.getComputed().get("isValid"), "computed.isValid should be true");
+        assertEquals(100, resultSnapshot.getComputed().get("computed.total"), "computed.total should be 100");
+        assertTrue((Boolean) resultSnapshot.getComputed().get("computed.isValid"), "computed.isValid should be true");
     }
 
     /**
@@ -144,11 +144,11 @@ class ComputeComputedFieldTest {
         Get exprA = new Get("computed.b");
         Get exprB = new Get("computed.a");
 
-        circularComputed.put("a", new ComputedFieldDef.Builder("a", exprA)
-            .addDependency("b")
+        circularComputed.put("computed.a", new ComputedFieldDef.Builder("computed.a", exprA)
+            .addDependency("computed.b")
             .build());
-        circularComputed.put("b", new ComputedFieldDef.Builder("b", exprB)
-            .addDependency("a")
+        circularComputed.put("computed.b", new ComputedFieldDef.Builder("computed.b", exprB)
+            .addDependency("computed.a")
             .build());
 
         ActionSpec dummyAction = new ActionSpec.Builder("test")
@@ -193,13 +193,13 @@ class ComputeComputedFieldTest {
         // then: 같은 결과 반환
         assertEquals(result1.getStatus(), result2.getStatus());
         assertEquals(
-            result1.getSnapshot().getComputed().get("total"),
-            result2.getSnapshot().getComputed().get("total"),
+            result1.getSnapshot().getComputed().get("computed.total"),
+            result2.getSnapshot().getComputed().get("computed.total"),
             "computed.total should be identical"
         );
         assertEquals(
-            result1.getSnapshot().getComputed().get("isValid"),
-            result2.getSnapshot().getComputed().get("isValid"),
+            result1.getSnapshot().getComputed().get("computed.isValid"),
+            result2.getSnapshot().getComputed().get("computed.isValid"),
             "computed.isValid should be identical"
         );
     }
@@ -250,7 +250,7 @@ class ComputeComputedFieldTest {
 
         // then: 결과 snapshot에 computed와 input 모두 포함
         Snapshot resultSnapshot = result.getSnapshot();
-        assertNotNull(resultSnapshot.getComputed().get("total"), "computed.total should exist");
+        assertNotNull(resultSnapshot.getComputed().get("computed.total"), "computed.total should exist");
         assertNotNull(resultSnapshot.getInput().get("count"), "input.count should exist");
         assertEquals(10, resultSnapshot.getInput().get("count"));
     }
@@ -268,18 +268,18 @@ class ComputeComputedFieldTest {
         // given: 연쇄 참조가 있는 computed 필드
         Map<String, ComputedFieldDef> chainedComputed = new HashMap<>();
 
-        chainedComputed.put("a", ComputedFieldDef.simple("a", new Lit(10)));
-        chainedComputed.put("b", new ComputedFieldDef.Builder(
-            "b",
+        chainedComputed.put("computed.a", ComputedFieldDef.simple("computed.a", new Lit(10)));
+        chainedComputed.put("computed.b", new ComputedFieldDef.Builder(
+            "computed.b",
             new Add(new Get("computed.a"), new Lit(20))
         )
-            .addDependency("a")
+            .addDependency("computed.a")
             .build());
-        chainedComputed.put("c", new ComputedFieldDef.Builder(
-            "c",
+        chainedComputed.put("computed.c", new ComputedFieldDef.Builder(
+            "computed.c",
             new Mul(new Get("computed.b"), new Lit(2))
         )
-            .addDependency("b")
+            .addDependency("computed.b")
             .build());
 
         ActionSpec action = new ActionSpec.Builder("test")
@@ -303,9 +303,9 @@ class ComputeComputedFieldTest {
 
         // then: 모든 computed 필드가 올바르게 계산됨
         Snapshot resultSnapshot = result.getSnapshot();
-        assertEquals(10, resultSnapshot.getComputed().get("a"));
-        assertEquals(30, resultSnapshot.getComputed().get("b"));
-        assertEquals(60, resultSnapshot.getComputed().get("c"));
+        assertEquals(10, resultSnapshot.getComputed().get("computed.a"));
+        assertEquals(30, resultSnapshot.getComputed().get("computed.b"));
+        assertEquals(60, resultSnapshot.getComputed().get("computed.c"));
     }
 
     /**

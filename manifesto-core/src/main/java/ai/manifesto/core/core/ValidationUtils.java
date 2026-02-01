@@ -4,19 +4,11 @@ import ai.manifesto.core.expr.ExprNode;
 import ai.manifesto.core.expr.arithmetic.Add;
 import ai.manifesto.core.expr.arithmetic.Abs;
 import ai.manifesto.core.expr.arithmetic.Div;
-import ai.manifesto.core.expr.arithmetic.Ceil;
-import ai.manifesto.core.expr.arithmetic.Floor;
 import ai.manifesto.core.expr.arithmetic.Max;
-import ai.manifesto.core.expr.arithmetic.MaxArray;
 import ai.manifesto.core.expr.arithmetic.Min;
-import ai.manifesto.core.expr.arithmetic.MinArray;
 import ai.manifesto.core.expr.arithmetic.Mod;
 import ai.manifesto.core.expr.arithmetic.Mul;
 import ai.manifesto.core.expr.arithmetic.Neg;
-import ai.manifesto.core.expr.arithmetic.Pow;
-import ai.manifesto.core.expr.arithmetic.Round;
-import ai.manifesto.core.expr.arithmetic.SumArray;
-import ai.manifesto.core.expr.arithmetic.Sqrt;
 import ai.manifesto.core.expr.arithmetic.Sub;
 import ai.manifesto.core.expr.collection.Append;
 import ai.manifesto.core.expr.collection.At;
@@ -47,15 +39,8 @@ import ai.manifesto.core.expr.object.Merge;
 import ai.manifesto.core.expr.object.ObjectExpr;
 import ai.manifesto.core.expr.object.Values;
 import ai.manifesto.core.expr.string.Concat;
-import ai.manifesto.core.expr.string.EndsWith;
-import ai.manifesto.core.expr.string.Split;
-import ai.manifesto.core.expr.string.StrLen;
-import ai.manifesto.core.expr.string.StartsWith;
 import ai.manifesto.core.expr.string.Substring;
-import ai.manifesto.core.expr.string.ToString;
 import ai.manifesto.core.expr.string.Trim;
-import ai.manifesto.core.expr.string.ToLowerCase;
-import ai.manifesto.core.expr.string.ToUpperCase;
 import ai.manifesto.core.expr.type.Coalesce;
 import ai.manifesto.core.expr.type.IsNull;
 import ai.manifesto.core.expr.type.Typeof;
@@ -204,27 +189,6 @@ public final class ValidationUtils {
             collectGetPathsFromExpr(neg.arg(), paths);
             return;
         }
-        if (expr instanceof Round round) {
-            collectGetPathsFromExpr(round.arg(), paths);
-            return;
-        }
-        if (expr instanceof Pow pow) {
-            collectGetPathsFromExpr(pow.base(), paths);
-            collectGetPathsFromExpr(pow.exponent(), paths);
-            return;
-        }
-        if (expr instanceof Sqrt sqrt) {
-            collectGetPathsFromExpr(sqrt.arg(), paths);
-            return;
-        }
-        if (expr instanceof Floor floor) {
-            collectGetPathsFromExpr(floor.arg(), paths);
-            return;
-        }
-        if (expr instanceof Ceil ceil) {
-            collectGetPathsFromExpr(ceil.arg(), paths);
-            return;
-        }
 
         if (expr instanceof And and) {
             for (ExprNode arg : and.args()) {
@@ -242,14 +206,6 @@ public final class ValidationUtils {
             for (ExprNode arg : concat.args()) {
                 collectGetPathsFromExpr(arg, paths);
             }
-            return;
-        }
-        if (expr instanceof ToLowerCase lower) {
-            collectGetPathsFromExpr(lower.str(), paths);
-            return;
-        }
-        if (expr instanceof ToUpperCase upper) {
-            collectGetPathsFromExpr(upper.str(), paths);
             return;
         }
         if (expr instanceof Coalesce coalesce) {
@@ -374,20 +330,6 @@ public final class ValidationUtils {
             collectGetPathsFromExpr(trim.str(), paths);
             return;
         }
-        if (expr instanceof StartsWith startsWith) {
-            collectGetPathsFromExpr(startsWith.str(), paths);
-            collectGetPathsFromExpr(startsWith.prefix(), paths);
-            return;
-        }
-        if (expr instanceof EndsWith endsWith) {
-            collectGetPathsFromExpr(endsWith.str(), paths);
-            collectGetPathsFromExpr(endsWith.suffix(), paths);
-            return;
-        }
-        if (expr instanceof Split split) {
-            collectGetPathsFromExpr(split.str(), paths);
-            collectGetPathsFromExpr(split.delimiter(), paths);
-        }
     }
 
     public static List<String> collectGetPathsFromFlow(FlowNode flow) {
@@ -437,27 +379,15 @@ public final class ValidationUtils {
         if (path == null || path.isEmpty()) {
             return true;
         }
-        String normalized = normalizeDataPath(path);
-        if (normalized.isEmpty()) {
-            return true;
-        }
-        String[] segments = normalized.split("\\.");
-        if (segments.length > 0 && "$host".equals(segments[0])) {
-            return true;
-        }
         FieldSpec root = new FieldSpec("state", "object", true, null, stateFields, null, null, null);
-        return pathExistsInFieldSpec(root, normalized);
+        return pathExistsInFieldSpec(root, path);
     }
 
     public static boolean pathExistsInComputedSpec(Map<String, ComputedFieldDef> computedFields, String path) {
         if (path == null || path.isEmpty()) {
-            return true;
+            return false;
         }
-        String normalized = normalizeComputedPath(path);
-        if (normalized.isEmpty()) {
-            return true;
-        }
-        return computedFields.containsKey(normalized);
+        return computedFields.containsKey(path);
     }
 
     public static boolean pathExistsInFieldSpec(Map<String, FieldSpec> inputFields, String path) {
@@ -522,24 +452,12 @@ public final class ValidationUtils {
         if (path == null) {
             return "";
         }
-        if (path.equals("computed")) {
-            return "";
-        }
-        if (path.startsWith("computed.")) {
-            return path.substring(9);
-        }
         return path;
     }
 
     public static String normalizeDataPath(String path) {
         if (path == null) {
             return "";
-        }
-        if (path.equals("data")) {
-            return "";
-        }
-        if (path.startsWith("data.")) {
-            return path.substring(5);
         }
         return path;
     }
@@ -580,7 +498,10 @@ public final class ValidationUtils {
     private static Map<String, Object> toTypeMap(Map<String, TypeSpec> types) {
         Map<String, Object> result = new LinkedHashMap<>();
         for (Map.Entry<String, TypeSpec> entry : types.entrySet()) {
-            result.put(entry.getKey(), entry.getValue().getDefinition());
+            Map<String, Object> typeSpec = new LinkedHashMap<>();
+            typeSpec.put("name", entry.getValue().getName());
+            typeSpec.put("definition", entry.getValue().getDefinition());
+            result.put(entry.getKey(), typeSpec);
         }
         return result;
     }
@@ -730,35 +651,11 @@ public final class ValidationUtils {
         if (expr instanceof Max max) {
             return Map.of("kind", "max", "args", toExprList(max.args()));
         }
-        if (expr instanceof SumArray sumArray) {
-            return Map.of("kind", "sumArray", "array", toExprMap(sumArray.array()));
-        }
-        if (expr instanceof MinArray minArray) {
-            return Map.of("kind", "minArray", "array", toExprMap(minArray.array()));
-        }
-        if (expr instanceof MaxArray maxArray) {
-            return Map.of("kind", "maxArray", "array", toExprMap(maxArray.array()));
-        }
         if (expr instanceof Abs abs) {
             return Map.of("kind", "abs", "arg", toExprMap(abs.arg()));
         }
         if (expr instanceof Neg neg) {
             return Map.of("kind", "neg", "arg", toExprMap(neg.arg()));
-        }
-        if (expr instanceof Round round) {
-            return Map.of("kind", "round", "arg", toExprMap(round.arg()));
-        }
-        if (expr instanceof Pow pow) {
-            return Map.of("kind", "pow", "base", toExprMap(pow.base()), "exponent", toExprMap(pow.exponent()));
-        }
-        if (expr instanceof Sqrt sqrt) {
-            return Map.of("kind", "sqrt", "arg", toExprMap(sqrt.arg()));
-        }
-        if (expr instanceof Floor floor) {
-            return Map.of("kind", "floor", "arg", toExprMap(floor.arg()));
-        }
-        if (expr instanceof Ceil ceil) {
-            return Map.of("kind", "ceil", "arg", toExprMap(ceil.arg()));
         }
         if (expr instanceof And and) {
             return Map.of("kind", "and", "args", toExprList(and.args()));
@@ -771,15 +668,6 @@ public final class ValidationUtils {
         }
         if (expr instanceof Coalesce coalesce) {
             return Map.of("kind", "coalesce", "args", toExprList(coalesce.args()));
-        }
-        if (expr instanceof StartsWith startsWith) {
-            return Map.of("kind", "startsWith", "str", toExprMap(startsWith.str()), "prefix", toExprMap(startsWith.prefix()));
-        }
-        if (expr instanceof EndsWith endsWith) {
-            return Map.of("kind", "endsWith", "str", toExprMap(endsWith.str()), "suffix", toExprMap(endsWith.suffix()));
-        }
-        if (expr instanceof Split split) {
-            return Map.of("kind", "split", "str", toExprMap(split.str()), "delimiter", toExprMap(split.delimiter()));
         }
         if (expr instanceof Not not) {
             return Map.of("kind", "not", "arg", toExprMap(not.arg()));
@@ -868,18 +756,6 @@ public final class ValidationUtils {
         }
         if (expr instanceof Trim trim) {
             return Map.of("kind", "trim", "str", toExprMap(trim.str()));
-        }
-        if (expr instanceof ToLowerCase lower) {
-            return Map.of("kind", "toLowerCase", "str", toExprMap(lower.str()));
-        }
-        if (expr instanceof ToUpperCase upper) {
-            return Map.of("kind", "toUpperCase", "str", toExprMap(upper.str()));
-        }
-        if (expr instanceof StrLen strLen) {
-            return Map.of("kind", "strLen", "str", toExprMap(strLen.str()));
-        }
-        if (expr instanceof ToString toString) {
-            return Map.of("kind", "toString", "arg", toExprMap(toString.arg()));
         }
 
         return Map.of("kind", expr.getClass().getSimpleName().toLowerCase(Locale.ROOT));

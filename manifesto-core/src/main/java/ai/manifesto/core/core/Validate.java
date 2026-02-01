@@ -282,8 +282,8 @@ public class Validate {
                 addError(
                     errors,
                     "V-002",
-                    "Cyclic dependency detected in computed fields: " + String.join(" -> ", cycle),
-                    "computed"
+                    "Cyclic dependency: " + String.join(" -> ", cycle),
+                    cycle.isEmpty() ? "computed" : cycle.get(0)
                 );
             }
         }
@@ -365,11 +365,11 @@ public class Validate {
         }
 
         if (schema.getDataFields().isEmpty()) {
-            addError(errors, "SCHEMA_ERROR", "State fields must not be empty", "state.fields");
+            addError(errors, "SCHEMA_ERROR", "StateSpec.fields must not be empty", "state.fields");
         }
 
         if (schema.getComputedFields().isEmpty()) {
-            addError(errors, "SCHEMA_ERROR", "Computed fields must not be empty", "computed.fields");
+            addError(errors, "SCHEMA_ERROR", "ComputedSpec.fields must not be empty", "computed.fields");
         }
 
         if (schema.getActions().isEmpty()) {
@@ -391,12 +391,24 @@ public class Validate {
      */
     private static void validateStateDefaults(DomainSchema schema, List<ValidationError> errors) {
         for (Map.Entry<String, FieldSpec> entry : schema.getDataFields().entrySet()) {
-            FieldSpec spec = entry.getValue();
-            if (!spec.isRequired() && spec.getDefaultValue() == null) {
-                addError(errors, "SCHEMA_ERROR",
-                    "Optional fields must define a default value: " + entry.getKey(),
-                    "state.fields." + entry.getKey());
+            visitFieldSpec(entry.getValue(), "state.fields." + entry.getKey(), errors);
+        }
+    }
+
+    private static void visitFieldSpec(FieldSpec spec, String path, List<ValidationError> errors) {
+        if (spec == null) {
+            return;
+        }
+        if (!spec.isRequired() && spec.getDefaultValue() == null) {
+            addError(errors, "SCHEMA_ERROR", "Optional fields must define a default value", path);
+        }
+        if ("object".equals(spec.getType()) && spec.getFields() != null) {
+            for (Map.Entry<String, FieldSpec> entry : spec.getFields().entrySet()) {
+                visitFieldSpec(entry.getValue(), path + "." + entry.getKey(), errors);
             }
+        }
+        if ("array".equals(spec.getType()) && spec.getItems() != null) {
+            visitFieldSpec(spec.getItems(), path + "[]", errors);
         }
     }
 
@@ -435,26 +447,26 @@ public class Validate {
                 if (exprPath.startsWith("computed.")) {
                     if (!ValidationUtils.pathExistsInComputedSpec(schema.getComputedFields(), exprPath)) {
                         addError(errors, "V-003",
-                            "Unknown computed path in expression: " + exprPath,
+                            "Unknown path in computed expression: " + exprPath,
                             "computed.fields." + fieldName);
                     }
                     continue;
                 }
                 if (exprPath.startsWith("input.")) {
                     addError(errors, "V-003",
-                        "input path is not allowed in computed expression: " + exprPath,
+                        "Unknown path in computed expression: " + exprPath,
                         "computed.fields." + fieldName);
                     continue;
                 }
                 if (exprPath.startsWith("system.")) {
                     addError(errors, "V-003",
-                        "system path is not allowed in computed expression: " + exprPath,
+                        "Unknown path in computed expression: " + exprPath,
                         "computed.fields." + fieldName);
                     continue;
                 }
                 if (!ValidationUtils.pathExistsInStateSpec(schema.getDataFields(), exprPath)) {
                     addError(errors, "V-003",
-                        "Unknown state path in expression: " + exprPath,
+                        "Unknown path in computed expression: " + exprPath,
                         "computed.fields." + fieldName);
                 }
             }
@@ -507,17 +519,6 @@ public class Validate {
     }
 
     private static boolean hasDependency(Set<String> deps, String exprPath) {
-        if (deps.contains(exprPath)) {
-            return true;
-        }
-        if (exprPath.startsWith("computed.")) {
-            String normalized = ValidationUtils.normalizeComputedPath(exprPath);
-            return deps.contains(normalized);
-        }
-        if (exprPath.startsWith("data.")) {
-            String normalized = ValidationUtils.normalizeDataPath(exprPath);
-            return deps.contains(normalized);
-        }
         return deps.contains(exprPath);
     }
 
@@ -541,17 +542,13 @@ public class Validate {
                 }
 
                 if (exprPath.equals("input") || exprPath.startsWith("input.")) {
-                    if (action.getInputFields().isEmpty()) {
-                        addError(errors, "V-003",
-                            "Unknown input path: " + exprPath,
-                            "actions." + actionName);
-                        continue;
-                    }
-                    String subPath = exprPath.equals("input") ? "" : exprPath.substring(6);
-                    if (!ValidationUtils.pathExistsInFieldSpec(action.getInputFields(), subPath)) {
-                        addError(errors, "V-003",
-                            "Unknown input path: " + exprPath,
-                            "actions." + actionName);
+                    if (action.getInputSpec() != null) {
+                        String subPath = exprPath.equals("input") ? "" : exprPath.substring(6);
+                        if (!ValidationUtils.pathExistsInFieldSpec(action.getInputSpec(), subPath)) {
+                            addError(errors, "V-003",
+                                "Unknown input path: " + exprPath,
+                                "actions." + actionName);
+                        }
                     }
                     continue;
                 }
@@ -643,7 +640,7 @@ public class Validate {
             } else if (recursionStack.contains(dep)) {
                 List<String> cycle = new ArrayList<>(path);
                 cycle.add(dep);
-                addError(errors, "V-005", "Cyclic call detected: " + String.join(" -> ", cycle), "actions");
+                addError(errors, "V-005", "Cyclic call detected: " + String.join(" -> ", cycle), "actions." + node);
                 return true;
             }
         }

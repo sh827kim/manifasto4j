@@ -17,7 +17,7 @@ import java.util.*;
  * 세 가지 경우를 처리한다:
  * 1. computed.*: Computed 필드 (DAG 기반 계산)
  * 2. system.*: 시스템 상태
- * 3. input.* 또는 data.*: 입력 또는 데이터 필드
+ * 3. input.* 또는 data: 입력 또는 데이터 필드
  */
 public class Explain {
 
@@ -30,7 +30,7 @@ public class Explain {
      *
      * @param schema 도메인 스키마
      * @param snapshot 현재 스냅샷
-     * @param path 설명할 값의 경로 (예: "data.count", "computed.total")
+     * @param path 설명할 값의 경로 (예: "count", "computed.total")
      * @return 값, 추적, 의존성을 포함한 설명 결과
      */
     public static ExplainResult explain(
@@ -120,16 +120,15 @@ public class Explain {
         String path,
         TraceContext traceContext
     ) {
-        // Computed 필드 정의 조회 (path는 "computed.fieldName" 형식)
-        String fieldName = path.substring(9);  // "computed." 제거
-        ComputedFieldDef spec = schema.getComputedFields().get(fieldName);
+        // Computed 필드 정의 조회 (path는 "computed.*" 형식)
+        ComputedFieldDef spec = schema.getComputedFields().get(path);
 
         if (spec == null) {
             // Computed 필드 정의가 없으면 저장된 값만 반환
             Object value = null;
             Map<String, Object> computed = snapshot.getComputed();
             if (computed != null) {
-                value = computed.get(fieldName);
+                value = computed.get(path);
             }
             TraceNode trace = TraceNode.builder()
                 .id(traceContext.nextId())
@@ -162,12 +161,9 @@ public class Explain {
         List<String> allDeps = new ArrayList<>();
 
         for (String dep : spec.getDependencies()) {
-            String depPath = schema.getComputedFields().containsKey(dep)
-                ? "computed." + dep
-                : dep;
-            ExplainResult depResult = explainWithTrace(schema, snapshot, depPath, traceContext);
+            ExplainResult depResult = explainWithTrace(schema, snapshot, dep, traceContext);
             childTraces.add(depResult.getTrace());
-            allDeps.add(depPath);
+            allDeps.add(dep);
         }
 
         // Spec의 표현식을 저장

@@ -62,7 +62,7 @@ public class ComputedEvaluatorTest {
     void testEvaluateComputed_SingleFieldNoDeps() {
         // given: computed.total = lit(100)
         ComputedFieldDef totalField = new ComputedFieldDef(
-            "total",
+            "computed.total",
             new Lit(100),
             new HashSet<>()
         );
@@ -79,19 +79,19 @@ public class ComputedEvaluatorTest {
         // then
         assertTrue(result.isOk());
         Map<String, Object> computed = result.unwrap();
-        assertEquals(100, computed.get("total"));
+        assertEquals(100, computed.get("computed.total"));
     }
 
     @Test
     @DisplayName("evaluateComputed: 순환 참조 감지 (V-002)")
     void testEvaluateComputed_CircularDependency() {
         // given: a → b, b → a (순환)
-        ComputedFieldDef fieldA = new ComputedFieldDef.Builder("a", new Lit(1))
-            .addDependency("b")
+        ComputedFieldDef fieldA = new ComputedFieldDef.Builder("computed.a", new Lit(1))
+            .addDependency("computed.b")
             .build();
 
-        ComputedFieldDef fieldB = new ComputedFieldDef.Builder("b", new Lit(2))
-            .addDependency("a")
+        ComputedFieldDef fieldB = new ComputedFieldDef.Builder("computed.b", new Lit(2))
+            .addDependency("computed.a")
             .build();
 
         DomainSchema schema = new DomainSchema.Builder("test", "1.0.0")
@@ -119,9 +119,9 @@ public class ComputedEvaluatorTest {
         // computed.a = lit(10)
         // computed.b = lit(20)
         // computed.c = lit(30)
-        ComputedFieldDef fieldA = ComputedFieldDef.simple("a", new Lit(10));
-        ComputedFieldDef fieldB = ComputedFieldDef.simple("b", new Lit(20));
-        ComputedFieldDef fieldC = ComputedFieldDef.simple("c", new Lit(30));
+        ComputedFieldDef fieldA = ComputedFieldDef.simple("computed.a", new Lit(10));
+        ComputedFieldDef fieldB = ComputedFieldDef.simple("computed.b", new Lit(20));
+        ComputedFieldDef fieldC = ComputedFieldDef.simple("computed.c", new Lit(30));
 
         DomainSchema schema = new DomainSchema.Builder("test", "1.0.0")
             .hash("test-hash")
@@ -137,9 +137,9 @@ public class ComputedEvaluatorTest {
         // then
         assertTrue(result.isOk());
         Map<String, Object> computed = result.unwrap();
-        assertEquals(10, computed.get("a"));
-        assertEquals(20, computed.get("b"));
-        assertEquals(30, computed.get("c"));
+        assertEquals(10, computed.get("computed.a"));
+        assertEquals(20, computed.get("computed.b"));
+        assertEquals(30, computed.get("computed.c"));
         assertEquals(3, computed.size());
     }
 
@@ -147,9 +147,9 @@ public class ComputedEvaluatorTest {
     @DisplayName("evaluateComputed: 여러 필드 함께 평가")
     void testEvaluateComputed_MultipleFields() {
         // given: price, tax, total 3개 필드
-        ComputedFieldDef priceField = ComputedFieldDef.simple("price", new Lit(100));
-        ComputedFieldDef taxField = ComputedFieldDef.simple("tax", new Lit(10));
-        ComputedFieldDef totalField = ComputedFieldDef.simple("total", new Lit(110));
+        ComputedFieldDef priceField = ComputedFieldDef.simple("computed.price", new Lit(100));
+        ComputedFieldDef taxField = ComputedFieldDef.simple("computed.tax", new Lit(10));
+        ComputedFieldDef totalField = ComputedFieldDef.simple("computed.total", new Lit(110));
 
         DomainSchema schema = new DomainSchema.Builder("test", "1.0.0")
             .hash("test-hash")
@@ -165,17 +165,17 @@ public class ComputedEvaluatorTest {
         // then
         assertTrue(result.isOk());
         Map<String, Object> computed = result.unwrap();
-        assertEquals(100, computed.get("price"));
-        assertEquals(10, computed.get("tax"));
-        assertEquals(110, computed.get("total"));
+        assertEquals(100, computed.get("computed.price"));
+        assertEquals(10, computed.get("computed.tax"));
+        assertEquals(110, computed.get("computed.total"));
     }
 
     @Test
     @DisplayName("evaluateComputed: 결정론성 검증 (같은 입력 → 같은 출력)")
     void testEvaluateComputed_Determinism() {
         // given
-        ComputedFieldDef fieldA = ComputedFieldDef.simple("a", new Lit(42));
-        ComputedFieldDef fieldB = ComputedFieldDef.simple("b", new Lit(100));
+        ComputedFieldDef fieldA = ComputedFieldDef.simple("computed.a", new Lit(42));
+        ComputedFieldDef fieldB = ComputedFieldDef.simple("computed.b", new Lit(100));
 
         DomainSchema schema = new DomainSchema.Builder("test", "1.0.0")
             .hash("test-hash")
@@ -201,7 +201,7 @@ public class ComputedEvaluatorTest {
     @DisplayName("evaluateSingleComputed: 정상 평가")
     void testEvaluateSingleComputed_Normal() {
         // given
-        ComputedFieldDef field = ComputedFieldDef.simple("value", new Lit(42));
+        ComputedFieldDef field = ComputedFieldDef.simple("computed.value", new Lit(42));
 
         DomainSchema schema = new DomainSchema.Builder("test", "1.0.0")
             .hash("test-hash")
@@ -210,7 +210,7 @@ public class ComputedEvaluatorTest {
 
         // when
         Result<Object, ErrorValue> result =
-            ComputedEvaluator.evaluateSingleComputed(schema, baseSnapshot, "value");
+            ComputedEvaluator.evaluateSingleComputed(schema, baseSnapshot, "computed.value");
 
         // then
         assertTrue(result.isOk());
@@ -227,14 +227,14 @@ public class ComputedEvaluatorTest {
 
         // when
         Result<Object, ErrorValue> result =
-            ComputedEvaluator.evaluateSingleComputed(schema, baseSnapshot, "nonexistent");
+            ComputedEvaluator.evaluateSingleComputed(schema, baseSnapshot, "computed.nonexistent");
 
         // then
         assertTrue(result.isErr());
         if (result instanceof Result.Err<?, ?> err) {
             ErrorValue error = (ErrorValue) err.error();
             assertEquals("PATH_NOT_FOUND", error.getCode());
-            assertTrue(error.getMessage().contains("nonexistent"));
+            assertTrue(error.getMessage().contains("computed.nonexistent"));
         }
     }
 
@@ -242,9 +242,9 @@ public class ComputedEvaluatorTest {
     @DisplayName("evaluateSingleComputed: 여러 필드 중 하나만 평가")
     void testEvaluateSingleComputed_OneOfMany() {
         // given: 3개 필드 중 "b"만 평가
-        ComputedFieldDef fieldA = ComputedFieldDef.simple("a", new Lit(10));
-        ComputedFieldDef fieldB = ComputedFieldDef.simple("b", new Lit(20));
-        ComputedFieldDef fieldC = ComputedFieldDef.simple("c", new Lit(30));
+        ComputedFieldDef fieldA = ComputedFieldDef.simple("computed.a", new Lit(10));
+        ComputedFieldDef fieldB = ComputedFieldDef.simple("computed.b", new Lit(20));
+        ComputedFieldDef fieldC = ComputedFieldDef.simple("computed.c", new Lit(30));
 
         DomainSchema schema = new DomainSchema.Builder("test", "1.0.0")
             .hash("test-hash")
@@ -255,7 +255,7 @@ public class ComputedEvaluatorTest {
 
         // when
         Result<Object, ErrorValue> result =
-            ComputedEvaluator.evaluateSingleComputed(schema, baseSnapshot, "b");
+            ComputedEvaluator.evaluateSingleComputed(schema, baseSnapshot, "computed.b");
 
         // then
         assertTrue(result.isOk());
@@ -266,7 +266,7 @@ public class ComputedEvaluatorTest {
     @DisplayName("evaluateSingleComputed: 결정론성 검증")
     void testEvaluateSingleComputed_Determinism() {
         // given
-        ComputedFieldDef field = ComputedFieldDef.simple("value", new Lit(99));
+        ComputedFieldDef field = ComputedFieldDef.simple("computed.value", new Lit(99));
 
         DomainSchema schema = new DomainSchema.Builder("test", "1.0.0")
             .hash("test-hash")
@@ -275,9 +275,9 @@ public class ComputedEvaluatorTest {
 
         // when: 두 번 실행
         Result<Object, ErrorValue> result1 =
-            ComputedEvaluator.evaluateSingleComputed(schema, baseSnapshot, "value");
+            ComputedEvaluator.evaluateSingleComputed(schema, baseSnapshot, "computed.value");
         Result<Object, ErrorValue> result2 =
-            ComputedEvaluator.evaluateSingleComputed(schema, baseSnapshot, "value");
+            ComputedEvaluator.evaluateSingleComputed(schema, baseSnapshot, "computed.value");
 
         // then: 같은 결과
         assertTrue(result1.isOk());
@@ -291,7 +291,7 @@ public class ComputedEvaluatorTest {
     @DisplayName("evaluateComputed: null 필드값 처리")
     void testEvaluateComputed_NullValue() {
         // given
-        ComputedFieldDef field = ComputedFieldDef.simple("nullField", new Lit(null));
+        ComputedFieldDef field = ComputedFieldDef.simple("computed.nullField", new Lit(null));
 
         DomainSchema schema = new DomainSchema.Builder("test", "1.0.0")
             .hash("test-hash")
@@ -305,15 +305,15 @@ public class ComputedEvaluatorTest {
         // then
         assertTrue(result.isOk());
         Map<String, Object> computed = result.unwrap();
-        assertNull(computed.get("nullField"));
+        assertNull(computed.get("computed.nullField"));
     }
 
     @Test
     @DisplayName("evaluateComputed: 자기 자신 의존 감지 (a → a)")
     void testEvaluateComputed_SelfDependency() {
         // given: a → a (자기 자신에 의존)
-        ComputedFieldDef field = new ComputedFieldDef.Builder("a", new Lit(1))
-            .addDependency("a")
+        ComputedFieldDef field = new ComputedFieldDef.Builder("computed.a", new Lit(1))
+            .addDependency("computed.a")
             .build();
 
         DomainSchema schema = new DomainSchema.Builder("test", "1.0.0")
@@ -337,7 +337,7 @@ public class ComputedEvaluatorTest {
     @DisplayName("evaluateComputed & evaluateSingleComputed: 메서드 분리 확인")
     void testBothMethods_Independence() {
         // given
-        ComputedFieldDef field = ComputedFieldDef.simple("value", new Lit(55));
+        ComputedFieldDef field = ComputedFieldDef.simple("computed.value", new Lit(55));
 
         DomainSchema schema = new DomainSchema.Builder("test", "1.0.0")
             .hash("test-hash")
@@ -348,11 +348,11 @@ public class ComputedEvaluatorTest {
         Result<Map<String, Object>, ErrorValue> result1 =
             ComputedEvaluator.evaluateComputed(schema, baseSnapshot);
         Result<Object, ErrorValue> result2 =
-            ComputedEvaluator.evaluateSingleComputed(schema, baseSnapshot, "value");
+            ComputedEvaluator.evaluateSingleComputed(schema, baseSnapshot, "computed.value");
 
         // then: 같은 결과값
         assertTrue(result1.isOk());
         assertTrue(result2.isOk());
-        assertEquals(result1.unwrap().get("value"), result2.unwrap());
+        assertEquals(result1.unwrap().get("computed.value"), result2.unwrap());
     }
 }

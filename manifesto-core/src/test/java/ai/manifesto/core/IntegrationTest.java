@@ -51,8 +51,8 @@ class IntegrationTest {
             .flow(FlowNode.Halt.of(null))
             .build();
 
-        ComputedFieldDef totalCount = ComputedFieldDef.simple("totalCount", new Lit(0));
-        ComputedFieldDef completedCount = ComputedFieldDef.simple("completedCount", new Lit(0));
+        ComputedFieldDef totalCount = ComputedFieldDef.simple("computed.totalCount", new Lit(0));
+        ComputedFieldDef completedCount = ComputedFieldDef.simple("computed.completedCount", new Lit(0));
 
         todoSchema = buildSchemaWithHash(
             "urn:todo-app",
@@ -68,8 +68,8 @@ class IntegrationTest {
         data.put("filter", "all");
 
         Map<String, Object> computed = new HashMap<>();
-        computed.put("totalCount", 0);
-        computed.put("completedCount", 0);
+        computed.put("computed.totalCount", 0);
+        computed.put("computed.completedCount", 0);
 
         initialSnapshot = Snapshot.builder()
             .data(data)
@@ -123,7 +123,7 @@ class IntegrationTest {
     @Test
     @DisplayName("Patch 적용 및 버전 증가")
     void testApplyPatch() {
-        Patch patch = Patch.set("data.filter", "active");
+        Patch patch = Patch.set("filter", "active");
         Result<Snapshot, ErrorValue> result = Apply.apply(todoSchema, initialSnapshot, patch);
 
         assertTrue(result.isOk());
@@ -135,8 +135,8 @@ class IntegrationTest {
     @Test
     @DisplayName("여러 Patch 순차 적용")
     void testApplyMultiplePatches() {
-        Patch patch1 = Patch.set("data.filter", "active");
-        Patch patch2 = Patch.set("data.sortBy", "date");
+        Patch patch1 = Patch.set("filter", "active");
+        Patch patch2 = Patch.set("sortBy", "date");
 
         Result<Snapshot, ErrorValue> result = Apply.apply(todoSchema, initialSnapshot, patch1, patch2);
 
@@ -167,7 +167,7 @@ class IntegrationTest {
         assertValid(todoSchema, initialSnapshot);
 
         // 2. Patch 적용
-        Patch patch = Patch.set("data.filter", "completed");
+        Patch patch = Patch.set("filter", "completed");
         Result<Snapshot, ErrorValue> applyResult = Apply.apply(todoSchema, initialSnapshot, patch);
         assertTrue(applyResult.isOk());
 
@@ -262,7 +262,7 @@ class IntegrationTest {
         assertValid(todoSchema, resultSnapshot);
 
         // Step 4: 추가 Patch 적용
-        Patch patch = Patch.set("data.filter", "active");
+        Patch patch = Patch.set("filter", "active");
         Result<Snapshot, ErrorValue> applyResult = Apply.apply(todoSchema, resultSnapshot, patch);
         assertTrue(applyResult.isOk());
 
@@ -278,7 +278,7 @@ class IntegrationTest {
         // given: data.title을 업데이트하는 Flow
         ActionSpec updateTitle = new ActionSpec.Builder("updateTitle")
             .addInputField("title", FieldSpec.required("title", "string"))
-            .flow(FlowNode.Patch.set("data.title", new Lit("Updated")))
+            .flow(FlowNode.Patch.set("title", new Lit("Updated")))
             .build();
 
         DomainSchema schema = buildSchemaWithHash(
@@ -286,12 +286,12 @@ class IntegrationTest {
             "1.0.0",
             new ActionSpec[] { updateTitle },
             new FieldSpec[] { FieldSpec.required("title", "string") },
-            new ComputedFieldDef[] { ComputedFieldDef.simple("noop", new Lit(0)) }
+            new ComputedFieldDef[] { ComputedFieldDef.simple("computed.noop", new Lit(0)) }
         );
 
         Snapshot snapshot = Snapshot.builder()
             .data(new HashMap<>(Map.of("title", "Original")))
-            .computed(new HashMap<>(Map.of("noop", 0)))
+            .computed(new HashMap<>(Map.of("computed.noop", 0)))
             .system(SystemState.initial())
             .input(new HashMap<>())
             .meta(Snapshot.SnapshotMeta.create(0, System.currentTimeMillis(), "seed", schema.getHash()))
@@ -326,12 +326,12 @@ class IntegrationTest {
             "1.0.0",
             new ActionSpec[] { effectAction },
             new FieldSpec[] { FieldSpec.required("title", "string") },
-            new ComputedFieldDef[] { ComputedFieldDef.simple("noop", new Lit(0)) }
+            new ComputedFieldDef[] { ComputedFieldDef.simple("computed.noop", new Lit(0)) }
         );
 
         Snapshot snapshot = Snapshot.builder()
             .data(new HashMap<>(Map.of("title", "t")))
-            .computed(new HashMap<>(Map.of("noop", 0)))
+            .computed(new HashMap<>(Map.of("computed.noop", 0)))
             .system(SystemState.initial())
             .input(new HashMap<>())
             .meta(Snapshot.SnapshotMeta.create(0, System.currentTimeMillis(), "seed", schema.getHash()))
@@ -357,7 +357,7 @@ class IntegrationTest {
                 "array.map",
                 Map.of(
                     "source", new Lit(List.of(1, 2, 3)),
-                    "into", new Lit("data.mapped"),
+                    "into", new Lit("mapped"),
                     "select", new Lit(1)
                 )
             ))
@@ -368,12 +368,12 @@ class IntegrationTest {
             "1.0.0",
             new ActionSpec[] { mapAction },
             new FieldSpec[] { new FieldSpec("mapped", "array", false, List.of()) },
-            new ComputedFieldDef[] { ComputedFieldDef.simple("noop", new Lit(0)) }
+            new ComputedFieldDef[] { ComputedFieldDef.simple("computed.noop", new Lit(0)) }
         );
 
         Snapshot snapshot = Snapshot.builder()
             .data(new HashMap<>(Map.of("mapped", List.of())))
-            .computed(new HashMap<>(Map.of("noop", 0)))
+            .computed(new HashMap<>(Map.of("computed.noop", 0)))
             .system(SystemState.initial())
             .input(new HashMap<>())
             .meta(Snapshot.SnapshotMeta.create(0, System.currentTimeMillis(), "seed", schema.getHash()))

@@ -21,7 +21,7 @@ import java.util.Objects;
  * - Fail: 에러로 중단
  *
  * 예: seq(
- *   patch("data.count").set(0),
+ *   patch("count").set(0),
  *   if(get("input.title") == "")
  *     fail("VALIDATION_ERROR")
  *   else

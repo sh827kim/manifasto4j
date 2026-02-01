@@ -3,7 +3,7 @@ package ai.manifesto.core.core;
 import ai.manifesto.core.expr.ExprNode;
 import ai.manifesto.core.expr.literal.Get;
 import ai.manifesto.core.expr.literal.Lit;
-import ai.manifesto.core.expr.string.StartsWith;
+import ai.manifesto.core.expr.string.Substring;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -15,13 +15,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class ValidationUtilsTest {
 
     @Test
-    @DisplayName("startsWith 표현식의 get 경로 수집")
-    void testCollectPathsFromStartsWithExpr() {
-        ExprNode startsWithExpr = StartsWith.of(new Get("data.name"), new Lit("user_"));
+    @DisplayName("substring 표현식의 get 경로 수집")
+    void testCollectPathsFromSubstringExpr() {
+        ExprNode substringExpr = Substring.of(new Get("name"), new Lit(0), new Lit(4));
 
-        List<String> paths = ValidationUtils.collectGetPathsFromExpr(startsWithExpr);
+        List<String> paths = ValidationUtils.collectGetPathsFromExpr(substringExpr);
 
         assertEquals(1, paths.size());
-        assertEquals("data.name", paths.get(0));
+        assertEquals("name", paths.get(0));
     }
 }

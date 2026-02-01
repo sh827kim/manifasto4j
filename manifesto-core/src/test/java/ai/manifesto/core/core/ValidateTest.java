@@ -201,8 +201,8 @@ class ValidateTest {
             .hash("wrong-hash")
             .addDataField(FieldSpec.required("name", "string"))
             .addDataField(new FieldSpec("age", "integer", false, 0))
-            .addComputedField(new ComputedFieldDef.Builder("greeting", new Get("data.name"))
-                .addDependency("data.name")
+            .addComputedField(new ComputedFieldDef.Builder("computed.greeting", new Get("name"))
+                .addDependency("name")
                 .build())
             .addAction(new ActionSpec.Builder("noop")
                 .flow(FlowNode.Halt.of(null))
@@ -218,13 +218,13 @@ class ValidateTest {
     @Test
     @DisplayName("Computed deps 경로 존재 검증")
     void testComputedDepsMissingPath() {
-        ComputedFieldDef computed = new ComputedFieldDef.Builder("total", new Get("data.name"))
-            .addDependency("data.name")
-            .addDependency("data.missing")
+        ComputedFieldDef computed = new ComputedFieldDef.Builder("computed.total", new Get("name"))
+            .addDependency("name")
+            .addDependency("missing")
             .build();
 
         DomainSchema invalidSchema = buildSchemaWithHash(
-            "test-schema",
+            "urn:test-schema",
             "1.0.0",
             List.of(FieldSpec.required("name", "string"), new FieldSpec("age", "integer", false, 0)),
             List.of(computed),
@@ -242,15 +242,15 @@ class ValidateTest {
     @Test
     @DisplayName("Computed 순환 참조 V-002 검증")
     void testComputedCycleValidation() {
-        ComputedFieldDef fieldA = new ComputedFieldDef.Builder("a", new Get("computed.b"))
-            .addDependency("b")
+        ComputedFieldDef fieldA = new ComputedFieldDef.Builder("computed.a", new Get("computed.b"))
+            .addDependency("computed.b")
             .build();
-        ComputedFieldDef fieldB = new ComputedFieldDef.Builder("b", new Get("computed.a"))
-            .addDependency("a")
+        ComputedFieldDef fieldB = new ComputedFieldDef.Builder("computed.b", new Get("computed.a"))
+            .addDependency("computed.a")
             .build();
 
         DomainSchema invalidSchema = buildSchemaWithHash(
-            "test-schema",
+            "urn:test-schema",
             "1.0.0",
             List.of(FieldSpec.required("name", "string"), new FieldSpec("age", "integer", false, 0)),
             List.of(fieldA, fieldB),
@@ -268,12 +268,12 @@ class ValidateTest {
     @Test
     @DisplayName("Computed 표현식에서 input 경로 차단")
     void testComputedExprInputPath() {
-        ComputedFieldDef computed = new ComputedFieldDef.Builder("fromInput", new Get("input.title"))
-            .addDependency("data.name")
+        ComputedFieldDef computed = new ComputedFieldDef.Builder("computed.fromInput", new Get("input.title"))
+            .addDependency("name")
             .build();
 
         DomainSchema invalidSchema = buildSchemaWithHash(
-            "test-schema",
+            "urn:test-schema",
             "1.0.0",
             List.of(FieldSpec.required("name", "string"), new FieldSpec("age", "integer", false, 0)),
             List.of(computed),
@@ -284,7 +284,7 @@ class ValidateTest {
 
         assertFalse(result.isValid());
         assertTrue(result.errors().stream().anyMatch(e ->
-            e.code().equals("V-003") && e.message().contains("input path")
+            e.code().equals("V-003") && e.message().contains("Unknown path in computed expression")
         ));
     }
 
@@ -297,21 +297,18 @@ class ValidateTest {
             .build();
 
         DomainSchema invalidSchema = buildSchemaWithHash(
-            "test-schema",
+            "urn:test-schema",
             "1.0.0",
             List.of(FieldSpec.required("name", "string"), new FieldSpec("age", "integer", false, 0)),
-            List.of(new ComputedFieldDef.Builder("greeting", new Get("data.name"))
-                .addDependency("data.name")
+            List.of(new ComputedFieldDef.Builder("computed.greeting", new Get("name"))
+                .addDependency("name")
                 .build()),
             List.of(action)
         );
 
         Validate.ValidationResult result = Validate.validate(invalidSchema, snapshot);
 
-        assertFalse(result.isValid());
-        assertTrue(result.errors().stream().anyMatch(e ->
-            e.code().equals("V-003") && e.message().contains("Unknown input path")
-        ));
+        assertTrue(result.isValid(), result.errors().toString());
     }
 
     @Test
@@ -325,8 +322,8 @@ class ValidateTest {
             "test-schema",
             "1.0.0",
             List.of(FieldSpec.required("name", "string"), new FieldSpec("age", "integer", false, 0)),
-            List.of(new ComputedFieldDef.Builder("greeting", new Get("data.name"))
-                .addDependency("data.name")
+            List.of(new ComputedFieldDef.Builder("computed.greeting", new Get("name"))
+                .addDependency("name")
                 .build()),
             List.of(action)
         );
@@ -351,8 +348,8 @@ class ValidateTest {
             "test-schema",
             "1.0.0",
             List.of(FieldSpec.required("name", "string"), new FieldSpec("age", "integer", false, 0)),
-            List.of(new ComputedFieldDef.Builder("greeting", new Get("data.name"))
-                .addDependency("data.name")
+            List.of(new ComputedFieldDef.Builder("computed.greeting", new Get("name"))
+                .addDependency("name")
                 .build()),
             List.of(actionA, actionB)
         );
@@ -370,8 +367,8 @@ class ValidateTest {
             "not-a-valid-id",
             "1",
             List.of(FieldSpec.required("name", "string"), new FieldSpec("age", "integer", false, 0)),
-            List.of(new ComputedFieldDef.Builder("greeting", new Get("data.name"))
-                .addDependency("data.name")
+            List.of(new ComputedFieldDef.Builder("computed.greeting", new Get("name"))
+                .addDependency("name")
                 .build()),
             List.of(new ActionSpec.Builder("noop").flow(FlowNode.Halt.of(null)).build())
         );
@@ -387,8 +384,8 @@ class ValidateTest {
         FieldSpec nameField = FieldSpec.required("name", "string");
         FieldSpec ageField = new FieldSpec("age", "integer", false, 0);
 
-        ComputedFieldDef computed = new ComputedFieldDef.Builder("greeting", new Get("data.name"))
-            .addDependency("data.name")
+        ComputedFieldDef computed = new ComputedFieldDef.Builder("computed.greeting", new Get("name"))
+            .addDependency("name")
             .build();
 
         ActionSpec action = new ActionSpec.Builder("noop")

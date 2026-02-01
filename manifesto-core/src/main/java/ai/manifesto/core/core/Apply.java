@@ -189,9 +189,6 @@ public class Apply {
         if (path == null) {
             return new PatchPath(PatchRoot.DATA, "");
         }
-        if (path.equals("data") || path.startsWith("data.")) {
-            return new PatchPath(PatchRoot.DATA, path.equals("data") ? "" : path.substring(5));
-        }
         if (path.equals("system") || path.startsWith("system.")) {
             return new PatchPath(PatchRoot.SYSTEM, path.equals("system") ? "" : path.substring(7));
         }
@@ -318,11 +315,7 @@ public class Apply {
         if (path == null || path.isEmpty()) {
             return null;
         }
-        String normalized = ValidationUtils.normalizeDataPath(path);
-        if (normalized.isEmpty()) {
-            return null;
-        }
-        String root = normalized.contains(".") ? normalized.substring(0, normalized.indexOf('.')) : normalized;
+        String root = path.contains(".") ? path.substring(0, path.indexOf('.')) : path;
         return schema.getDataField(root);
     }
 

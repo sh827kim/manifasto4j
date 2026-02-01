@@ -730,10 +730,8 @@ public class FlowEvaluator {
             return null;
         }
 
-        String normalized = path.startsWith("data.") ? path.substring(5) : path;
-
         Map<String, FieldSpec> dataFields = ctx.getSchema().getDataFields();
-        if (!ValidationUtils.pathExistsInStateSpec(dataFields, normalized)) {
+        if (!ValidationUtils.pathExistsInStateSpec(dataFields, path)) {
             return ErrorValue.create(
                 "PATH_NOT_FOUND",
                 "Unknown patch path: " + path,
@@ -747,7 +745,7 @@ public class FlowEvaluator {
             return null;
         }
 
-        String root = normalized.contains(".") ? normalized.substring(0, normalized.indexOf('.')) : normalized;
+        String root = path.contains(".") ? path.substring(0, path.indexOf('.')) : path;
         FieldSpec spec = dataFields.get(root);
         if (spec == null) {
             return null;
@@ -867,28 +865,21 @@ public class FlowEvaluator {
         }
 
         Map<String, Object> data = new HashMap<>(snapshot.getData());
-        String normalizedPath = path;
-        if ("data".equals(path)) {
-            normalizedPath = "";
-        } else if (path != null && path.startsWith("data.")) {
-            normalizedPath = path.substring(5);
-        }
-
         switch (op) {
             case SET -> {
-                Object result = PathUtils.setByPath(data, normalizedPath, value);
+                Object result = PathUtils.setByPath(data, path, value);
                 if (result instanceof Map) {
                     data = (Map<String, Object>) result;
                 }
             }
             case UNSET -> {
-                Object result = PathUtils.unsetByPath(data, normalizedPath);
+                Object result = PathUtils.unsetByPath(data, path);
                 if (result instanceof Map) {
                     data = (Map<String, Object>) result;
                 }
             }
             case MERGE -> {
-                Object result = PathUtils.mergeByPath(data, normalizedPath, value);
+                Object result = PathUtils.mergeByPath(data, path, value);
                 if (result instanceof Map) {
                     data = (Map<String, Object>) result;
                 }

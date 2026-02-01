@@ -173,9 +173,9 @@ class DomainSchemaTest {
     void testComputedFieldDef() {
         ai.manifesto.core.expr.literal.Lit expr = new ai.manifesto.core.expr.literal.Lit(100);
 
-        ComputedFieldDef computed = ComputedFieldDef.simple("total", expr);
+        ComputedFieldDef computed = ComputedFieldDef.simple("computed.total", expr);
 
-        assertEquals("total", computed.getFieldName());
+        assertEquals("computed.total", computed.getFieldName());
         assertNotNull(computed.getExpression());
         assertTrue(computed.getDependencies().isEmpty());
     }
@@ -184,7 +184,7 @@ class DomainSchemaTest {
     @DisplayName("스키마에 computed 필드 추가")
     void testAddComputedFields() {
         ai.manifesto.core.expr.literal.Lit expr = new ai.manifesto.core.expr.literal.Lit(42);
-        ComputedFieldDef computed = ComputedFieldDef.simple("answer", expr);
+        ComputedFieldDef computed = ComputedFieldDef.simple("computed.answer", expr);
 
         DomainSchema schema = new DomainSchema.Builder("test", "1.0.0")
             .hash("hash1")
@@ -193,6 +193,6 @@ class DomainSchemaTest {
 
         Map<String, ComputedFieldDef> computedFields = schema.getComputedFields();
         assertEquals(1, computedFields.size());
-        assertTrue(computedFields.containsKey("answer"));
+        assertTrue(computedFields.containsKey("computed.answer"));
     }
 }
