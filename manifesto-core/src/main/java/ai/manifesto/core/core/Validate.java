@@ -6,6 +6,7 @@ import ai.manifesto.core.schema.ActionSpec;
 import ai.manifesto.core.schema.ComputedFieldDef;
 import ai.manifesto.core.schema.DomainSchema;
 import ai.manifesto.core.schema.FieldSpec;
+import ai.manifesto.core.utils.DagUtils;
 
 import java.util.*;
 import java.util.Objects;
@@ -240,46 +241,15 @@ public class Validate {
             return;
         }
 
-        // 순환 참조 감지 (간단한 버전)
-        for (String fieldName : computedFields.keySet()) {
-            if (hasCycle(fieldName, computedFields, new HashSet<>())) {
-                errors.add("Circular dependency detected in computed field '" + fieldName + "'");
+        DagUtils.DependencyGraph graph = DagUtils.buildDependencyGraph(computedFields);
+        List<List<String>> cycles = DagUtils.detectCycles(graph);
+
+        if (!cycles.isEmpty()) {
+            for (List<String> cycle : cycles) {
+                errors.add("V-002: Cyclic dependency detected in computed fields: "
+                    + String.join(" -> ", cycle));
             }
         }
-    }
-
-    /**
-     * 순환 참조 감지 헬퍼
-     */
-    private static boolean hasCycle(
-        String fieldName,
-        Map<String, ComputedFieldDef> allFields,
-        Set<String> visiting
-    ) {
-        ComputedFieldDef field = allFields.get(fieldName);
-        if (field == null) {
-            return false;
-        }
-
-        if (visiting.contains(fieldName)) {
-            return true; // 순환 참조 발견
-        }
-
-        visiting.add(fieldName);
-
-        // 의존성 재귀 검증
-        for (String dependency : field.getDependencies()) {
-            String normalized = ValidationUtils.normalizeComputedPath(dependency);
-            if (normalized.isEmpty()) {
-                continue;
-            }
-            if (hasCycle(normalized, allFields, visiting)) {
-                return true;
-            }
-        }
-
-        visiting.remove(fieldName);
-        return false;
     }
 
     /**

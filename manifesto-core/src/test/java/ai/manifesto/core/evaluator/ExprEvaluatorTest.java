@@ -2,9 +2,11 @@ package ai.manifesto.core.evaluator;
 
 import ai.manifesto.core.*;
 import ai.manifesto.core.expr.arithmetic.*;
+import ai.manifesto.core.expr.collection.Reduce;
 import ai.manifesto.core.expr.comparison.*;
 import ai.manifesto.core.expr.literal.*;
 import ai.manifesto.core.expr.logical.*;
+import ai.manifesto.core.expr.string.*;
 import ai.manifesto.core.schema.DomainSchema;
 import ai.manifesto.core.schema.FieldSpec;
 import ai.manifesto.core.trace.TraceContext;
@@ -13,6 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -253,5 +256,65 @@ class ExprEvaluatorTest {
 
         // 존재하지 않는 경로는 null을 반환하거나 에러를 반환할 수 있음
         assertTrue(result.isOk() || result.isErr());
+    }
+
+    @Test
+    @DisplayName("반올림/내림/올림 표현식")
+    void testRoundingExpressions() {
+        Round roundExpr = Round.of(new Lit(2.6));
+        Floor floorExpr = Floor.of(new Lit(2.6));
+        Ceil ceilExpr = Ceil.of(new Lit(2.1));
+
+        Result<Object, ErrorValue> roundResult = ExprEvaluator.evaluate(roundExpr, context);
+        Result<Object, ErrorValue> floorResult = ExprEvaluator.evaluate(floorExpr, context);
+        Result<Object, ErrorValue> ceilResult = ExprEvaluator.evaluate(ceilExpr, context);
+
+        assertTrue(roundResult.isOk());
+        assertTrue(floorResult.isOk());
+        assertTrue(ceilResult.isOk());
+        assertEquals(3L, roundResult.unwrap());
+        assertEquals(2L, floorResult.unwrap());
+        assertEquals(3L, ceilResult.unwrap());
+    }
+
+    @Test
+    @DisplayName("startsWith/endsWith 표현식")
+    void testStringPrefixSuffixExpressions() {
+        StartsWith startsWithExpr = StartsWith.of(new Lit("hello"), new Lit("he"));
+        EndsWith endsWithExpr = EndsWith.of(new Lit("hello"), new Lit("lo"));
+
+        Result<Object, ErrorValue> startsWithResult = ExprEvaluator.evaluate(startsWithExpr, context);
+        Result<Object, ErrorValue> endsWithResult = ExprEvaluator.evaluate(endsWithExpr, context);
+
+        assertTrue(startsWithResult.isOk());
+        assertTrue(endsWithResult.isOk());
+        assertEquals(true, startsWithResult.unwrap());
+        assertEquals(true, endsWithResult.unwrap());
+    }
+
+    @Test
+    @DisplayName("split 표현식")
+    void testSplitExpression() {
+        Split splitExpr = Split.of(new Lit("a,b,,c"), new Lit(","));
+
+        Result<Object, ErrorValue> result = ExprEvaluator.evaluate(splitExpr, context);
+
+        assertTrue(result.isOk());
+        assertEquals(List.of("a", "b", "", "c"), result.unwrap());
+    }
+
+    @Test
+    @DisplayName("reduce 표현식")
+    void testReduceExpression() {
+        Reduce reduceExpr = Reduce.of(
+            new Lit(List.of(1, 2, 3)),
+            Add.of(new Get("$acc"), new Get("$item")),
+            new Lit(0)
+        );
+
+        Result<Object, ErrorValue> result = ExprEvaluator.evaluate(reduceExpr, context);
+
+        assertTrue(result.isOk());
+        assertEquals(6, result.unwrap());
     }
 }

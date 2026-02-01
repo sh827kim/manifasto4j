@@ -1,0 +1,59 @@
+[
+  {
+    "testName": "evaluateRuntimePatches: set",
+    "input": [
+      {
+        "op": "set",
+        "path": "count",
+        "value": {
+          "kind": "lit",
+          "value": 42
+        }
+      }
+    ],
+    "expected": [
+      {
+        "op": "set",
+        "path": "count",
+        "value": 42
+      }
+    ]
+  },
+  {
+    "testName": "evaluateRuntimePatchesWithTrace: set",
+    "input": [
+      {
+        "op": "set",
+        "path": "count",
+        "value": {
+          "kind": "lit",
+          "value": 42
+        }
+      }
+    ],
+    "expected": {
+      "patches": [
+        {
+          "op": "set",
+          "path": "count",
+          "value": 42
+        }
+      ],
+      "skipped": [],
+      "finalSnapshot": {
+        "data": {
+          "count": 42,
+          "name": "Alice",
+          "items": [
+            1,
+            2,
+            3
+          ]
+        },
+        "computed": {
+          "total": 100
+        }
+      }
+    }
+  }
+]

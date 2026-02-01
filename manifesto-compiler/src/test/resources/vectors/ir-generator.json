@@ -1,0 +1,44 @@
+[
+  {
+    "testName": "ir: literal-union-with-null",
+    "input": {
+      "typeExpr": "enum(\"a\",\"b\",null)"
+    },
+    "expected": {
+      "fieldSpec": {
+        "type": { "enum": ["a", "b", null] },
+        "required": false
+      }
+    }
+  },
+  {
+    "testName": "ir: nullable-simple-type",
+    "input": {
+      "typeExpr": "string|null"
+    },
+    "expected": {
+      "fieldSpec": {
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  {
+    "testName": "ir: action-input-object-array",
+    "input": {
+      "params": {
+        "payload": "object{name:string,items:array<string>}"
+      }
+    },
+    "expected": {
+      "fieldSpec": {
+        "type": "object",
+        "fields": {
+          "name": { "type": "string", "required": true },
+          "items": { "type": "array", "items": { "type": "string", "required": true }, "required": true }
+        },
+        "required": true
+      }
+    }
+  }
+]

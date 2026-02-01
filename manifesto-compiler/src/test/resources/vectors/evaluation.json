@@ -1,0 +1,124 @@
+[
+  {
+    "testName": "evaluateExpr: get data.count",
+    "input": {
+      "kind": "get",
+      "path": "count"
+    },
+    "expected": 10
+  },
+  {
+    "testName": "evaluateExpr: get meta.intentId",
+    "input": {
+      "kind": "get",
+      "path": "meta.intentId"
+    },
+    "expected": "test-intent-123"
+  },
+  {
+    "testName": "evaluateExpr: get input.title",
+    "input": {
+      "kind": "get",
+      "path": "input.title"
+    },
+    "expected": "Hello"
+  },
+  {
+    "testName": "evaluateExpr: get computed.total",
+    "input": {
+      "kind": "get",
+      "path": "computed.total"
+    },
+    "expected": 100
+  },
+  {
+    "testName": "evaluateExpr: eq",
+    "input": {
+      "kind": "eq",
+      "left": {
+        "kind": "lit",
+        "value": 5
+      },
+      "right": {
+        "kind": "lit",
+        "value": 5
+      }
+    },
+    "expected": true
+  },
+  {
+    "testName": "evaluateExpr: gt",
+    "input": {
+      "kind": "gt",
+      "left": {
+        "kind": "lit",
+        "value": 10
+      },
+      "right": {
+        "kind": "lit",
+        "value": 5
+      }
+    },
+    "expected": true
+  },
+  {
+    "testName": "evaluateExpr: and",
+    "input": {
+      "kind": "and",
+      "args": [
+        {
+          "kind": "lit",
+          "value": true
+        },
+        {
+          "kind": "lit",
+          "value": false
+        }
+      ]
+    },
+    "expected": false
+  },
+  {
+    "testName": "evaluateExpr: or",
+    "input": {
+      "kind": "or",
+      "args": [
+        {
+          "kind": "lit",
+          "value": false
+        },
+        {
+          "kind": "lit",
+          "value": true
+        }
+      ]
+    },
+    "expected": true
+  },
+  {
+    "testName": "evaluateExpr: add",
+    "input": {
+      "kind": "add",
+      "left": {
+        "kind": "lit",
+        "value": 1
+      },
+      "right": {
+        "kind": "lit",
+        "value": 2
+      }
+    },
+    "expected": 3
+  },
+  {
+    "testName": "evaluateExpr: len",
+    "input": {
+      "kind": "len",
+      "arg": {
+        "kind": "get",
+        "path": "items"
+      }
+    },
+    "expected": 3
+  }
+]

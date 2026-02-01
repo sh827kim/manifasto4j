@@ -232,6 +232,13 @@ public class Snapshot {
         }
 
         /**
+         * 버전/타임스탬프를 지정해 새로운 메타데이터 생성
+         */
+        public SnapshotMeta nextVersion(long timestamp) {
+            return new SnapshotMeta(version + 1, timestamp, randomSeed, schemaHash);
+        }
+
+        /**
          * 타임스탬프를 업데이트한 새로운 메타데이터 생성
          */
         public SnapshotMeta withTimestamp(long timestamp) {

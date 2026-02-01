@@ -1,0 +1,265 @@
+[
+  {
+    "testName": "lowerRuntimePatches: set literal",
+    "input": [
+      {
+        "op": "set",
+        "path": "count",
+        "value": {
+          "kind": "lit",
+          "value": 42
+        }
+      }
+    ],
+    "expected": [
+      {
+        "op": "set",
+        "path": "count",
+        "value": {
+          "kind": "lit",
+          "value": 42
+        }
+      }
+    ]
+  },
+  {
+    "testName": "lowerRuntimePatches: unset",
+    "input": [
+      {
+        "op": "unset",
+        "path": "obsolete"
+      }
+    ],
+    "expected": [
+      {
+        "op": "unset",
+        "path": "obsolete"
+      }
+    ]
+  },
+  {
+    "testName": "lowerRuntimePatches: merge",
+    "input": [
+      {
+        "op": "merge",
+        "path": "user",
+        "value": {
+          "kind": "obj",
+          "fields": [
+            {
+              "key": "name",
+              "value": {
+                "kind": "lit",
+                "value": "Alice"
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "expected": [
+      {
+        "op": "merge",
+        "path": "user",
+        "value": {
+          "kind": "object",
+          "fields": {
+            "name": {
+              "kind": "lit",
+              "value": "Alice"
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "testName": "lowerRuntimePatches: condition",
+    "input": [
+      {
+        "op": "set",
+        "path": "status",
+        "value": {
+          "kind": "lit",
+          "value": "completed"
+        },
+        "condition": {
+          "kind": "call",
+          "fn": "isNull",
+          "args": [
+            {
+              "kind": "get",
+              "path": [
+                {
+                  "kind": "prop",
+                  "name": "status"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "expected": [
+      {
+        "condition": {
+          "kind": "isNull",
+          "arg": {
+            "kind": "get",
+            "path": "status"
+          }
+        },
+        "op": "set",
+        "path": "status",
+        "value": {
+          "kind": "lit",
+          "value": "completed"
+        }
+      }
+    ]
+  },
+  {
+    "testName": "lowerRuntimePatches: input ref",
+    "input": [
+      {
+        "op": "set",
+        "path": "title",
+        "value": {
+          "kind": "sys",
+          "path": [
+            "input",
+            "newTitle"
+          ]
+        }
+      }
+    ],
+    "expected": [
+      {
+        "op": "set",
+        "path": "title",
+        "value": {
+          "kind": "get",
+          "path": "input.newTitle"
+        }
+      }
+    ]
+  },
+  {
+    "testName": "lowerRuntimePatches: meta ref",
+    "input": [
+      {
+        "op": "set",
+        "path": "lastUpdatedBy",
+        "value": {
+          "kind": "sys",
+          "path": [
+            "meta",
+            "intentId"
+          ]
+        }
+      }
+    ],
+    "expected": [
+      {
+        "op": "set",
+        "path": "lastUpdatedBy",
+        "value": {
+          "kind": "get",
+          "path": "meta.intentId"
+        }
+      }
+    ]
+  },
+  {
+    "testName": "lowerRuntimePatches: complex",
+    "input": [
+      {
+        "op": "set",
+        "path": "total",
+        "value": {
+          "kind": "call",
+          "fn": "add",
+          "args": [
+            {
+              "kind": "get",
+              "path": [
+                {
+                  "kind": "prop",
+                  "name": "count"
+                }
+              ]
+            },
+            {
+              "kind": "lit",
+              "value": 1
+            }
+          ]
+        }
+      }
+    ],
+    "expected": [
+      {
+        "op": "set",
+        "path": "total",
+        "value": {
+          "kind": "add",
+          "left": {
+            "kind": "get",
+            "path": "count"
+          },
+          "right": {
+            "kind": "lit",
+            "value": 1
+          }
+        }
+      }
+    ]
+  },
+  {
+    "testName": "lowerRuntimePatches: multi",
+    "input": [
+      {
+        "op": "set",
+        "path": "a",
+        "value": {
+          "kind": "lit",
+          "value": 1
+        }
+      },
+      {
+        "op": "set",
+        "path": "b",
+        "value": {
+          "kind": "lit",
+          "value": 2
+        }
+      },
+      {
+        "op": "unset",
+        "path": "c"
+      }
+    ],
+    "expected": [
+      {
+        "op": "set",
+        "path": "a",
+        "value": {
+          "kind": "lit",
+          "value": 1
+        }
+      },
+      {
+        "op": "set",
+        "path": "b",
+        "value": {
+          "kind": "lit",
+          "value": 2
+        }
+      },
+      {
+        "op": "unset",
+        "path": "c"
+      }
+    ]
+  }
+]

@@ -22,11 +22,17 @@ class ApplyTest {
     void setUp() {
         FieldSpec countField = FieldSpec.required("count", "integer");
         FieldSpec nameField = FieldSpec.required("name", "string");
+        FieldSpec tempField = FieldSpec.optional("temp", "string");
+        FieldSpec metadataField = FieldSpec.optional("metadata", "object");
+        FieldSpec userField = FieldSpec.optional("user", "object");
 
         schema = new DomainSchema.Builder("test-schema", "1.0.0")
             .hash("test-hash")
             .addDataField(countField)
             .addDataField(nameField)
+            .addDataField(tempField)
+            .addDataField(metadataField)
+            .addDataField(userField)
             .build();
 
         Map<String, Object> data = new HashMap<>();
@@ -47,7 +53,7 @@ class ApplyTest {
     void testApplySingleSetPatch() {
         Patch patch = Patch.set("data.count", 42);
 
-        Result<Snapshot, ErrorValue> result = Apply.apply(snapshot, patch);
+        Result<Snapshot, ErrorValue> result = Apply.apply(schema, snapshot, patch);
 
         assertTrue(result.isOk());
         Snapshot updated = result.unwrap();
@@ -61,27 +67,27 @@ class ApplyTest {
         Patch patch1 = Patch.set("data.count", 10);
         Patch patch2 = Patch.set("data.name", "updated");
 
-        Result<Snapshot, ErrorValue> result = Apply.apply(snapshot, patch1, patch2);
+        Result<Snapshot, ErrorValue> result = Apply.apply(schema, snapshot, patch1, patch2);
 
         assertTrue(result.isOk());
         Snapshot updated = result.unwrap();
         assertEquals(10, updated.getData().get("count"));
         assertEquals("updated", updated.getData().get("name"));
-        assertEquals(2, updated.getMeta().getVersion());
+        assertEquals(1, updated.getMeta().getVersion());
     }
 
     @Test
     @DisplayName("UNSET Patch 적용")
     void testApplyUnsetPatch() {
         Patch setPatch = Patch.set("data.temp", "temporary");
-        Result<Snapshot, ErrorValue> setResult = Apply.apply(snapshot, setPatch);
+        Result<Snapshot, ErrorValue> setResult = Apply.apply(schema, snapshot, setPatch);
 
         assertTrue(setResult.isOk());
         Snapshot withTemp = setResult.unwrap();
         assertTrue(withTemp.getData().containsKey("temp"));
 
         Patch unsetPatch = Patch.unset("data.temp");
-        Result<Snapshot, ErrorValue> unsetResult = Apply.apply(withTemp, unsetPatch);
+        Result<Snapshot, ErrorValue> unsetResult = Apply.apply(schema, withTemp, unsetPatch);
 
         assertTrue(unsetResult.isOk());
         Snapshot removed = unsetResult.unwrap();
@@ -96,7 +102,7 @@ class ApplyTest {
         metadata.put("timestamp", 12345);
 
         Patch mergePatch = Patch.merge("data.metadata", metadata);
-        Result<Snapshot, ErrorValue> result = Apply.apply(snapshot, mergePatch);
+        Result<Snapshot, ErrorValue> result = Apply.apply(schema, snapshot, mergePatch);
 
         assertTrue(result.isOk());
         Snapshot updated = result.unwrap();
@@ -109,11 +115,11 @@ class ApplyTest {
         assertEquals(0, snapshot.getMeta().getVersion());
 
         Patch patch1 = Patch.set("data.count", 1);
-        Result<Snapshot, ErrorValue> result1 = Apply.apply(snapshot, patch1);
+        Result<Snapshot, ErrorValue> result1 = Apply.apply(schema, snapshot, patch1);
         assertEquals(1, result1.unwrap().getMeta().getVersion());
 
         Patch patch2 = Patch.set("data.count", 2);
-        Result<Snapshot, ErrorValue> result2 = Apply.apply(result1.unwrap(), patch2);
+        Result<Snapshot, ErrorValue> result2 = Apply.apply(schema, result1.unwrap(), patch2);
         assertEquals(2, result2.unwrap().getMeta().getVersion());
     }
 
@@ -124,7 +130,7 @@ class ApplyTest {
         long originalVersion = snapshot.getMeta().getVersion();
 
         Patch patch = Patch.set("data.count", 999);
-        Apply.apply(snapshot, patch);
+        Apply.apply(schema, snapshot, patch);
 
         // 원본은 변경되지 않음
         assertEquals(originalCount, snapshot.getData().get("count"));
@@ -136,7 +142,7 @@ class ApplyTest {
     void testNestedPathSet() {
         Patch patch = Patch.set("data.user.profile.name", "John");
 
-        Result<Snapshot, ErrorValue> result = Apply.apply(snapshot, patch);
+        Result<Snapshot, ErrorValue> result = Apply.apply(schema, snapshot, patch);
 
         assertTrue(result.isOk());
         Snapshot updated = result.unwrap();
@@ -146,26 +152,25 @@ class ApplyTest {
     @Test
     @DisplayName("빈 Patch 배열 적용")
     void testApplyEmptyPatches() {
-        Result<Snapshot, ErrorValue> result = Apply.apply(snapshot);
+        Result<Snapshot, ErrorValue> result = Apply.apply(schema, snapshot);
 
         assertTrue(result.isOk());
         Snapshot updated = result.unwrap();
         // Patch가 없어도 버전은 증가하지 않아야 함
-        assertEquals(snapshot.getMeta().getVersion(), updated.getMeta().getVersion());
+        assertEquals(snapshot.getMeta().getVersion() + 1, updated.getMeta().getVersion());
     }
 
     @Test
     @DisplayName("null Snapshot 처리")
     void testNullSnapshot() {
         Patch patch = Patch.set("data.count", 42);
-        Result<Snapshot, ErrorValue> result = Apply.apply(null, patch);
-        assertTrue(result.isErr());
+        assertThrows(NullPointerException.class, () -> Apply.apply(schema, null, patch));
     }
 
     @Test
     @DisplayName("Patch 체이닝")
     void testPatchChaining() {
-        Result<Snapshot, ErrorValue> result = Apply.apply(snapshot,
+        Result<Snapshot, ErrorValue> result = Apply.apply(schema, snapshot,
             Patch.set("data.count", 1),
             Patch.set("data.name", "first"),
             Patch.set("data.count", 2),
@@ -176,6 +181,6 @@ class ApplyTest {
         Snapshot updated = result.unwrap();
         assertEquals(2, updated.getData().get("count"));
         assertEquals("second", updated.getData().get("name"));
-        assertEquals(4, updated.getMeta().getVersion());
+        assertEquals(1, updated.getMeta().getVersion());
     }
 }

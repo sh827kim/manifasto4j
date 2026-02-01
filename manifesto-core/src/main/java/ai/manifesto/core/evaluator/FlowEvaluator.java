@@ -3,9 +3,11 @@ package ai.manifesto.core.evaluator;
 import ai.manifesto.core.*;
 import ai.manifesto.core.flow.FlowNode;
 import ai.manifesto.core.flow.PatchOp;
-import ai.manifesto.core.trace.TraceContext;
 import ai.manifesto.core.expr.ExprNode;
+import ai.manifesto.core.schema.FieldSpec;
+import ai.manifesto.core.trace.TraceContext;
 import ai.manifesto.core.utils.PathUtils;
+import ai.manifesto.core.core.ValidationUtils;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -78,8 +80,8 @@ public class FlowEvaluator {
         } else {
             // 알 수 없는 Flow 타입
             ErrorValue error = ErrorValue.create(
-                "UNKNOWN_FLOW_TYPE",
-                "Unknown flow type: " + flow.getClass().getSimpleName(),
+                "INTERNAL_ERROR",
+                "Unknown flow kind: " + flow.getClass().getSimpleName(),
                 ctx.getCurrentAction() != null ? ctx.getCurrentAction() : "",
                 nodePath,
                 ctx.getTrace().getTimestamp()
@@ -172,7 +174,7 @@ public class FlowEvaluator {
             .thenCompose(result -> {
                 // 현재 단계의 결과 상태로 다음 단계 평가
                 // 상태가 COMPLETE가 아니면 그대로 반환 (재진입 안전성)
-                if (!result.state().getStatus().isComplete()) {
+                if (!result.state().getStatus().isRunning()) {
                     return CompletableFuture.completedFuture(result);
                 }
 
@@ -277,13 +279,26 @@ public class FlowEvaluator {
             value = valueResult.unwrap();
         }
 
-        // 2. Patch 객체 생성 및 적용
+        // 2. Patch 경로/타입 검증
+        ErrorValue patchError = validatePatch(patchFlow, value, ctx, nodePath);
+        if (patchError != null) {
+            TraceNode trace = createTraceNode(
+                TraceNode.Kind.ERROR,
+                nodePath,
+                "patch_invalid",
+                ctx.getTrace()
+            );
+            FlowState newState = state.withStatus(FlowStatus.ERROR).withError(patchError);
+            return CompletableFuture.completedFuture(new FlowResult(newState, trace));
+        }
+
+        // 3. Patch 객체 생성 및 적용
         String path = patchFlow.getPath();
         PatchOp op = patchFlow.getOp();
         Snapshot currentSnapshot = state.getSnapshot();
         Snapshot newSnapshot = applyPatchToSnapshot(currentSnapshot, op, path, value);
 
-        // 3. FlowState 업데이트
+        // 4. FlowState 업데이트
         // Patch 객체도 기록 (추적용)
         Patch patchObj = createPatch(op, path, value);
         FlowState newState = state
@@ -316,6 +331,11 @@ public class FlowEvaluator {
         FlowState state,
         String nodePath
     ) {
+        // 순수 배열 연산은 인라인으로 처리
+        if ("array.map".equals(effect.getType()) || "array.filter".equals(effect.getType())) {
+            return evaluateArrayOperation(effect, ctx, state, nodePath);
+        }
+
         // 1. 파라미터 평가
         Map<String, Object> params = new HashMap<>();
 
@@ -345,6 +365,8 @@ public class FlowEvaluator {
         Requirement req = Requirement.create(
             effect.getType(),
             params,
+            ctx.getSchema().getHash(),
+            ctx.getIntentId(),
             ctx.getCurrentAction() != null ? ctx.getCurrentAction() : "",
             nodePath,
             ctx.getTrace().getTimestamp()
@@ -367,6 +389,182 @@ public class FlowEvaluator {
     }
 
     /**
+     * 배열 연산 처리 (array.map / array.filter)
+     * 순수 변환이므로 Host 없이 즉시 patch 적용한다.
+     */
+    private static CompletableFuture<FlowResult> evaluateArrayOperation(
+        FlowNode.Effect effect,
+        EvalContext ctx,
+        FlowState state,
+        String nodePath
+    ) {
+        Map<String, ExprNode> params = effect.getParams();
+
+        EvalContext currentCtx = ctx.withSnapshot(state.getSnapshot());
+
+        ExprNode sourceExpr = params.get("source");
+        if (sourceExpr == null) {
+            ErrorValue error = ErrorValue.create(
+                "INVALID_INPUT",
+                effect.getType() + " requires 'source' parameter",
+                currentCtx.getCurrentAction() != null ? currentCtx.getCurrentAction() : "",
+                nodePath,
+                currentCtx.getTrace().getTimestamp()
+            );
+            TraceNode trace = createTraceNode(
+                TraceNode.Kind.ERROR,
+                nodePath,
+                "array_source_missing",
+                currentCtx.getTrace()
+            );
+            FlowState newState = state.withStatus(FlowStatus.ERROR).withError(error);
+            return CompletableFuture.completedFuture(new FlowResult(newState, trace));
+        }
+
+        Result<Object, ErrorValue> sourceResult = ExprEvaluator.evaluate(sourceExpr, currentCtx);
+        if (sourceResult.isErr()) {
+            ErrorValue error = (ErrorValue) sourceResult.mapErr(e -> e).unwrap();
+            TraceNode trace = createTraceNode(
+                TraceNode.Kind.ERROR,
+                nodePath,
+                "array_source_error",
+                currentCtx.getTrace()
+            );
+            FlowState newState = state.withStatus(FlowStatus.ERROR).withError(error);
+            return CompletableFuture.completedFuture(new FlowResult(newState, trace));
+        }
+
+        Object sourceValue = sourceResult.unwrap();
+        if (!(sourceValue instanceof List<?> sourceArray)) {
+            ErrorValue error = ErrorValue.create(
+                "TYPE_MISMATCH",
+                effect.getType() + " source must be an array",
+                currentCtx.getCurrentAction() != null ? currentCtx.getCurrentAction() : "",
+                nodePath,
+                currentCtx.getTrace().getTimestamp()
+            );
+            TraceNode trace = createTraceNode(
+                TraceNode.Kind.ERROR,
+                nodePath,
+                "array_source_type_mismatch",
+                currentCtx.getTrace()
+            );
+            FlowState newState = state.withStatus(FlowStatus.ERROR).withError(error);
+            return CompletableFuture.completedFuture(new FlowResult(newState, trace));
+        }
+
+        ExprNode intoExpr = params.get("into");
+        if (intoExpr == null) {
+            ErrorValue error = ErrorValue.create(
+                "INVALID_INPUT",
+                effect.getType() + " requires 'into' parameter",
+                currentCtx.getCurrentAction() != null ? currentCtx.getCurrentAction() : "",
+                nodePath,
+                currentCtx.getTrace().getTimestamp()
+            );
+            TraceNode trace = createTraceNode(
+                TraceNode.Kind.ERROR,
+                nodePath,
+                "array_into_missing",
+                currentCtx.getTrace()
+            );
+            FlowState newState = state.withStatus(FlowStatus.ERROR).withError(error);
+            return CompletableFuture.completedFuture(new FlowResult(newState, trace));
+        }
+
+        Result<Object, ErrorValue> intoResult = ExprEvaluator.evaluate(intoExpr, currentCtx);
+        if (intoResult.isErr()) {
+            ErrorValue error = (ErrorValue) intoResult.mapErr(e -> e).unwrap();
+            TraceNode trace = createTraceNode(
+                TraceNode.Kind.ERROR,
+                nodePath,
+                "array_into_error",
+                currentCtx.getTrace()
+            );
+            FlowState newState = state.withStatus(FlowStatus.ERROR).withError(error);
+            return CompletableFuture.completedFuture(new FlowResult(newState, trace));
+        }
+
+        String targetPath = String.valueOf(intoResult.unwrap());
+
+        ExprNode transformExpr = "array.map".equals(effect.getType())
+            ? params.get("select")
+            : params.get("where");
+        if (transformExpr == null) {
+            String missing = "array.map".equals(effect.getType()) ? "select" : "where";
+            ErrorValue error = ErrorValue.create(
+                "INVALID_INPUT",
+                effect.getType() + " requires '" + missing + "' parameter",
+                currentCtx.getCurrentAction() != null ? currentCtx.getCurrentAction() : "",
+                nodePath,
+                currentCtx.getTrace().getTimestamp()
+            );
+            TraceNode trace = createTraceNode(
+                TraceNode.Kind.ERROR,
+                nodePath,
+                "array_transform_missing",
+                currentCtx.getTrace()
+            );
+            FlowState newState = state.withStatus(FlowStatus.ERROR).withError(error);
+            return CompletableFuture.completedFuture(new FlowResult(newState, trace));
+        }
+
+        List<Object> resultArray = new ArrayList<>();
+
+        for (int index = 0; index < sourceArray.size(); index++) {
+            Object item = sourceArray.get(index);
+            EvalContext itemCtx = currentCtx.withCollectionContext(item, index, sourceArray);
+
+            Result<Object, ErrorValue> itemResult = ExprEvaluator.evaluate(transformExpr, itemCtx);
+            if (itemResult.isErr()) {
+                ErrorValue error = (ErrorValue) itemResult.mapErr(e -> e).unwrap();
+                TraceNode trace = createTraceNode(
+                    TraceNode.Kind.ERROR,
+                    nodePath,
+                    "array_item_error",
+                    currentCtx.getTrace()
+                );
+                FlowState newState = state.withStatus(FlowStatus.ERROR).withError(error);
+                return CompletableFuture.completedFuture(new FlowResult(newState, trace));
+            }
+
+            if ("array.map".equals(effect.getType())) {
+                resultArray.add(itemResult.unwrap());
+            } else {
+                Object predicate = itemResult.unwrap();
+                if (predicate != null && predicate != Boolean.FALSE) {
+                    resultArray.add(item);
+                }
+            }
+        }
+
+        FlowNode.Patch patchFlow = new FlowNode.Patch(PatchOp.SET, targetPath, null);
+        ErrorValue patchError = validatePatch(patchFlow, resultArray, currentCtx, nodePath);
+        if (patchError != null) {
+            TraceNode trace = createTraceNode(
+                TraceNode.Kind.ERROR,
+                nodePath,
+                "array_patch_invalid",
+                currentCtx.getTrace()
+            );
+            FlowState newState = state.withStatus(FlowStatus.ERROR).withError(patchError);
+            return CompletableFuture.completedFuture(new FlowResult(newState, trace));
+        }
+
+        Snapshot newSnapshot = applyPatchToSnapshot(state.getSnapshot(), PatchOp.SET, targetPath, resultArray);
+        Patch patchObj = createPatch(PatchOp.SET, targetPath, resultArray);
+        FlowState newState = state.withSnapshot(newSnapshot).addPatch(patchObj);
+
+        TraceNode trace = createTraceNode(
+            TraceNode.Kind.EFFECT,
+            nodePath,
+            "array_applied",
+            currentCtx.getTrace()
+        );
+        return CompletableFuture.completedFuture(new FlowResult(newState, trace));
+    }
+
+    /**
      * Call 평가 - 다른 Flow 호출
      *
      * Schema에 정의된 다른 액션의 Flow를 호출한다.
@@ -385,8 +583,8 @@ public class FlowEvaluator {
         var action = ctx.getSchema().getAction(actionId);
         if (action == null) {
             ErrorValue error = ErrorValue.create(
-                "FLOW_NOT_FOUND",
-                "Flow not found: " + actionId,
+                "UNKNOWN_FLOW",
+                "Unknown flow: " + actionId,
                 ctx.getCurrentAction() != null ? ctx.getCurrentAction() : "",
                 nodePath,
                 ctx.getTrace().getTimestamp()
@@ -407,7 +605,7 @@ public class FlowEvaluator {
         FlowNode calleeFlow = action.getFlow();
 
         // 재귀적으로 Flow 평가
-        String callPath = nodePath + ".call." + actionId;
+        String callPath = nodePath + ".call(" + actionId + ")";
         return evaluate(calleeFlow, ctx, state, callPath);
     }
 
@@ -465,12 +663,13 @@ public class FlowEvaluator {
         }
 
         // 2. ErrorValue 생성
-        ErrorValue error = ErrorValue.create(
-            fail.getCode(),
+        ErrorValue error = ErrorValue.createWithContext(
+            "VALIDATION_ERROR",
             message,
             ctx.getCurrentAction() != null ? ctx.getCurrentAction() : "",
             nodePath,
-            ctx.getTrace().getTimestamp()
+            ctx.getTrace().getTimestamp(),
+            Map.of("code", fail.getCode())
         );
 
         // 3. FlowState 업데이트
@@ -497,19 +696,89 @@ public class FlowEvaluator {
      * - 나머지 → true
      */
     private static boolean toBoolean(Object value) {
-        if (value == null || value == Boolean.FALSE) {
-            return false;
+        return value != null && value != Boolean.FALSE;
+    }
+
+    private static ErrorValue validatePatch(
+        FlowNode.Patch patchFlow,
+        Object value,
+        EvalContext ctx,
+        String nodePath
+    ) {
+        String path = patchFlow.getPath();
+        if (path == null || path.isEmpty()) {
+            return ErrorValue.create(
+                "PATH_NOT_FOUND",
+                "Unknown patch path: " + path,
+                ctx.getCurrentAction() != null ? ctx.getCurrentAction() : "",
+                nodePath,
+                ctx.getTrace().getTimestamp()
+            );
         }
-        if (value instanceof Boolean b) {
-            return b;
+
+        if (path.startsWith("computed.") || path.startsWith("meta.")) {
+            return ErrorValue.create(
+                "PATH_NOT_FOUND",
+                "Unknown patch path: " + path,
+                ctx.getCurrentAction() != null ? ctx.getCurrentAction() : "",
+                nodePath,
+                ctx.getTrace().getTimestamp()
+            );
         }
-        if (value instanceof Number n) {
-            return n.doubleValue() != 0.0;
+
+        if (path.startsWith("system")) {
+            return null;
         }
-        if (value instanceof String s) {
-            return !s.isEmpty();
+
+        String normalized = path.startsWith("data.") ? path.substring(5) : path;
+
+        Map<String, FieldSpec> dataFields = ctx.getSchema().getDataFields();
+        if (!ValidationUtils.pathExistsInStateSpec(dataFields, normalized)) {
+            return ErrorValue.create(
+                "PATH_NOT_FOUND",
+                "Unknown patch path: " + path,
+                ctx.getCurrentAction() != null ? ctx.getCurrentAction() : "",
+                nodePath,
+                ctx.getTrace().getTimestamp()
+            );
         }
-        return true;  // 다른 모든 값은 true
+
+        if (patchFlow.getOp() == PatchOp.UNSET) {
+            return null;
+        }
+
+        String root = normalized.contains(".") ? normalized.substring(0, normalized.indexOf('.')) : normalized;
+        FieldSpec spec = dataFields.get(root);
+        if (spec == null) {
+            return null;
+        }
+
+        if (value == null) {
+            return null;
+        }
+
+        String type = spec.getType();
+        boolean typeOk = switch (type) {
+            case "string" -> value instanceof String;
+            case "number" -> value instanceof Number;
+            case "integer" -> value instanceof Integer || value instanceof Long;
+            case "boolean" -> value instanceof Boolean;
+            case "array" -> value instanceof List<?>;
+            case "object" -> value instanceof Map<?, ?>;
+            default -> true;
+        };
+
+        if (!typeOk) {
+            return ErrorValue.create(
+                "TYPE_MISMATCH",
+                "Invalid patch value at " + path,
+                ctx.getCurrentAction() != null ? ctx.getCurrentAction() : "",
+                nodePath,
+                ctx.getTrace().getTimestamp()
+            );
+        }
+
+        return null;
     }
 
     /**
@@ -527,26 +796,99 @@ public class FlowEvaluator {
         String path,
         Object value
     ) {
+        if (path != null && (path.equals("system") || path.startsWith("system."))) {
+            String subPath = path.equals("system") ? "" : path.substring(7);
+            Map<String, Object> systemMap = new HashMap<>();
+            systemMap.put("status", snapshot.getSystem().getStatus().name().toLowerCase());
+            systemMap.put("lastError", snapshot.getSystem().getLastError());
+            systemMap.put("errors", snapshot.getSystem().getErrors());
+            systemMap.put("pendingRequirements", snapshot.getSystem().getPendingRequirements());
+            systemMap.put("currentAction", snapshot.getSystem().getCurrentAction());
+
+            Object result = switch (op) {
+                case SET -> PathUtils.setByPath(systemMap, subPath, value);
+                case UNSET -> PathUtils.unsetByPath(systemMap, subPath);
+                case MERGE -> PathUtils.mergeByPath(systemMap, subPath, value);
+            };
+
+            if (result instanceof Map<?, ?> mapResult) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> cast = (Map<String, Object>) mapResult;
+                SystemState.Status status = snapshot.getSystem().getStatus();
+                Object statusValue = cast.get("status");
+                if (statusValue instanceof String s) {
+                    try {
+                        status = SystemState.Status.valueOf(s.toUpperCase());
+                    } catch (IllegalArgumentException ignored) {
+                        // keep existing
+                    }
+                } else if (statusValue instanceof SystemState.Status s) {
+                    status = s;
+                }
+
+                ErrorValue lastError = snapshot.getSystem().getLastError();
+                if (cast.get("lastError") instanceof ErrorValue ev) {
+                    lastError = ev;
+                }
+
+                List<ErrorValue> errors = snapshot.getSystem().getErrors();
+                if (cast.get("errors") instanceof List<?> list) {
+                    List<ErrorValue> newErrors = new ArrayList<>();
+                    for (Object item : list) {
+                        if (item instanceof ErrorValue ev) {
+                            newErrors.add(ev);
+                        }
+                    }
+                    errors = newErrors;
+                }
+
+                List<Requirement> pending = snapshot.getSystem().getPendingRequirements();
+                if (cast.get("pendingRequirements") instanceof List<?> list) {
+                    List<Requirement> newPending = new ArrayList<>();
+                    for (Object item : list) {
+                        if (item instanceof Requirement req) {
+                            newPending.add(req);
+                        }
+                    }
+                    pending = newPending;
+                }
+
+                String currentAction = snapshot.getSystem().getCurrentAction();
+                Object currentValue = cast.get("currentAction");
+                if (currentValue instanceof String s) {
+                    currentAction = s;
+                } else if (currentValue == null) {
+                    currentAction = null;
+                }
+
+                SystemState newSystem = SystemState.of(status, lastError, errors, pending, currentAction);
+                return snapshot.withSystem(newSystem);
+            }
+        }
+
         Map<String, Object> data = new HashMap<>(snapshot.getData());
+        String normalizedPath = path;
+        if ("data".equals(path)) {
+            normalizedPath = "";
+        } else if (path != null && path.startsWith("data.")) {
+            normalizedPath = path.substring(5);
+        }
 
         switch (op) {
             case SET -> {
-                // 경로에 값 설정
-                Object result = PathUtils.setByPath(data, path, value);
+                Object result = PathUtils.setByPath(data, normalizedPath, value);
                 if (result instanceof Map) {
                     data = (Map<String, Object>) result;
                 }
             }
             case UNSET -> {
-                // 경로의 키 제거
-                Object result = PathUtils.unsetByPath(data, path);
+                Object result = PathUtils.unsetByPath(data, normalizedPath);
                 if (result instanceof Map) {
                     data = (Map<String, Object>) result;
                 }
             }
             case MERGE -> {
-                // 얕은 병합
-                Object result = PathUtils.mergeByPath(data, path, value);
+                Object result = PathUtils.mergeByPath(data, normalizedPath, value);
                 if (result instanceof Map) {
                     data = (Map<String, Object>) result;
                 }

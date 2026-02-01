@@ -236,6 +236,30 @@ class ValidateTest {
     }
 
     @Test
+    @DisplayName("Computed 순환 참조 V-002 검증")
+    void testComputedCycleValidation() {
+        ComputedFieldDef fieldA = new ComputedFieldDef.Builder("a", new Get("computed.b"))
+            .addDependency("b")
+            .build();
+        ComputedFieldDef fieldB = new ComputedFieldDef.Builder("b", new Get("computed.a"))
+            .addDependency("a")
+            .build();
+
+        DomainSchema invalidSchema = buildSchemaWithHash(
+            "test-schema",
+            "1.0.0",
+            List.of(FieldSpec.required("name", "string"), new FieldSpec("age", "integer", false, 0)),
+            List.of(fieldA, fieldB),
+            List.of(new ActionSpec.Builder("noop").flow(FlowNode.Halt.of(null)).build())
+        );
+
+        Validate.ValidationResult result = Validate.validate(invalidSchema, snapshot);
+
+        assertFalse(result.isValid());
+        assertTrue(result.errors().stream().anyMatch(e -> e.contains("V-002") && e.contains("a")));
+    }
+
+    @Test
     @DisplayName("Computed 표현식에서 input 경로 차단")
     void testComputedExprInputPath() {
         ComputedFieldDef computed = new ComputedFieldDef.Builder("fromInput", new Get("input.title"))

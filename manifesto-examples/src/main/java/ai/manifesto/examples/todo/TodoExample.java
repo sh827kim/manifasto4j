@@ -2,7 +2,12 @@ package ai.manifesto.examples.todo;
 
 import ai.manifesto.core.*;
 import ai.manifesto.core.core.*;
+import ai.manifesto.core.expr.collection.Append;
+import ai.manifesto.core.expr.collection.Filter;
+import ai.manifesto.core.expr.collection.Len;
+import ai.manifesto.core.expr.literal.Get;
 import ai.manifesto.core.expr.literal.Lit;
+import ai.manifesto.core.expr.object.ObjectExpr;
 import ai.manifesto.core.flow.FlowNode;
 import ai.manifesto.core.schema.*;
 
@@ -53,10 +58,11 @@ public class TodoExample {
         // 📸 3단계: 초기 Snapshot 생성
         System.out.println("📸 3단계: 초기 Snapshot 생성");
         System.out.println("─".repeat(42));
-        Snapshot initialSnapshot = createInitialSnapshot();
+        Snapshot initialSnapshot = createInitialSnapshot(schema.getHash());
         System.out.println("✓ Snapshot 생성 완료:");
         System.out.println("  - 버전: " + initialSnapshot.getMeta().getVersion());
         System.out.println("  - Todos: " + initialSnapshot.getData().get("todos"));
+        System.out.println("  - Computed: " + initialSnapshot.getComputed());
         System.out.println();
 
         // 📋 4단계: Intent 생성 및 Validate
@@ -76,20 +82,17 @@ public class TodoExample {
         // 🔧 5단계: Compute 호출 (동기식)
         System.out.println("🔧 5단계: Compute 호출");
         System.out.println("─".repeat(42));
-        try {
-            ComputeResult result = ManifestoCore.getInstance().computeSync(
-                schema,
-                initialSnapshot,
-                intent,
-                5  // 5초 타임아웃
-            );
-            System.out.println("✓ Compute 완료:");
-            System.out.println("  - 상태: " + result.getStatus());
-            System.out.println("  - 요구사항: " + result.getRequirements().size());
-        } catch (Exception e) {
-            System.out.println("✓ Compute 처리 (예상된 상황):");
-            System.out.println("  - 메시지: " + e.getClass().getSimpleName());
-        }
+        ComputeResult result = ManifestoCore.getInstance().computeSync(
+            schema,
+            initialSnapshot,
+            intent,
+            5  // 5초 타임아웃
+        );
+        System.out.println("✓ Compute 완료:");
+        System.out.println("  - 상태: " + result.getStatus());
+        System.out.println("  - 요구사항: " + result.getRequirements().size());
+        System.out.println("  - Todos: " + result.getSnapshot().getData().get("todos"));
+        System.out.println("  - Computed: " + result.getSnapshot().getComputed());
         System.out.println();
 
         // 🔨 6단계: Patch 적용
@@ -145,44 +148,78 @@ public class TodoExample {
      */
     private static DomainSchema createTodoSchema() {
         // 필드 정의
-        FieldSpec titleField = FieldSpec.required("title", "string");
-        FieldSpec completedField = new FieldSpec("completed", "boolean", false, false);
+        FieldSpec todosField = new FieldSpec("todos", "array", false, new ArrayList<>());
+        FieldSpec filterField = new FieldSpec("filter", "string", false, "all");
 
-        // addTodo 액션 정의
+        // addTodo 액션 정의 (data.todos에 새로운 항목 추가)
         ActionSpec addTodoAction = new ActionSpec.Builder("addTodo")
-            .addInputField("title", titleField)
-            .flow(FlowNode.Halt.of(null))  // 간단한 Flow
+            .addInputField("title", FieldSpec.required("title", "string"))
+            .flow(FlowNode.Seq.of(List.of(
+                FlowNode.Patch.set(
+                    "data.todos",
+                    Append.of(
+                        new Get("data.todos"),
+                        ObjectExpr.of(Map.of(
+                            "id", new Get("$system.uuid"),
+                            "title", new Get("input.title"),
+                            "completed", new Lit(false)
+                        ))
+                    )
+                ),
+                FlowNode.Halt.of("added")
+            )))
             .build();
 
-        // 스키마 빌더
-        return new DomainSchema.Builder("todo-app", "1.0.0")
-            .hash("schema-hash-todo-1.0.0")
+        // computed.totalCount = len(data.todos)
+        ComputedFieldDef totalCount = new ComputedFieldDef.Builder(
+            "totalCount",
+            new Len(new Get("data.todos"))
+        ).addDependency("data.todos").build();
+
+        // computed.completedCount = len(filter(data.todos, $item.completed))
+        ComputedFieldDef completedCount = new ComputedFieldDef.Builder(
+            "completedCount",
+            new Len(new Filter(new Get("data.todos"), new Get("$item.completed")))
+        ).addDependency("data.todos").build();
+
+        DomainSchema.Builder builder = new DomainSchema.Builder("todo-app", "1.0.0")
             .addAction(addTodoAction)
-            .addDataField(titleField)
-            .addDataField(completedField)
+            .addDataField(todosField)
+            .addDataField(filterField)
+            .addComputedField(totalCount)
+            .addComputedField(completedCount);
+
+        DomainSchema temp = builder.hash("").build();
+        String hash = ValidationUtils.computeSchemaHash(temp);
+
+        return new DomainSchema.Builder("todo-app", "1.0.0")
+            .hash(hash)
+            .addAction(addTodoAction)
+            .addDataField(todosField)
+            .addDataField(filterField)
+            .addComputedField(totalCount)
+            .addComputedField(completedCount)
             .build();
     }
 
     /**
      * 초기 Snapshot 생성
      */
-    private static Snapshot createInitialSnapshot() {
+    private static Snapshot createInitialSnapshot(String schemaHash) {
         // 도메인 데이터
         Map<String, Object> data = new HashMap<>();
         data.put("todos", new ArrayList<>());
         data.put("filter", "all");
 
-        // 계산된 값
+        // 계산된 값 (초기에는 비워두고 Compute에서 재계산)
         Map<String, Object> computed = new HashMap<>();
-        computed.put("activeCount", 0);
-        computed.put("completedCount", 0);
 
         // 메타데이터
         Snapshot.SnapshotMeta meta = Snapshot.SnapshotMeta.create(
             0,  // version
             System.currentTimeMillis(),  // timestamp
             "random-seed-123",  // randomSeed
-            "schema-hash-abc"   // schemaHash
+            schemaHash   // schemaHash
         );
 
         return Snapshot.builder()
@@ -230,4 +267,3 @@ public class TodoExample {
     }
 
 }
-

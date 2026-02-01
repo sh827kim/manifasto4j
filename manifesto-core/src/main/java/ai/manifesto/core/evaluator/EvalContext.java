@@ -23,6 +23,7 @@ import java.util.Objects;
  * - $item: 현재 항목
  * - $index: 현재 인덱스
  * - $array: 전체 배열
+ * - $acc: reduce 누적값
  *
  * 결정론적 UUID 생성:
  * - uuidCounter: mutable 카운터 (결정론성을 위해 의도적으로 mutable)
@@ -41,6 +42,7 @@ public class EvalContext {
     private final Object $item; // nullable
     private final Integer $index; // nullable
     private final List<?> $array; // nullable
+    private final Object $acc; // nullable
 
     private EvalContext(Builder builder) {
         this.snapshot = Objects.requireNonNull(builder.snapshot, "snapshot is required");
@@ -53,6 +55,7 @@ public class EvalContext {
         this.$item = builder.$item;
         this.$index = builder.$index;
         this.$array = builder.$array;
+        this.$acc = builder.$acc;
     }
 
     // ===== Getters =====
@@ -93,6 +96,10 @@ public class EvalContext {
         return $array;
     }
 
+    public Object get$acc() {
+        return $acc;
+    }
+
     // ===== Copy-on-Write 패턴 =====
 
     /**
@@ -121,6 +128,18 @@ public class EvalContext {
     }
 
     /**
+     * reduce 컨텍스트 설정 ($acc 포함)
+     */
+    public EvalContext withReduceContext(Object acc, Object item, int index, List<?> array) {
+        return new Builder(this)
+            .$acc(acc)
+            .$item(item)
+            .$index(index)
+            .$array(array)
+            .build();
+    }
+
+    /**
      * 컬렉션 컨텍스트 제거
      */
     public EvalContext clearCollectionContext() {
@@ -128,6 +147,7 @@ public class EvalContext {
             .$item(null)
             .$index(null)
             .$array(null)
+            .$acc(null)
             .build();
     }
 
@@ -177,6 +197,7 @@ public class EvalContext {
         private Object $item;
         private Integer $index;
         private List<?> $array;
+        private Object $acc;
 
         public Builder() {
         }
@@ -195,6 +216,7 @@ public class EvalContext {
             this.$item = ctx.$item;
             this.$index = ctx.$index;
             this.$array = ctx.$array;
+            this.$acc = ctx.$acc;
         }
 
         public Builder snapshot(Snapshot snapshot) {
@@ -244,6 +266,11 @@ public class EvalContext {
 
         public Builder $array(List<?> array) {
             this.$array = array;
+            return this;
+        }
+
+        public Builder $acc(Object acc) {
+            this.$acc = acc;
             return this;
         }
 

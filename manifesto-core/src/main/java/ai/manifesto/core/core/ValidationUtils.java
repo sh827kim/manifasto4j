@@ -2,9 +2,16 @@ package ai.manifesto.core.core;
 
 import ai.manifesto.core.expr.ExprNode;
 import ai.manifesto.core.expr.arithmetic.Add;
+import ai.manifesto.core.expr.arithmetic.Abs;
 import ai.manifesto.core.expr.arithmetic.Div;
+import ai.manifesto.core.expr.arithmetic.Ceil;
+import ai.manifesto.core.expr.arithmetic.Floor;
+import ai.manifesto.core.expr.arithmetic.Max;
+import ai.manifesto.core.expr.arithmetic.Min;
 import ai.manifesto.core.expr.arithmetic.Mod;
 import ai.manifesto.core.expr.arithmetic.Mul;
+import ai.manifesto.core.expr.arithmetic.Neg;
+import ai.manifesto.core.expr.arithmetic.Round;
 import ai.manifesto.core.expr.arithmetic.Sub;
 import ai.manifesto.core.expr.collection.Append;
 import ai.manifesto.core.expr.collection.At;
@@ -15,6 +22,7 @@ import ai.manifesto.core.expr.collection.First;
 import ai.manifesto.core.expr.collection.Includes;
 import ai.manifesto.core.expr.collection.Last;
 import ai.manifesto.core.expr.collection.Len;
+import ai.manifesto.core.expr.collection.Reduce;
 import ai.manifesto.core.expr.collection.Some;
 import ai.manifesto.core.expr.collection.Slice;
 import ai.manifesto.core.expr.comparison.Eq;
@@ -35,6 +43,9 @@ import ai.manifesto.core.expr.object.Merge;
 import ai.manifesto.core.expr.object.ObjectExpr;
 import ai.manifesto.core.expr.object.Values;
 import ai.manifesto.core.expr.string.Concat;
+import ai.manifesto.core.expr.string.EndsWith;
+import ai.manifesto.core.expr.string.Split;
+import ai.manifesto.core.expr.string.StartsWith;
 import ai.manifesto.core.expr.string.Substring;
 import ai.manifesto.core.expr.string.Trim;
 import ai.manifesto.core.expr.type.Coalesce;
@@ -163,6 +174,38 @@ public final class ValidationUtils {
             collectGetPathsFromExpr(mod.right(), paths);
             return;
         }
+        if (expr instanceof Min min) {
+            for (ExprNode arg : min.args()) {
+                collectGetPathsFromExpr(arg, paths);
+            }
+            return;
+        }
+        if (expr instanceof Max max) {
+            for (ExprNode arg : max.args()) {
+                collectGetPathsFromExpr(arg, paths);
+            }
+            return;
+        }
+        if (expr instanceof Abs abs) {
+            collectGetPathsFromExpr(abs.arg(), paths);
+            return;
+        }
+        if (expr instanceof Neg neg) {
+            collectGetPathsFromExpr(neg.arg(), paths);
+            return;
+        }
+        if (expr instanceof Round round) {
+            collectGetPathsFromExpr(round.arg(), paths);
+            return;
+        }
+        if (expr instanceof Floor floor) {
+            collectGetPathsFromExpr(floor.arg(), paths);
+            return;
+        }
+        if (expr instanceof Ceil ceil) {
+            collectGetPathsFromExpr(ceil.arg(), paths);
+            return;
+        }
 
         if (expr instanceof And and) {
             for (ExprNode arg : and.args()) {
@@ -262,6 +305,12 @@ public final class ValidationUtils {
             }
             return;
         }
+        if (expr instanceof Reduce reduce) {
+            collectGetPathsFromExpr(reduce.array(), paths);
+            collectGetPathsFromExpr(reduce.reducer(), paths);
+            collectGetPathsFromExpr(reduce.initial(), paths);
+            return;
+        }
 
         if (expr instanceof ObjectExpr objectExpr) {
             for (ExprNode value : objectExpr.fields().values()) {
@@ -302,6 +351,21 @@ public final class ValidationUtils {
         }
         if (expr instanceof Trim trim) {
             collectGetPathsFromExpr(trim.str(), paths);
+            return;
+        }
+        if (expr instanceof StartsWith startsWith) {
+            collectGetPathsFromExpr(startsWith.str(), paths);
+            collectGetPathsFromExpr(startsWith.prefix(), paths);
+            return;
+        }
+        if (expr instanceof EndsWith endsWith) {
+            collectGetPathsFromExpr(endsWith.str(), paths);
+            collectGetPathsFromExpr(endsWith.suffix(), paths);
+            return;
+        }
+        if (expr instanceof Split split) {
+            collectGetPathsFromExpr(split.str(), paths);
+            collectGetPathsFromExpr(split.delimiter(), paths);
         }
     }
 
@@ -357,6 +421,9 @@ public final class ValidationUtils {
             return true;
         }
         String[] segments = normalized.split("\\.");
+        if (segments.length > 0 && "$host".equals(segments[0])) {
+            return true;
+        }
         return stateFields.containsKey(segments[0]);
     }
 
@@ -489,10 +556,20 @@ public final class ValidationUtils {
 
     private static Map<String, Object> toFieldSpecMap(FieldSpec spec) {
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("type", spec.getType());
+        if (spec.getEnumValues() != null && !spec.getEnumValues().isEmpty()) {
+            result.put("type", Map.of("enum", spec.getEnumValues()));
+        } else {
+            result.put("type", spec.getType());
+        }
         result.put("required", spec.isRequired());
         if (spec.getDefaultValue() != null) {
             result.put("default", spec.getDefaultValue());
+        }
+        if (spec.getFields() != null && !spec.getFields().isEmpty()) {
+            result.put("fields", toFieldMap(spec.getFields()));
+        }
+        if (spec.getItems() != null) {
+            result.put("items", toFieldSpecMap(spec.getItems()));
         }
         return result;
     }
@@ -540,6 +617,27 @@ public final class ValidationUtils {
         if (expr instanceof Mod mod) {
             return Map.of("kind", "mod", "left", toExprMap(mod.left()), "right", toExprMap(mod.right()));
         }
+        if (expr instanceof Min min) {
+            return Map.of("kind", "min", "args", toExprList(min.args()));
+        }
+        if (expr instanceof Max max) {
+            return Map.of("kind", "max", "args", toExprList(max.args()));
+        }
+        if (expr instanceof Abs abs) {
+            return Map.of("kind", "abs", "arg", toExprMap(abs.arg()));
+        }
+        if (expr instanceof Neg neg) {
+            return Map.of("kind", "neg", "arg", toExprMap(neg.arg()));
+        }
+        if (expr instanceof Round round) {
+            return Map.of("kind", "round", "arg", toExprMap(round.arg()));
+        }
+        if (expr instanceof Floor floor) {
+            return Map.of("kind", "floor", "arg", toExprMap(floor.arg()));
+        }
+        if (expr instanceof Ceil ceil) {
+            return Map.of("kind", "ceil", "arg", toExprMap(ceil.arg()));
+        }
         if (expr instanceof And and) {
             return Map.of("kind", "and", "args", toExprList(and.args()));
         }
@@ -551,6 +649,15 @@ public final class ValidationUtils {
         }
         if (expr instanceof Coalesce coalesce) {
             return Map.of("kind", "coalesce", "args", toExprList(coalesce.args()));
+        }
+        if (expr instanceof StartsWith startsWith) {
+            return Map.of("kind", "startsWith", "str", toExprMap(startsWith.str()), "prefix", toExprMap(startsWith.prefix()));
+        }
+        if (expr instanceof EndsWith endsWith) {
+            return Map.of("kind", "endsWith", "str", toExprMap(endsWith.str()), "suffix", toExprMap(endsWith.suffix()));
+        }
+        if (expr instanceof Split split) {
+            return Map.of("kind", "split", "str", toExprMap(split.str()), "delimiter", toExprMap(split.delimiter()));
         }
         if (expr instanceof Not not) {
             return Map.of("kind", "not", "arg", toExprMap(not.arg()));
@@ -596,6 +703,14 @@ public final class ValidationUtils {
         }
         if (expr instanceof Append append) {
             return Map.of("kind", "append", "array", toExprMap(append.array()), "items", toExprList(append.items()));
+        }
+        if (expr instanceof Reduce reduce) {
+            return Map.of(
+                "kind", "reduce",
+                "array", toExprMap(reduce.array()),
+                "reducer", toExprMap(reduce.reducer()),
+                "initial", toExprMap(reduce.initial())
+            );
         }
         if (expr instanceof ObjectExpr objectExpr) {
             return Map.of("kind", "object", "fields", toExprFieldMap(objectExpr.fields()));

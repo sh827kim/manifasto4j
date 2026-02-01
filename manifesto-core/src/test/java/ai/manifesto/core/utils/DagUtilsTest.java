@@ -96,6 +96,23 @@ class DagUtilsTest {
     }
 
     @Test
+    @DisplayName("buildDependencyGraph: computed 접두사 의존성 정규화")
+    void testBuildDependencyGraph_NormalizeComputedPrefix() {
+        // given: 필드명은 접두사 없이, deps는 computed.* 형태
+        Map<String, ComputedFieldDef> fields = createFieldMap(
+                "a", new String[]{"computed.b"},
+                "b", new String[]{}
+        );
+
+        // when
+        DagUtils.DependencyGraph graph = DagUtils.buildDependencyGraph(fields);
+
+        // then
+        assertEquals(Collections.singletonList("b"), graph.getDepsFor("a"));
+        assertTrue(graph.getDepsFor("b").isEmpty());
+    }
+
+    @Test
     @DisplayName("buildDependencyGraph: 빈 필드 맵")
     void testBuildDependencyGraph_EmptyFields() {
         // given

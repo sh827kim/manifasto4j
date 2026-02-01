@@ -1,0 +1,93 @@
+[
+  {
+    "testName": "lowerPatchFragments: condition",
+    "input": [
+      {
+        "fragmentId": "frag-1",
+        "sourceIntentId": "intent-1",
+        "op": {
+          "kind": "addComputed",
+          "name": "total",
+          "expr": {
+            "kind": "call",
+            "fn": "add",
+            "args": [
+              {
+                "kind": "get",
+                "path": [
+                  {
+                    "kind": "prop",
+                    "name": "a"
+                  }
+                ]
+              },
+              {
+                "kind": "get",
+                "path": [
+                  {
+                    "kind": "prop",
+                    "name": "b"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "condition": {
+          "kind": "call",
+          "fn": "gt",
+          "args": [
+            {
+              "kind": "sys",
+              "path": [
+                "meta",
+                "intentId"
+              ]
+            },
+            {
+              "kind": "lit",
+              "value": ""
+            }
+          ]
+        },
+        "confidence": 0.9,
+        "evidence": [
+          "test"
+        ],
+        "createdAt": "2024-01-01T00:00:00Z"
+      }
+    ],
+    "expected": [
+      {
+        "fragmentId": "frag-1",
+        "condition": {
+          "kind": "gt",
+          "left": {
+            "kind": "get",
+            "path": "meta.intentId"
+          },
+          "right": {
+            "kind": "lit",
+            "value": ""
+          }
+        },
+        "op": {
+          "kind": "addComputed",
+          "name": "total",
+          "expr": {
+            "kind": "add",
+            "left": {
+              "kind": "get",
+              "path": "a"
+            },
+            "right": {
+              "kind": "get",
+              "path": "b"
+            }
+          }
+        },
+        "confidence": 0.9
+      }
+    ]
+  }
+]

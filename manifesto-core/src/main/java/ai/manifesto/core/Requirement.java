@@ -1,5 +1,8 @@
 package ai.manifesto.core;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -43,10 +46,10 @@ public class Requirement {
      * Requirement 생성 (helpe 메서드)
      */
     public static Requirement create(String type, Map<String, Object> params,
+                                     String schemaHash, String intentId,
                                      String actionId, String nodePath, long createdAt) {
         // id는 결정론적으로 생성 (재실행 시 같은 id)
-        // 실제로는 schema hash + intentId + actionId + nodePath의 해시를 사용해야 함
-        String id = generateDeterministicId(type, actionId, nodePath);
+        String id = generateDeterministicId(schemaHash, intentId, actionId, nodePath);
 
         FlowPosition position = new FlowPosition(nodePath, 0); // version은 나중에 설정
         return new Requirement(id, type, params, actionId, position, createdAt);
@@ -55,11 +58,33 @@ public class Requirement {
     /**
      * 결정론적 ID 생성 (테스트용, 실제로는 해시 함수 사용)
      */
-    private static String generateDeterministicId(String type, String actionId,
-                                                   String nodePath) {
-        // 간단한 구현: 개발/테스트용
-        // 프로덕션: SHA256(schemaHash + intentId + actionId + nodePath)
-        return "req_" + Math.abs((type + actionId + nodePath).hashCode());
+    private static String generateDeterministicId(
+        String schemaHash,
+        String intentId,
+        String actionId,
+        String nodePath
+    ) {
+        String input = safe(schemaHash) + ":" + safe(intentId) + ":" + safe(actionId) + ":" + safe(nodePath);
+        String hash = sha256Hex(input);
+        return "req-" + hash.substring(0, 16);
+    }
+
+    private static String safe(String value) {
+        return value == null ? "" : value;
+    }
+
+    private static String sha256Hex(String input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] bytes = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+            StringBuilder builder = new StringBuilder();
+            for (byte b : bytes) {
+                builder.append(String.format("%02x", b));
+            }
+            return builder.toString();
+        } catch (NoSuchAlgorithmException e) {
+            return Integer.toHexString(input.hashCode());
+        }
     }
 
     // Getters

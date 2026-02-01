@@ -1,5 +1,7 @@
 package ai.manifesto.core.schema;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -20,6 +22,9 @@ public final class FieldSpec {
     private final String type;
     private final boolean required;
     private final Object defaultValue;
+    private final Map<String, FieldSpec> fields;
+    private final FieldSpec items;
+    private final List<Object> enumValues;
 
     public FieldSpec(
         String fieldName,
@@ -27,10 +32,25 @@ public final class FieldSpec {
         boolean required,
         Object defaultValue
     ) {
+        this(fieldName, type, required, defaultValue, null, null, null);
+    }
+
+    public FieldSpec(
+        String fieldName,
+        String type,
+        boolean required,
+        Object defaultValue,
+        Map<String, FieldSpec> fields,
+        FieldSpec items,
+        List<Object> enumValues
+    ) {
         this.fieldName = Objects.requireNonNull(fieldName, "fieldName required");
         this.type = Objects.requireNonNull(type, "type required");
         this.required = required;
         this.defaultValue = defaultValue;
+        this.fields = fields != null ? Map.copyOf(fields) : null;
+        this.items = items;
+        this.enumValues = enumValues != null ? new java.util.ArrayList<>(enumValues) : null;
     }
 
     public String getFieldName() {
@@ -49,6 +69,18 @@ public final class FieldSpec {
         return defaultValue;
     }
 
+    public Map<String, FieldSpec> getFields() {
+        return fields;
+    }
+
+    public FieldSpec getItems() {
+        return items;
+    }
+
+    public List<Object> getEnumValues() {
+        return enumValues;
+    }
+
     /**
      * 필드 빌더
      */
@@ -57,6 +89,9 @@ public final class FieldSpec {
         private final String type;
         private boolean required = false;
         private Object defaultValue = null;
+        private Map<String, FieldSpec> fields = null;
+        private FieldSpec items = null;
+        private List<Object> enumValues = null;
 
         public Builder(String fieldName, String type) {
             this.fieldName = Objects.requireNonNull(fieldName);
@@ -73,8 +108,23 @@ public final class FieldSpec {
             return this;
         }
 
+        public Builder fields(Map<String, FieldSpec> fields) {
+            this.fields = fields;
+            return this;
+        }
+
+        public Builder items(FieldSpec items) {
+            this.items = items;
+            return this;
+        }
+
+        public Builder enumValues(List<Object> enumValues) {
+            this.enumValues = enumValues;
+            return this;
+        }
+
         public FieldSpec build() {
-            return new FieldSpec(fieldName, type, required, defaultValue);
+            return new FieldSpec(fieldName, type, required, defaultValue, fields, items, enumValues);
         }
     }
 
@@ -98,6 +148,27 @@ public final class FieldSpec {
                "fieldName='" + fieldName + '\'' +
                ", type='" + type + '\'' +
                ", required=" + required +
+               ", fields=" + (fields != null ? fields.keySet() : null) +
+               ", items=" + (items != null ? items.fieldName : null) +
+               ", enumValues=" + enumValues +
                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof FieldSpec that)) return false;
+        return required == that.required &&
+               Objects.equals(fieldName, that.fieldName) &&
+               Objects.equals(type, that.type) &&
+               Objects.equals(defaultValue, that.defaultValue) &&
+               Objects.equals(fields, that.fields) &&
+               Objects.equals(items, that.items) &&
+               Objects.equals(enumValues, that.enumValues);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(fieldName, type, required, defaultValue, fields, items, enumValues);
     }
 }

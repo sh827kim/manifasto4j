@@ -1,0 +1,411 @@
+[
+  {
+    "testName": "lowerExprNode: lit number",
+    "input": {
+      "kind": "lit",
+      "value": 42
+    },
+    "expected": {
+      "kind": "lit",
+      "value": 42
+    }
+  },
+  {
+    "testName": "lowerExprNode: lit null",
+    "input": {
+      "kind": "lit",
+      "value": null
+    },
+    "expected": {
+      "kind": "lit",
+      "value": null
+    }
+  },
+  {
+    "testName": "lowerExprNode: lit string",
+    "input": {
+      "kind": "lit",
+      "value": "hello"
+    },
+    "expected": {
+      "kind": "lit",
+      "value": "hello"
+    }
+  },
+  {
+    "testName": "lowerExprNode: var(item) effect ctx",
+    "input": {
+      "kind": "var",
+      "name": "item"
+    },
+    "expected": {
+      "kind": "get",
+      "path": "$item"
+    }
+  },
+  {
+    "testName": "lowerExprNode: sys meta.intentId",
+    "input": {
+      "kind": "sys",
+      "path": [
+        "meta",
+        "intentId"
+      ]
+    },
+    "expected": {
+      "kind": "get",
+      "path": "meta.intentId"
+    }
+  },
+  {
+    "testName": "lowerExprNode: sys input.title",
+    "input": {
+      "kind": "sys",
+      "path": [
+        "input",
+        "title"
+      ]
+    },
+    "expected": {
+      "kind": "get",
+      "path": "input.title"
+    }
+  },
+  {
+    "testName": "lowerExprNode: get path",
+    "input": {
+      "kind": "get",
+      "path": [
+        {
+          "kind": "prop",
+          "name": "user"
+        },
+        {
+          "kind": "prop",
+          "name": "name"
+        }
+      ]
+    },
+    "expected": {
+      "kind": "get",
+      "path": "user.name"
+    }
+  },
+  {
+    "testName": "lowerExprNode: get single segment",
+    "input": {
+      "kind": "get",
+      "path": [
+        {
+          "kind": "prop",
+          "name": "count"
+        }
+      ]
+    },
+    "expected": {
+      "kind": "get",
+      "path": "count"
+    }
+  },
+  {
+    "testName": "lowerExprNode: get base var(item)",
+    "input": {
+      "kind": "get",
+      "base": {
+        "kind": "var",
+        "name": "item"
+      },
+      "path": [
+        {
+          "kind": "prop",
+          "name": "id"
+        }
+      ]
+    },
+    "expected": {
+      "kind": "get",
+      "path": "$item.id"
+    }
+  },
+  {
+    "testName": "lowerExprNode: call eq",
+    "input": {
+      "kind": "call",
+      "fn": "eq",
+      "args": [
+        {
+          "kind": "get",
+          "path": [
+            {
+              "kind": "prop",
+              "name": "x"
+            }
+          ]
+        },
+        {
+          "kind": "lit",
+          "value": 5
+        }
+      ]
+    },
+    "expected": {
+      "kind": "eq",
+      "left": {
+        "kind": "get",
+        "path": "x"
+      },
+      "right": {
+        "kind": "lit",
+        "value": 5
+      }
+    }
+  },
+  {
+    "testName": "lowerExprNode: call not",
+    "input": {
+      "kind": "call",
+      "fn": "not",
+      "args": [
+        {
+          "kind": "lit",
+          "value": true
+        }
+      ]
+    },
+    "expected": {
+      "kind": "not",
+      "arg": {
+        "kind": "lit",
+        "value": true
+      }
+    }
+  },
+  {
+    "testName": "lowerExprNode: call and",
+    "input": {
+      "kind": "call",
+      "fn": "and",
+      "args": [
+        {
+          "kind": "lit",
+          "value": true
+        },
+        {
+          "kind": "lit",
+          "value": false
+        }
+      ]
+    },
+    "expected": {
+      "kind": "and",
+      "args": [
+        {
+          "kind": "lit",
+          "value": true
+        },
+        {
+          "kind": "lit",
+          "value": false
+        }
+      ]
+    }
+  },
+  {
+    "testName": "lowerExprNode: call if",
+    "input": {
+      "kind": "call",
+      "fn": "if",
+      "args": [
+        {
+          "kind": "lit",
+          "value": true
+        },
+        {
+          "kind": "lit",
+          "value": 1
+        },
+        {
+          "kind": "lit",
+          "value": 0
+        }
+      ]
+    },
+    "expected": {
+      "kind": "if",
+      "cond": {
+        "kind": "lit",
+        "value": true
+      },
+      "then": {
+        "kind": "lit",
+        "value": 1
+      },
+      "else": {
+        "kind": "lit",
+        "value": 0
+      }
+    }
+  },
+  {
+    "testName": "lowerExprNode: call filter",
+    "input": {
+      "kind": "call",
+      "fn": "filter",
+      "args": [
+        {
+          "kind": "get",
+          "path": [
+            {
+              "kind": "prop",
+              "name": "items"
+            }
+          ]
+        },
+        {
+          "kind": "call",
+          "fn": "gt",
+          "args": [
+            {
+              "kind": "var",
+              "name": "item"
+            },
+            {
+              "kind": "lit",
+              "value": 0
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "kind": "filter",
+      "array": {
+        "kind": "get",
+        "path": "items"
+      },
+      "predicate": {
+        "kind": "gt",
+        "left": {
+          "kind": "get",
+          "path": "$item"
+        },
+        "right": {
+          "kind": "lit",
+          "value": 0
+        }
+      }
+    }
+  },
+  {
+    "testName": "lowerExprNode: obj",
+    "input": {
+      "kind": "obj",
+      "fields": [
+        {
+          "key": "x",
+          "value": {
+            "kind": "lit",
+            "value": 1
+          }
+        },
+        {
+          "key": "y",
+          "value": {
+            "kind": "lit",
+            "value": 2
+          }
+        }
+      ]
+    },
+    "expected": {
+      "kind": "object",
+      "fields": {
+        "x": {
+          "kind": "lit",
+          "value": 1
+        },
+        "y": {
+          "kind": "lit",
+          "value": 2
+        }
+      }
+    }
+  },
+  {
+    "testName": "lowerExprNode: arr literals",
+    "input": {
+      "kind": "arr",
+      "elements": [
+        {
+          "kind": "lit",
+          "value": 1
+        },
+        {
+          "kind": "lit",
+          "value": 2
+        },
+        {
+          "kind": "lit",
+          "value": 3
+        }
+      ]
+    },
+    "expected": {
+      "kind": "lit",
+      "value": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "testName": "lowerExprNode: arr mixed",
+    "input": {
+      "kind": "arr",
+      "elements": [
+        {
+          "kind": "lit",
+          "value": 1
+        },
+        {
+          "kind": "get",
+          "path": [
+            {
+              "kind": "prop",
+              "name": "x"
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "kind": "append",
+      "array": {
+        "kind": "lit",
+        "value": []
+      },
+      "items": [
+        {
+          "kind": "lit",
+          "value": 1
+        },
+        {
+          "kind": "get",
+          "path": "x"
+        }
+      ]
+    }
+  },
+  {
+    "testName": "lowerExprNode: arr empty",
+    "input": {
+      "kind": "arr",
+      "elements": []
+    },
+    "expected": {
+      "kind": "lit",
+      "value": []
+    }
+  }
+]

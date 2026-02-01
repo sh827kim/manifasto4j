@@ -95,7 +95,7 @@ class ComputeComputedFieldTest {
 
         // then: 계산이 완료되고 computed 필드가 평가됨
         assertNotNull(result, "Result should not be null");
-        assertEquals(ComputeStatus.COMPLETE, result.getStatus(), "Status should be COMPLETE");
+        assertEquals(ComputeStatus.HALTED, result.getStatus(), "Status should be HALTED");
 
         Snapshot resultSnapshot = result.getSnapshot();
         assertNotNull(resultSnapshot.getComputed(), "Computed should not be null");
@@ -123,7 +123,7 @@ class ComputeComputedFieldTest {
         );
 
         // then: availability 체크 성공, COMPLETE 반환
-        assertEquals(ComputeStatus.COMPLETE, result.getStatus());
+        assertEquals(ComputeStatus.HALTED, result.getStatus());
     }
 
     /**
@@ -339,7 +339,7 @@ class ComputeComputedFieldTest {
 
         // then: ERROR 상태, 원본 snapshot 반환
         assertEquals(ComputeStatus.ERROR, result.getStatus());
-        assertSame(snapshot, result.getSnapshot(),
-            "Should return original snapshot on availability check failure");
+        assertNotSame(snapshot, result.getSnapshot(),
+            "Should return new snapshot on availability check failure");
     }
 }

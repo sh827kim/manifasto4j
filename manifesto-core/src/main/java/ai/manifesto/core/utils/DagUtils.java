@@ -117,6 +117,21 @@ public class DagUtils {
         // 각 필드의 의존성 처리
         Map<String, List<String>> edges = new HashMap<>();
         Set<String> computedFieldNames = computedFields.keySet();
+        Map<String, String> normalizedToKey = new HashMap<>();
+        Set<String> ambiguousNormalized = new HashSet<>();
+
+        for (String fieldName : computedFieldNames) {
+            String normalized = normalizeComputedPath(fieldName);
+            if (normalized.isEmpty()) {
+                continue;
+            }
+            if (normalizedToKey.containsKey(normalized)
+                && !Objects.equals(normalizedToKey.get(normalized), fieldName)) {
+                ambiguousNormalized.add(normalized);
+            } else {
+                normalizedToKey.put(normalized, fieldName);
+            }
+        }
 
         for (Map.Entry<String, ComputedFieldDef> entry : computedFields.entrySet()) {
             String fieldName = entry.getKey();
@@ -125,7 +140,8 @@ public class DagUtils {
             // 이 필드의 모든 의존성 중 computed-to-computed만 필터링
             List<String> computedDeps = fieldDef.getDependencies()
                     .stream()
-                    .filter(computedFieldNames::contains)
+                    .map(dep -> resolveComputedDependency(dep, computedFieldNames, normalizedToKey, ambiguousNormalized))
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toList());
 
             edges.put(fieldName, computedDeps);
@@ -380,5 +396,37 @@ public class DagUtils {
         }
 
         return deps;
+    }
+
+    private static String resolveComputedDependency(
+            String dep,
+            Set<String> computedFieldNames,
+            Map<String, String> normalizedToKey,
+            Set<String> ambiguousNormalized
+    ) {
+        if (dep == null || dep.isEmpty()) {
+            return null;
+        }
+        if (computedFieldNames.contains(dep)) {
+            return dep;
+        }
+        String normalized = normalizeComputedPath(dep);
+        if (normalized.isEmpty() || ambiguousNormalized.contains(normalized)) {
+            return null;
+        }
+        return normalizedToKey.get(normalized);
+    }
+
+    private static String normalizeComputedPath(String path) {
+        if (path == null) {
+            return "";
+        }
+        if (path.equals("computed")) {
+            return "";
+        }
+        if (path.startsWith("computed.")) {
+            return path.substring(9);
+        }
+        return path;
     }
 }

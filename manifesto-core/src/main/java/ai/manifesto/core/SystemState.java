@@ -52,6 +52,13 @@ public class SystemState {
             new ArrayList<>(), null);
     }
 
+    public static SystemState of(Status status, ErrorValue lastError,
+                                 List<ErrorValue> errors,
+                                 List<Requirement> pendingRequirements,
+                                 String currentAction) {
+        return new SystemState(status, lastError, errors, pendingRequirements, currentAction);
+    }
+
     // Getters
     public Status getStatus() { return status; }
     public ErrorValue getLastError() { return lastError; }

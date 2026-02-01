@@ -58,7 +58,7 @@ class ComputeTest {
         ComputeResult result = Compute.computeSync(schema, snapshot, intent, 5);
 
         assertNotNull(result);
-        assertEquals(ComputeStatus.COMPLETE, result.getStatus());
+        assertEquals(ComputeStatus.HALTED, result.getStatus());
     }
 
     @Test
@@ -94,7 +94,7 @@ class ComputeTest {
         ComputeResult result = Compute.computeSync(schema, snapshot, intent, 5);
 
         // 입력 필드 검증 실패
-        assertTrue(result.getStatus() == ComputeStatus.ERROR || result.getStatus() == ComputeStatus.COMPLETE);
+        assertTrue(result.getStatus() == ComputeStatus.ERROR || result.getStatus() == ComputeStatus.HALTED);
     }
 
     @Test
@@ -107,7 +107,7 @@ class ComputeTest {
         ComputeResult result = Compute.computeSync(schema, snapshot, intent, 5);
 
         assertNotNull(result);
-        assertEquals(ComputeStatus.COMPLETE, result.getStatus());
+        assertEquals(ComputeStatus.HALTED, result.getStatus());
         assertTrue(result.getSnapshot().getInput().containsKey("title"));
     }
 
@@ -210,7 +210,7 @@ class ComputeTest {
         Intent addIntent = new Intent("add", addInput, UUID.randomUUID().toString());
 
         ComputeResult addResult = Compute.computeSync(multiActionSchema, snapshot, addIntent, 5);
-        assertEquals(ComputeStatus.COMPLETE, addResult.getStatus());
+        assertEquals(ComputeStatus.HALTED, addResult.getStatus());
 
         // delete 액션 실행
         Map<String, Object> deleteInput = new HashMap<>();
@@ -218,7 +218,7 @@ class ComputeTest {
         Intent deleteIntent = new Intent("delete", deleteInput, UUID.randomUUID().toString());
 
         ComputeResult deleteResult = Compute.computeSync(multiActionSchema, snapshot, deleteIntent, 5);
-        assertEquals(ComputeStatus.COMPLETE, deleteResult.getStatus());
+        assertEquals(ComputeStatus.HALTED, deleteResult.getStatus());
     }
 
     @Test
