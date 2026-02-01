@@ -17,7 +17,16 @@ public final class MelRenderer {
         if (program == null) {
             return "";
         }
-        return renderDomain(program.domain(), options);
+        String newline = options.newline();
+        StringBuilder sb = new StringBuilder();
+        if (program.imports() != null && !program.imports().isEmpty()) {
+            for (ImportNode imp : program.imports()) {
+                sb.append(renderImport(imp)).append(newline);
+            }
+            sb.append(newline);
+        }
+        sb.append(renderDomain(program.domain(), options));
+        return sb.toString();
     }
 
     public static String renderDomain(DomainNode domain) {
@@ -72,6 +81,14 @@ public final class MelRenderer {
 
         sb.append("}").append(newline);
         return sb.toString();
+    }
+
+    private static String renderImport(ImportNode imp) {
+        StringJoiner joiner = new StringJoiner(", ");
+        for (String name : imp.names()) {
+            joiner.add(name);
+        }
+        return "import { " + joiner + " } from " + renderValue(imp.from());
     }
 
     private static void renderStmt(StringBuilder sb, AstNode stmt, String indent, String indentUnit, String newline) {
