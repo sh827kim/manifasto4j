@@ -6,3 +6,5 @@ build/
 *.class
 
 local-only-docs
+.aiignore
+.aiassistant
