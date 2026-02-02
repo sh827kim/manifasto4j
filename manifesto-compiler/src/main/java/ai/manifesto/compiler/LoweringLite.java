@@ -13,18 +13,18 @@ import java.util.Map;
 public final class LoweringLite {
 
     public Map<String, Object> lowerExprNode(Map<String, Object> node) {
-        try {
-            return lowerExprNodeStrict(node, LoweringContext.effectArgsContext());
-        } catch (LoweringError e) {
-            return mapOf("kind", "lit", "value", null);
-        }
+        return lowerExprNodeStrict(node, LoweringContext.effectArgsContext());
     }
 
     public Map<String, Object> lowerExprNodeStrict(Map<String, Object> node, LoweringContext ctx) {
         if (node == null) {
             throw LoweringError.invalidShape("Node is null");
         }
-        String kind = String.valueOf(node.get("kind"));
+        Object kindObj = node.get("kind");
+        if (!(kindObj instanceof String)) {
+            throw LoweringError.invalidShape("Missing or invalid 'kind' field");
+        }
+        String kind = (String) kindObj;
         return switch (kind) {
             case "lit" -> mapOf("kind", "lit", "value", node.get("value"));
             case "get" -> mapOf("kind", "get", "path", lowerGetPath(node, ctx));
@@ -38,7 +38,7 @@ public final class LoweringLite {
     }
 
     public List<Map<String, Object>> lowerRuntimePatches(List<Map<String, Object>> patches) {
-        return lowerRuntimePatches(patches, LoweringContext.defaultContext());
+        return lowerRuntimePatches(patches, LoweringContext.defaultActionContext());
     }
 
     public List<Map<String, Object>> lowerRuntimePatches(List<Map<String, Object>> patches, CompilePatchOptions options) {
@@ -47,15 +47,29 @@ public final class LoweringLite {
 
     public List<Map<String, Object>> lowerRuntimePatches(List<Map<String, Object>> patches, LoweringContext ctx) {
         List<Map<String, Object>> lowered = new ArrayList<>();
+        if (patches == null) {
+            throw LoweringError.invalidShape("Runtime patches are null");
+        }
         for (Map<String, Object> patch : patches) {
+            if (patch == null) {
+                throw LoweringError.invalidShape("Runtime patch is null");
+            }
             Map<String, Object> out = new LinkedHashMap<>();
             if (patch.containsKey("condition")) {
-                out.put("condition", lowerExprNodeStrict(castMap(patch.get("condition")), ctx));
+                out.put("condition", lowerExprNodeStrict(requireMap(patch.get("condition"), "Runtime patch condition is not a node"), ctx));
             }
-            out.put("op", patch.get("op"));
-            out.put("path", patch.get("path"));
+            Object op = patch.get("op");
+            Object path = patch.get("path");
+            if (!(op instanceof String)) {
+                throw LoweringError.invalidShape("Runtime patch missing 'op'");
+            }
+            if (!(path instanceof String)) {
+                throw LoweringError.invalidShape("Runtime patch missing 'path'");
+            }
+            out.put("op", op);
+            out.put("path", path);
             if (patch.containsKey("value")) {
-                out.put("value", lowerExprNodeStrict(castMap(patch.get("value")), ctx));
+                out.put("value", lowerExprNodeStrict(requireMap(patch.get("value"), "Runtime patch value is not a node"), ctx));
             }
             lowered.add(out);
         }
@@ -63,7 +77,7 @@ public final class LoweringLite {
     }
 
     public List<Map<String, Object>> lowerPatchFragments(List<Map<String, Object>> fragments) {
-        return lowerPatchFragments(fragments, LoweringContext.defaultContext());
+        return lowerPatchFragments(fragments, LoweringContext.defaultActionContext());
     }
 
     public List<Map<String, Object>> lowerPatchFragments(List<Map<String, Object>> fragments, CompilePatchOptions options) {
@@ -72,194 +86,306 @@ public final class LoweringLite {
 
     public List<Map<String, Object>> lowerPatchFragments(List<Map<String, Object>> fragments, LoweringContext ctx) {
         List<Map<String, Object>> lowered = new ArrayList<>();
+        if (fragments == null) {
+            throw LoweringError.invalidShape("Patch fragments are null");
+        }
+        LoweringContext actionCtx = ctx.withModeAndAllowItem("action", false);
+        LoweringContext schemaCtx = ctx.withModeAndAllowItem("schema", false);
         for (Map<String, Object> fragment : fragments) {
+            if (fragment == null) {
+                throw LoweringError.invalidShape("Patch fragment is null");
+            }
             Map<String, Object> out = new LinkedHashMap<>();
-            out.put("fragmentId", fragment.get("fragmentId"));
+            Object fragmentId = fragment.get("fragmentId");
+            if (!(fragmentId instanceof String)) {
+                throw LoweringError.invalidShape("Patch fragment missing 'fragmentId'");
+            }
+            out.put("fragmentId", fragmentId);
             if (fragment.containsKey("condition")) {
-                out.put("condition", lowerExprNodeStrict(castMap(fragment.get("condition")), ctx));
+                out.put("condition", lowerExprNodeStrict(requireMap(fragment.get("condition"), "Patch fragment condition is not a node"), actionCtx));
             }
-            Map<String, Object> op = castMap(fragment.get("op"));
-            Map<String, Object> loweredOp = new LinkedHashMap<>();
-            if (op != null) {
-                loweredOp.put("kind", op.get("kind"));
-                loweredOp.put("name", op.get("name"));
-                if (op.containsKey("expr")) {
-                    loweredOp.put("expr", lowerExprNodeStrict(castMap(op.get("expr")), ctx));
-                }
+            Map<String, Object> op = requireMap(fragment.get("op"), "Patch fragment op is not an object");
+            if (op == null) {
+                throw LoweringError.invalidShape("Patch fragment missing 'op'");
             }
-            out.put("op", loweredOp);
+            out.put("op", lowerPatchOp(op, schemaCtx));
             out.put("confidence", fragment.get("confidence"));
             lowered.add(out);
         }
         return lowered;
     }
 
+    private Map<String, Object> lowerPatchOp(Map<String, Object> op, LoweringContext ctx) {
+        String kind = requireString(op.get("kind"), "Patch op missing 'kind'");
+        return switch (kind) {
+            case "addType" -> mapOf(
+                "kind", "addType",
+                "typeName", requireString(op.get("typeName"), "addType missing 'typeName'"),
+                "typeExpr", lowerTypeExpr(requireMap(op.get("typeExpr"), "addType missing 'typeExpr'"))
+            );
+            case "addField" -> {
+                String typeName = requireString(op.get("typeName"), "addField missing 'typeName'");
+                Map<String, Object> field = requireMap(op.get("field"), "addField missing 'field'");
+                Map<String, Object> loweredField = new LinkedHashMap<>();
+                loweredField.put("name", requireString(field.get("name"), "addField.field missing 'name'"));
+                loweredField.put("type", lowerTypeExpr(requireMap(field.get("type"), "addField.field missing 'type'")));
+                if (field.containsKey("optional")) {
+                    loweredField.put("optional", field.get("optional"));
+                }
+                if (field.containsKey("defaultValue")) {
+                    loweredField.put("defaultValue", field.get("defaultValue"));
+                }
+                yield mapOf(
+                    "kind", "addField",
+                    "typeName", typeName,
+                    "field", loweredField
+                );
+            }
+            case "setFieldType" -> mapOf(
+                "kind", "setFieldType",
+                "path", requireString(op.get("path"), "setFieldType missing 'path'"),
+                "typeExpr", lowerTypeExpr(requireMap(op.get("typeExpr"), "setFieldType missing 'typeExpr'"))
+            );
+            case "setDefaultValue" -> mapOf(
+                "kind", "setDefaultValue",
+                "path", requireString(op.get("path"), "setDefaultValue missing 'path'"),
+                "value", op.get("value")
+            );
+            case "addConstraint" -> {
+                Map<String, Object> out = new LinkedHashMap<>();
+                out.put("kind", "addConstraint");
+                out.put("targetPath", requireString(op.get("targetPath"), "addConstraint missing 'targetPath'"));
+                out.put("rule", lowerExprNodeStrict(requireMap(op.get("rule"), "addConstraint missing 'rule'"), ctx));
+                if (op.containsKey("message")) {
+                    out.put("message", op.get("message"));
+                }
+                yield out;
+            }
+            case "addComputed" -> {
+                Map<String, Object> out = new LinkedHashMap<>();
+                out.put("kind", "addComputed");
+                out.put("name", requireString(op.get("name"), "addComputed missing 'name'"));
+                out.put("expr", lowerExprNodeStrict(requireMap(op.get("expr"), "addComputed missing 'expr'"), ctx));
+                if (op.containsKey("deps")) {
+                    out.put("deps", op.get("deps"));
+                }
+                yield out;
+            }
+            case "addActionAvailable" -> mapOf(
+                "kind", "addActionAvailable",
+                "actionName", requireString(op.get("actionName"), "addActionAvailable missing 'actionName'"),
+                "expr", lowerExprNodeStrict(requireMap(op.get("expr"), "addActionAvailable missing 'expr'"), ctx)
+            );
+            default -> throw LoweringError.invalidShape("Unknown patch op kind: " + kind);
+        };
+    }
+
+    private Map<String, Object> lowerTypeExpr(Map<String, Object> typeExpr) {
+        String kind = requireString(typeExpr.get("kind"), "TypeExpr missing 'kind'");
+        return switch (kind) {
+            case "primitive" -> mapOf(
+                "kind", "primitive",
+                "name", requireString(typeExpr.get("name"), "primitive TypeExpr missing 'name'")
+            );
+            case "array" -> mapOf(
+                "kind", "array",
+                "element", lowerTypeExpr(requireMap(typeExpr.get("element"), "array TypeExpr missing 'element'"))
+            );
+            case "object" -> {
+                List<Map<String, Object>> fields = requireList(typeExpr.get("fields"), "object TypeExpr missing 'fields'");
+                List<Map<String, Object>> loweredFields = new ArrayList<>();
+                for (Map<String, Object> field : fields) {
+                    if (field == null) {
+                        throw LoweringError.invalidShape("object TypeExpr field is null");
+                    }
+                    Map<String, Object> outField = new LinkedHashMap<>();
+                    outField.put("name", requireString(field.get("name"), "object field missing 'name'"));
+                    outField.put("type", lowerTypeExpr(requireMap(field.get("type"), "object field missing 'type'")));
+                    if (field.containsKey("optional")) {
+                        outField.put("optional", field.get("optional"));
+                    }
+                    loweredFields.add(outField);
+                }
+                yield mapOf("kind", "object", "fields", loweredFields);
+            }
+            case "union" -> {
+                List<Map<String, Object>> members = requireList(typeExpr.get("members"), "union TypeExpr missing 'members'");
+                List<Map<String, Object>> loweredMembers = new ArrayList<>();
+                for (Map<String, Object> member : members) {
+                    loweredMembers.add(lowerTypeExpr(requireMap(member, "union member is not a TypeExpr")));
+                }
+                yield mapOf("kind", "union", "members", loweredMembers);
+            }
+            case "literal" -> mapOf(
+                "kind", "literal",
+                "value", typeExpr.get("value")
+            );
+            case "ref" -> mapOf(
+                "kind", "ref",
+                "name", requireString(typeExpr.get("name"), "ref TypeExpr missing 'name'")
+            );
+            default -> throw LoweringError.invalidShape("Unknown TypeExpr kind: " + kind);
+        };
+    }
+
     private Map<String, Object> lowerCall(Map<String, Object> node, LoweringContext ctx) {
-        String fn = String.valueOf(node.get("fn"));
-        List<Map<String, Object>> args = castList(node.get("args"));
+        String fn = requireString(node.get("fn"), "Call missing 'fn'");
+        List<Map<String, Object>> args = requireList(node.get("args"), "Call missing 'args'");
 
         if (isBinary(fn)) {
-            requireArgs(args, 2, fn);
-            Map<String, Object> left = lowerExprNodeStrict(args.get(0), ctx);
-            Map<String, Object> right = lowerExprNodeStrict(args.get(1), ctx);
+            if (args.size() != 2) {
+                throw LoweringError.unknownCallFn(fn);
+            }
+            Map<String, Object> left = lowerExprNodeStrict(requireMap(args.get(0), "Call arg[0] is not a node"), ctx);
+            Map<String, Object> right = lowerExprNodeStrict(requireMap(args.get(1), "Call arg[1] is not a node"), ctx);
             return mapOf("kind", fn, "left", left, "right", right);
         }
-        if ("strLen".equals(fn) || "strlen".equals(fn)) {
-            requireArgs(args, 1, fn);
-            Map<String, Object> arg = lowerExprNodeStrict(args.get(0), ctx);
-            return mapOf("kind", "strLen", "str", arg);
-        }
-        if (isUnary(fn)) {
-            requireArgs(args, 1, fn);
-            Map<String, Object> arg = lowerExprNodeStrict(args.get(0), ctx);
+        if (isUnaryArgOp(fn)) {
+            if (args.size() != 1) {
+                throw LoweringError.unknownCallFn(fn);
+            }
+            Map<String, Object> arg = lowerExprNodeStrict(requireMap(args.get(0), "Call arg[0] is not a node"), ctx);
             return mapOf("kind", fn, "arg", arg);
         }
-        if ("and".equals(fn) || "or".equals(fn)) {
-            List<Map<String, Object>> loweredArgs = new ArrayList<>();
-            for (Map<String, Object> arg : args) {
-                loweredArgs.add(lowerExprNodeStrict(arg, ctx));
+        if ("trim".equals(fn)) {
+            if (args.size() != 1) {
+                throw LoweringError.unknownCallFn(fn);
             }
-            return mapOf("kind", fn, "args", loweredArgs);
+            return mapOf("kind", "trim",
+                "str", lowerExprNodeStrict(requireMap(args.get(0), "Call arg[0] is not a node"), ctx)
+            );
+        }
+        if (isArgsOp(fn)) {
+            return mapOf("kind", fn, "args", lowerArgs(args, ctx));
         }
         if ("if".equals(fn)) {
-            requireArgs(args, 3, fn);
-            return mapOf("kind", "if",
-                "cond", lowerExprNodeStrict(args.get(0), ctx),
-                "then", lowerExprNodeStrict(args.get(1), ctx),
-                "else", lowerExprNodeStrict(args.get(2), ctx)
-            );
-        }
-        if ("pow".equals(fn)) {
-            requireArgs(args, 2, fn);
-            return mapOf("kind", "pow",
-                "base", lowerExprNodeStrict(args.get(0), ctx),
-                "exponent", lowerExprNodeStrict(args.get(1), ctx)
-            );
-        }
-        if ("sqrt".equals(fn)) {
-            requireArgs(args, 1, fn);
-            return mapOf("kind", "sqrt",
-                "arg", lowerExprNodeStrict(args.get(0), ctx)
-            );
-        }
-        if ("toLowerCase".equals(fn) || "lower".equals(fn)) {
-            requireArgs(args, 1, fn);
-            return mapOf("kind", "toLowerCase",
-                "str", lowerExprNodeStrict(args.get(0), ctx)
-            );
-        }
-        if ("toUpperCase".equals(fn) || "upper".equals(fn)) {
-            requireArgs(args, 1, fn);
-            return mapOf("kind", "toUpperCase",
-                "str", lowerExprNodeStrict(args.get(0), ctx)
-            );
-        }
-        if ("substring".equals(fn) || "substr".equals(fn)) {
-            requireArgs(args, 2, fn);
-            Map<String, Object> out = mapOf("kind", "substring",
-                "str", lowerExprNodeStrict(args.get(0), ctx),
-                "start", lowerExprNodeStrict(args.get(1), ctx)
-            );
-            if (args.size() > 2) {
-                out.put("end", lowerExprNodeStrict(args.get(2), ctx));
+            if (args.size() != 3) {
+                throw LoweringError.unknownCallFn(fn);
             }
-            return out;
-        }
-        if ("filter".equals(fn)) {
-            requireArgs(args, 2, fn);
-            return mapOf("kind", "filter",
-                "array", lowerExprNodeStrict(args.get(0), ctx),
-                "predicate", lowerExprNodeStrict(args.get(1), ctx)
+            return mapOf("kind", "if",
+                "cond", lowerExprNodeStrict(requireMap(args.get(0), "Call arg[0] is not a node"), ctx),
+                "then", lowerExprNodeStrict(requireMap(args.get(1), "Call arg[1] is not a node"), ctx),
+                "else", lowerExprNodeStrict(requireMap(args.get(2), "Call arg[2] is not a node"), ctx)
             );
         }
-        if ("map".equals(fn)) {
-            requireArgs(args, 2, fn);
-            return mapOf("kind", "map",
-                "array", lowerExprNodeStrict(args.get(0), ctx),
-                "mapper", lowerExprNodeStrict(args.get(1), ctx)
-            );
-        }
-        if ("find".equals(fn) || "some".equals(fn) || "every".equals(fn)) {
-            requireArgs(args, 2, fn);
+        if (isArrayArgOp(fn)) {
+            if (args.size() != 1) {
+                throw LoweringError.unknownCallFn(fn);
+            }
             return mapOf("kind", fn,
-                "array", lowerExprNodeStrict(args.get(0), ctx),
-                "predicate", lowerExprNodeStrict(args.get(1), ctx)
+                "array", lowerExprNodeStrict(requireMap(args.get(0), "Call arg[0] is not a node"), ctx)
             );
         }
-        if ("includes".equals(fn)) {
-            requireArgs(args, 2, fn);
-            return mapOf("kind", "includes",
-                "array", lowerExprNodeStrict(args.get(0), ctx),
-                "item", lowerExprNodeStrict(args.get(1), ctx)
+        if (isObjArgOp(fn)) {
+            if (args.size() != 1) {
+                throw LoweringError.unknownCallFn(fn);
+            }
+            return mapOf("kind", fn,
+                "obj", lowerExprNodeStrict(requireMap(args.get(0), "Call arg[0] is not a node"), ctx)
             );
         }
         if ("at".equals(fn)) {
-            requireArgs(args, 2, fn);
+            if (args.size() != 2) {
+                throw LoweringError.unknownCallFn(fn);
+            }
             return mapOf("kind", "at",
-                "array", lowerExprNodeStrict(args.get(0), ctx),
-                "index", lowerExprNodeStrict(args.get(1), ctx)
+                "array", lowerExprNodeStrict(requireMap(args.get(0), "Call arg[0] is not a node"), ctx),
+                "index", lowerExprNodeStrict(requireMap(args.get(1), "Call arg[1] is not a node"), ctx)
+            );
+        }
+        if ("includes".equals(fn)) {
+            if (args.size() != 2) {
+                throw LoweringError.unknownCallFn(fn);
+            }
+            return mapOf("kind", "includes",
+                "array", lowerExprNodeStrict(requireMap(args.get(0), "Call arg[0] is not a node"), ctx),
+                "item", lowerExprNodeStrict(requireMap(args.get(1), "Call arg[1] is not a node"), ctx)
+            );
+        }
+        if (isPredicateOp(fn)) {
+            if (args.size() != 2) {
+                throw LoweringError.unknownCallFn(fn);
+            }
+            LoweringContext predicateCtx = ctx.withModeAndAllowItem(ctx.getMode(), true);
+            if ("map".equals(fn)) {
+                return mapOf("kind", "map",
+                    "array", lowerExprNodeStrict(requireMap(args.get(0), "Call arg[0] is not a node"), ctx),
+                    "mapper", lowerExprNodeStrict(requireMap(args.get(1), "Call arg[1] is not a node"), predicateCtx)
+                );
+            }
+            return mapOf("kind", fn,
+                "array", lowerExprNodeStrict(requireMap(args.get(0), "Call arg[0] is not a node"), ctx),
+                "predicate", lowerExprNodeStrict(requireMap(args.get(1), "Call arg[1] is not a node"), predicateCtx)
             );
         }
         if ("slice".equals(fn)) {
-            requireArgs(args, 1, fn);
-            Map<String, Object> out = mapOf("kind", "slice",
-                "array", lowerExprNodeStrict(args.get(0), ctx));
-            if (args.size() > 1) {
-                out.put("start", lowerExprNodeStrict(args.get(1), ctx));
+            if (args.size() < 2 || args.size() > 3) {
+                throw LoweringError.unknownCallFn(fn);
             }
-            if (args.size() > 2) {
-                out.put("end", lowerExprNodeStrict(args.get(2), ctx));
+            Map<String, Object> out = mapOf("kind", "slice",
+                "array", lowerExprNodeStrict(requireMap(args.get(0), "Call arg[0] is not a node"), ctx),
+                "start", lowerExprNodeStrict(requireMap(args.get(1), "Call arg[1] is not a node"), ctx)
+            );
+            if (args.size() == 3) {
+                out.put("end", lowerExprNodeStrict(requireMap(args.get(2), "Call arg[2] is not a node"), ctx));
+            }
+            return out;
+        }
+        if ("substring".equals(fn)) {
+            if (args.size() < 2 || args.size() > 3) {
+                throw LoweringError.unknownCallFn(fn);
+            }
+            Map<String, Object> out = mapOf("kind", "substring",
+                "str", lowerExprNodeStrict(requireMap(args.get(0), "Call arg[0] is not a node"), ctx),
+                "start", lowerExprNodeStrict(requireMap(args.get(1), "Call arg[1] is not a node"), ctx)
+            );
+            if (args.size() == 3) {
+                out.put("end", lowerExprNodeStrict(requireMap(args.get(2), "Call arg[2] is not a node"), ctx));
             }
             return out;
         }
         if ("append".equals(fn)) {
-            requireArgs(args, 1, fn);
+            if (args.isEmpty()) {
+                throw LoweringError.unknownCallFn(fn);
+            }
             return mapOf("kind", "append",
-                "array", lowerExprNodeStrict(args.get(0), ctx),
+                "array", lowerExprNodeStrict(requireMap(args.get(0), "Call arg[0] is not a node"), ctx),
                 "items", lowerArgs(args.subList(1, args.size()), ctx)
             );
         }
         if ("merge".equals(fn)) {
-            requireArgs(args, 1, fn);
             return mapOf("kind", "merge",
                 "objects", lowerArgs(args, ctx)
             );
-        }
-        if ("min".equals(fn) || "max".equals(fn)) {
-            if (args.size() == 1) {
-                return mapOf("kind", fn + "Array", "array", lowerExprNodeStrict(args.get(0), ctx));
-            }
-            return mapOf("kind", fn, "args", lowerArgs(args, ctx));
-        }
-        if ("sum".equals(fn)) {
-            requireArgs(args, 1, fn);
-            return mapOf("kind", "sumArray", "array", lowerExprNodeStrict(args.get(0), ctx));
-        }
-        if ("concat".equals(fn) || "coalesce".equals(fn)) {
-            return mapOf("kind", fn, "args", lowerArgs(args, ctx));
         }
         throw LoweringError.unknownCallFn(fn);
     }
 
     private Map<String, Object> lowerObject(Map<String, Object> node, LoweringContext ctx) {
         Map<String, Object> fields = new LinkedHashMap<>();
-        List<Map<String, Object>> rawFields = castList(node.get("fields"));
+        List<Map<String, Object>> rawFields = requireList(node.get("fields"), "Object missing 'fields'");
         for (Map<String, Object> field : rawFields) {
-            String key = String.valueOf(field.get("key"));
-            Map<String, Object> value = lowerExprNodeStrict(castMap(field.get("value")), ctx);
+            if (field == null) {
+                throw LoweringError.invalidShape("Object field is null");
+            }
+            String key = requireString(field.get("key"), "Object field missing 'key'");
+            Map<String, Object> value = lowerExprNodeStrict(requireMap(field.get("value"), "Object field missing 'value'"), ctx);
             fields.put(key, value);
         }
         return mapOf("kind", "object", "fields", fields);
     }
 
     private Map<String, Object> lowerArray(Map<String, Object> node, LoweringContext ctx) {
-        List<Map<String, Object>> elements = castList(node.get("elements"));
+        List<Map<String, Object>> elements = requireList(node.get("elements"), "Array missing 'elements'");
         if (elements.isEmpty()) {
             return mapOf("kind", "lit", "value", List.of());
         }
         boolean allLiteral = true;
         List<Object> values = new ArrayList<>();
         for (Map<String, Object> element : elements) {
+            if (element == null) {
+                throw LoweringError.invalidShape("Array element is null");
+            }
             if (!"lit".equals(String.valueOf(element.get("kind")))) {
                 allLiteral = false;
                 break;
@@ -277,45 +403,50 @@ public final class LoweringLite {
     }
 
     private String lowerSysPath(Object pathObj, LoweringContext ctx) {
-        if (pathObj instanceof List<?> list) {
-            List<String> parts = new ArrayList<>();
-            for (Object part : list) {
-                parts.add(String.valueOf(part));
-            }
-            validateSysPrefix(parts, ctx);
-            return String.join(".", parts);
+        if (!(pathObj instanceof List<?> list)) {
+            throw LoweringError.invalidShape("Sys path must be a string array");
         }
-        String path = String.valueOf(pathObj);
-        validateSysPrefix(List.of(path.split("\\\\.")), ctx);
-        return path;
+        List<String> parts = new ArrayList<>();
+        for (Object part : list) {
+            if (!(part instanceof String)) {
+                throw LoweringError.invalidShape("Sys path segment must be a string");
+            }
+            parts.add((String) part);
+        }
+        validateSysPrefix(parts, ctx);
+        return String.join(".", parts);
     }
 
     private String lowerPath(Object pathObj) {
-        if (pathObj instanceof List<?> list) {
-            List<String> parts = new ArrayList<>();
-            for (Object part : list) {
-                if (part instanceof Map<?, ?> map && "prop".equals(String.valueOf(map.get("kind")))) {
-                    parts.add(String.valueOf(map.get("name")));
-                } else {
-                    parts.add(String.valueOf(part));
-                }
-            }
-            return String.join(".", parts);
+        if (!(pathObj instanceof List<?> list)) {
+            throw LoweringError.invalidShape("Get path must be an array of path segments");
         }
-        return String.valueOf(pathObj);
+        List<String> parts = new ArrayList<>();
+        for (Object part : list) {
+            if (!(part instanceof Map<?, ?> map)) {
+                throw LoweringError.invalidShape("Get path segment must be an object");
+            }
+            Object kind = map.get("kind");
+            Object name = map.get("name");
+            if (!"prop".equals(kind) || !(name instanceof String)) {
+                throw LoweringError.invalidShape("Get path segment must be { kind: 'prop', name: string }");
+            }
+            parts.add((String) name);
+        }
+        return String.join(".", parts);
     }
 
     private String lowerGetPath(Map<String, Object> node, LoweringContext ctx) {
         String path = lowerPath(node.get("path"));
         if (node.containsKey("base")) {
-            Map<String, Object> base = castMap(node.get("base"));
+            Map<String, Object> base = optionalMap(node.get("base"), "Get base must be an object");
             if (base != null && "var".equals(String.valueOf(base.get("kind")))) {
-                String baseName = String.valueOf(base.get("name"));
+                String baseName = requireString(base.get("name"), "Get base var missing 'name'");
+                if (!"item".equals(baseName)) {
+                    throw LoweringError.invalidShape("Only var(item) is supported");
+                }
                 if (!ctx.isAllowItem()) {
                     throw LoweringError.invalidKindForContext("var", ctx.getMode());
-                }
-                if (path == null || path.isEmpty() || "null".equals(path)) {
-                    return "$" + baseName;
                 }
                 return "$" + baseName + "." + path;
             }
@@ -327,7 +458,7 @@ public final class LoweringLite {
     }
 
     private Map<String, Object> lowerVar(Map<String, Object> node, LoweringContext ctx) {
-        String name = String.valueOf(node.get("name"));
+        String name = requireString(node.get("name"), "Var missing 'name'");
         if (!ctx.isAllowItem()) {
             throw LoweringError.invalidKindForContext("var", ctx.getMode());
         }
@@ -339,14 +470,42 @@ public final class LoweringLite {
 
     private boolean isBinary(String fn) {
         return switch (fn) {
-            case "eq", "neq", "gt", "gte", "lt", "lte", "add", "sub", "mul", "div", "mod", "startsWith", "endsWith" -> true;
+            case "eq", "neq", "gt", "gte", "lt", "lte", "add", "sub", "mul", "div", "mod" -> true;
             default -> false;
         };
     }
 
-    private boolean isUnary(String fn) {
+    private boolean isUnaryArgOp(String fn) {
         return switch (fn) {
-            case "not", "isNull", "len", "strLen", "toString", "abs", "neg", "round", "floor", "ceil", "typeof", "trim", "keys", "values", "entries", "first", "last" -> true;
+            case "not", "len", "typeof", "isNull" -> true;
+            default -> false;
+        };
+    }
+
+    private boolean isArgsOp(String fn) {
+        return switch (fn) {
+            case "and", "or", "concat", "coalesce" -> true;
+            default -> false;
+        };
+    }
+
+    private boolean isArrayArgOp(String fn) {
+        return switch (fn) {
+            case "first", "last" -> true;
+            default -> false;
+        };
+    }
+
+    private boolean isObjArgOp(String fn) {
+        return switch (fn) {
+            case "keys", "values", "entries" -> true;
+            default -> false;
+        };
+    }
+
+    private boolean isPredicateOp(String fn) {
+        return switch (fn) {
+            case "filter", "find", "every", "some", "map" -> true;
             default -> false;
         };
     }
@@ -354,7 +513,7 @@ public final class LoweringLite {
     private List<Map<String, Object>> lowerArgs(List<Map<String, Object>> args, LoweringContext ctx) {
         List<Map<String, Object>> lowered = new ArrayList<>();
         for (Map<String, Object> arg : args) {
-            lowered.add(lowerExprNodeStrict(arg, ctx));
+            lowered.add(lowerExprNodeStrict(requireMap(arg, "Call arg is not a node"), ctx));
         }
         return lowered;
     }
@@ -369,12 +528,6 @@ public final class LoweringLite {
         }
     }
 
-    private void requireArgs(List<?> args, int count, String fn) {
-        if (args == null || args.size() < count) {
-            throw LoweringError.invalidShape("Function '" + fn + "' requires at least " + count + " args");
-        }
-    }
-
     private Map<String, Object> mapOf(Object... entries) {
         Map<String, Object> map = new LinkedHashMap<>();
         for (int i = 0; i + 1 < entries.length; i += 2) {
@@ -383,13 +536,37 @@ public final class LoweringLite {
         return map;
     }
 
+    private String requireString(Object value, String message) {
+        if (!(value instanceof String)) {
+            throw LoweringError.invalidShape(message);
+        }
+        return (String) value;
+    }
+
     @SuppressWarnings("unchecked")
-    private Map<String, Object> castMap(Object obj) {
+    private Map<String, Object> requireMap(Object obj, String message) {
+        if (!(obj instanceof Map<?, ?>)) {
+            throw LoweringError.invalidShape(message);
+        }
         return (Map<String, Object>) obj;
     }
 
     @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> castList(Object obj) {
-        return obj == null ? List.of() : (List<Map<String, Object>>) obj;
+    private Map<String, Object> optionalMap(Object obj, String message) {
+        if (obj == null) {
+            return null;
+        }
+        if (!(obj instanceof Map<?, ?>)) {
+            throw LoweringError.invalidShape(message);
+        }
+        return (Map<String, Object>) obj;
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> List<T> requireList(Object obj, String message) {
+        if (!(obj instanceof List<?>)) {
+            throw LoweringError.invalidShape(message);
+        }
+        return (List<T>) obj;
     }
 }

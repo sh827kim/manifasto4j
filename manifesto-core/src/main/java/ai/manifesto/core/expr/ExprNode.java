@@ -12,11 +12,11 @@ package ai.manifesto.core.expr;
  * - Comparison: Eq, Neq, Gt, Gte, Lt, Lte
  * - Logical: And, Or, Not
  * - Conditional: If
- * - Arithmetic: Add, Sub, Mul, Div, Mod, Min, Max, Abs, Neg
- * - String: Concat, Substring, Trim
+ * - Arithmetic: Add, Sub, Mul, Div, Mod, Min, Max, SumArray, MinArray, MaxArray, Floor, Ceil, Round, Sqrt, Pow, Abs, Neg
+ * - String: Concat, Substring, Trim, ToLowerCase, ToUpperCase, StrLen
  * - Collection: Len, At, First, Last, Slice, Includes, Filter, Map, Find, Every, Some, Append
  * - Object: ObjectExpr, Keys, Values, Entries, Merge
- * - Type: Typeof, IsNull, Coalesce
+ * - Type: Typeof, IsNull, Coalesce, ToString
  *
  * 예: add(get("count"), lit(1))
  *    if(eq(get("input.title"), lit("")), lit(false), lit(true))

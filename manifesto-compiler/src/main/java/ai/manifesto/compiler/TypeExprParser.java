@@ -75,7 +75,7 @@ final class TypeExprParser {
             String inner = token.substring(6, token.length() - 1).trim();
             TypeParseResult items = parseTypeExpr(inner);
             FieldSpec itemSpec = new FieldSpec("item", items.type, !items.nullable, null, items.fields, items.items, items.enumValues);
-            return new TypeParseResult("array", nullable || items.nullable, null, itemSpec, null);
+            return new TypeParseResult("array", nullable, null, itemSpec, null);
         }
 
         if ((token.startsWith("record<") || token.startsWith("Record<")) && token.endsWith(">")) {
@@ -156,7 +156,14 @@ final class TypeExprParser {
             }
 
             if (simpleTypes.size() == 1) {
-                return new TypeParseResult(simpleTypes.get(0), nullable || hasNull, null, null, null);
+                TypeParseResult inner = parseTypeExpr(simpleTypes.get(0));
+                return new TypeParseResult(
+                    inner.type,
+                    nullable || hasNull || inner.nullable,
+                    inner.fields,
+                    inner.items,
+                    inner.enumValues
+                );
             }
 
             return new TypeParseResult("any", nullable || hasNull, null, null, null);

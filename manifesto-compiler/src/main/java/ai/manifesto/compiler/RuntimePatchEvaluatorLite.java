@@ -12,52 +12,65 @@ public final class RuntimePatchEvaluatorLite {
     public EvaluationResult evaluate(List<Map<String, Object>> patches, SnapshotContext snapshot) {
         List<Map<String, Object>> outPatches = new ArrayList<>();
         List<Map<String, Object>> skipped = new ArrayList<>();
+        SnapshotContext workingSnapshot = snapshot;
 
-        for (Map<String, Object> patch : patches) {
+        for (int i = 0; i < patches.size(); i++) {
+            Map<String, Object> patch = patches.get(i);
             if (patch.containsKey("condition")) {
-                Object cond = evaluateExpr(castMap(patch.get("condition")), snapshot);
+                Object cond = evaluateExpr(castMap(patch.get("condition")), workingSnapshot);
                 if (!(cond instanceof Boolean) || !((Boolean) cond)) {
-                    skipped.add(patch);
+                    String reason = cond == null ? "null" : (cond instanceof Boolean ? "false" : "non-boolean");
+                    Map<String, Object> skipInfo = new LinkedHashMap<>();
+                    skipInfo.put("index", i);
+                    skipInfo.put("path", patch.get("path"));
+                    skipInfo.put("reason", reason);
+                    skipped.add(skipInfo);
                     continue;
                 }
             }
-            Map<String, Object> out = new LinkedHashMap<>();
-            out.put("op", patch.get("op"));
-            out.put("path", patch.get("path"));
+            String op = String.valueOf(patch.get("op"));
+            String path = String.valueOf(patch.get("path"));
+            Object concreteValue = null;
             if (patch.containsKey("value")) {
-                Object value = evaluateExpr(castMap(patch.get("value")), snapshot);
-                out.put("value", value);
+                concreteValue = evaluateExpr(castMap(patch.get("value")), workingSnapshot);
             }
-            outPatches.add(out);
+            Map<String, Object> out = buildConcretePatch(op, path, concreteValue);
+            if (out != null) {
+                outPatches.add(out);
+                workingSnapshot = applyToWorkingSnapshot(out, workingSnapshot);
+            }
         }
 
-        SnapshotContext finalSnapshot = apply(outPatches, snapshot);
-        return new EvaluationResult(outPatches, skipped, finalSnapshot);
+        return new EvaluationResult(outPatches, skipped, workingSnapshot);
     }
 
     public Object evaluateExpr(Map<String, Object> expr, SnapshotContext snapshot) {
+        try {
+            return evaluateNode(expr, snapshot);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private Object evaluateNode(Map<String, Object> expr, SnapshotContext snapshot) {
         String kind = String.valueOf(expr.get("kind"));
         return switch (kind) {
             case "lit" -> expr.get("value");
             case "get" -> getByPath(snapshot, String.valueOf(expr.get("path")));
-            case "eq" -> eq(evaluateExpr(castMap(expr.get("left")), snapshot),
-                            evaluateExpr(castMap(expr.get("right")), snapshot));
-            case "neq" -> !eq(evaluateExpr(castMap(expr.get("left")), snapshot),
-                              evaluateExpr(castMap(expr.get("right")), snapshot));
-            case "gt" -> gt(evaluateExpr(castMap(expr.get("left")), snapshot),
-                            evaluateExpr(castMap(expr.get("right")), snapshot));
-            case "gte" -> gte(evaluateExpr(castMap(expr.get("left")), snapshot),
-                              evaluateExpr(castMap(expr.get("right")), snapshot));
-            case "lt" -> lt(evaluateExpr(castMap(expr.get("left")), snapshot),
-                            evaluateExpr(castMap(expr.get("right")), snapshot));
-            case "lte" -> lte(evaluateExpr(castMap(expr.get("left")), snapshot),
-                              evaluateExpr(castMap(expr.get("right")), snapshot));
-            case "add" -> add(evaluateExpr(castMap(expr.get("left")), snapshot),
-                              evaluateExpr(castMap(expr.get("right")), snapshot));
-            case "sub" -> sub(evaluateExpr(castMap(expr.get("left")), snapshot),
-                              evaluateExpr(castMap(expr.get("right")), snapshot));
-            case "mul" -> mul(evaluateExpr(castMap(expr.get("left")), snapshot),
-                              evaluateExpr(castMap(expr.get("right")), snapshot));
+            case "eq" -> deepEqual(evaluateExpr(castMap(expr.get("left")), snapshot),
+                                   evaluateExpr(castMap(expr.get("right")), snapshot));
+            case "neq" -> {
+                Object result = deepEqual(evaluateExpr(castMap(expr.get("left")), snapshot),
+                                          evaluateExpr(castMap(expr.get("right")), snapshot));
+                yield result instanceof Boolean b ? !b : null;
+            }
+            case "gt" -> compareNumber(expr, snapshot, (l, r) -> l > r);
+            case "gte" -> compareNumber(expr, snapshot, (l, r) -> l >= r);
+            case "lt" -> compareNumber(expr, snapshot, (l, r) -> l < r);
+            case "lte" -> compareNumber(expr, snapshot, (l, r) -> l <= r);
+            case "add" -> arithmetic(expr, snapshot, (l, r) -> l + r);
+            case "sub" -> arithmetic(expr, snapshot, (l, r) -> l - r);
+            case "mul" -> arithmetic(expr, snapshot, (l, r) -> l * r);
             case "div" -> div(evaluateExpr(castMap(expr.get("left")), snapshot),
                               evaluateExpr(castMap(expr.get("right")), snapshot));
             case "mod" -> mod(evaluateExpr(castMap(expr.get("left")), snapshot),
@@ -67,7 +80,7 @@ public final class RuntimePatchEvaluatorLite {
             case "len" -> len(evaluateExpr(castMap(expr.get("arg")), snapshot));
             case "strLen" -> strLen(evaluateExpr(castMap(expr.get("str")), snapshot));
             case "toString" -> toStringValue(evaluateExpr(castMap(expr.get("arg")), snapshot));
-            case "not" -> !truthy(evaluateExpr(castMap(expr.get("arg")), snapshot));
+            case "not" -> not(evaluateExpr(castMap(expr.get("arg")), snapshot));
             case "isNull" -> evaluateExpr(castMap(expr.get("arg")), snapshot) == null;
             case "abs" -> abs(evaluateExpr(castMap(expr.get("arg")), snapshot));
             case "neg" -> neg(evaluateExpr(castMap(expr.get("arg")), snapshot));
@@ -77,9 +90,7 @@ public final class RuntimePatchEvaluatorLite {
             case "pow" -> pow(evaluateExpr(castMap(expr.get("base")), snapshot),
                               evaluateExpr(castMap(expr.get("exponent")), snapshot));
             case "sqrt" -> sqrt(evaluateExpr(castMap(expr.get("arg")), snapshot));
-            case "if" -> truthy(evaluateExpr(castMap(expr.get("cond")), snapshot))
-                ? evaluateExpr(castMap(expr.get("then")), snapshot)
-                : evaluateExpr(castMap(expr.get("else")), snapshot);
+            case "if" -> ifExpr(expr, snapshot);
             case "concat" -> concat(castList(expr.get("args")), snapshot);
             case "coalesce" -> coalesce(castList(expr.get("args")), snapshot);
             case "min" -> min(castList(expr.get("args")), snapshot);
@@ -92,13 +103,13 @@ public final class RuntimePatchEvaluatorLite {
                                             evaluateExpr(castMap(expr.get("right")), snapshot));
             case "endsWith" -> endsWith(evaluateExpr(castMap(expr.get("left")), snapshot),
                                         evaluateExpr(castMap(expr.get("right")), snapshot));
-            case "trim" -> trim(evaluateExpr(castMap(expr.get("arg")), snapshot));
+            case "trim" -> trim(evaluateExpr(castMap(expr.get("str")), snapshot));
             case "toLowerCase" -> toLowerCase(evaluateExpr(castMap(expr.get("str")), snapshot));
             case "toUpperCase" -> toUpperCase(evaluateExpr(castMap(expr.get("str")), snapshot));
             case "at" -> at(evaluateExpr(castMap(expr.get("array")), snapshot),
                             evaluateExpr(castMap(expr.get("index")), snapshot));
-            case "first" -> first(evaluateExpr(castMap(expr.get("arg")), snapshot));
-            case "last" -> last(evaluateExpr(castMap(expr.get("arg")), snapshot));
+            case "first" -> first(evaluateExpr(castMap(expr.get("array")), snapshot));
+            case "last" -> last(evaluateExpr(castMap(expr.get("array")), snapshot));
             case "slice" -> slice(expr, snapshot);
             case "append" -> append(expr, snapshot);
             case "filter" -> filter(expr, snapshot);
@@ -113,32 +124,51 @@ public final class RuntimePatchEvaluatorLite {
         };
     }
 
-    private boolean and(Map<String, Object> expr, SnapshotContext snapshot) {
+    private Object and(Map<String, Object> expr, SnapshotContext snapshot) {
         List<Map<String, Object>> args = castList(expr.get("args"));
         for (Map<String, Object> arg : args) {
-            if (!truthy(evaluateExpr(arg, snapshot))) {
+            Object result = evaluateExpr(arg, snapshot);
+            if (Boolean.TRUE.equals(result)) {
+                continue;
+            }
+            if (Boolean.FALSE.equals(result)) {
                 return false;
             }
+            return null;
         }
         return true;
     }
 
-    private boolean or(Map<String, Object> expr, SnapshotContext snapshot) {
+    private Object or(Map<String, Object> expr, SnapshotContext snapshot) {
         List<Map<String, Object>> args = castList(expr.get("args"));
         for (Map<String, Object> arg : args) {
-            if (truthy(evaluateExpr(arg, snapshot))) {
+            Object result = evaluateExpr(arg, snapshot);
+            if (Boolean.TRUE.equals(result)) {
                 return true;
             }
+            if (Boolean.FALSE.equals(result)) {
+                continue;
+            }
+            return null;
         }
         return false;
     }
 
     private Object getByPath(SnapshotContext snapshot, String path) {
+        if ("meta".equals(path)) {
+            return snapshot.meta;
+        }
         if (path.startsWith("meta.")) {
             return getMapValue(snapshot.meta, path.substring(5));
         }
+        if ("input".equals(path)) {
+            return snapshot.input;
+        }
         if (path.startsWith("input.")) {
             return getMapValue(snapshot.input, path.substring(6));
+        }
+        if ("computed".equals(path)) {
+            return snapshot.computed;
         }
         if (path.startsWith("computed.")) {
             return getMapValue(snapshot.computed, path.substring(9));
@@ -161,23 +191,15 @@ public final class RuntimePatchEvaluatorLite {
         return current;
     }
 
-    private SnapshotContext apply(List<Map<String, Object>> patches, SnapshotContext snapshot) {
-        Map<String, Object> data = new LinkedHashMap<>(snapshot.data);
-        for (Map<String, Object> patch : patches) {
-            String op = String.valueOf(patch.get("op"));
-            String path = String.valueOf(patch.get("path"));
-            if ("set".equals(op)) {
-                setByPath(data, path, patch.get("value"));
-                continue;
-            }
-            if ("unset".equals(op)) {
-                unsetByPath(data, path);
-                continue;
-            }
-            if ("merge".equals(op)) {
-                mergeByPath(data, path, patch.get("value"));
-            }
+    private SnapshotContext applyToWorkingSnapshot(Map<String, Object> patch, SnapshotContext snapshot) {
+        Map<String, Object> data = deepCopyMap(snapshot.data);
+        String op = String.valueOf(patch.get("op"));
+        String path = String.valueOf(patch.get("path"));
+        if ("unset".equals(op)) {
+            unsetByPath(data, path);
+            return new SnapshotContext(data, snapshot.computed, snapshot.meta, snapshot.input);
         }
+        setByPath(data, path, patch.get("value"));
         return new SnapshotContext(data, snapshot.computed, snapshot.meta, snapshot.input);
     }
 
@@ -214,125 +236,52 @@ public final class RuntimePatchEvaluatorLite {
         current.remove(parts[parts.length - 1]);
     }
 
-    @SuppressWarnings("unchecked")
-    private void mergeByPath(Map<String, Object> data, String path, Object value) {
-        Object current = getMapValue(data, path);
-        if (value instanceof Map<?, ?> mapValue) {
-            Map<String, Object> merged = new LinkedHashMap<>();
-            if (current instanceof Map<?, ?> currentMap) {
-                merged.putAll((Map<String, Object>) currentMap);
-            }
-            merged.putAll((Map<String, Object>) mapValue);
-            setByPath(data, path, merged);
-            return;
-        }
-        setByPath(data, path, value);
-    }
-
-    private boolean truthy(Object value) {
-        if (value == null) return false;
-        if (value instanceof Boolean b) return b;
-        return true;
-    }
-
-    private boolean eq(Object left, Object right) {
-        if (left == null && right == null) return true;
-        if (left == null || right == null) return false;
-        return left.equals(right);
-    }
-
-    private boolean gt(Object left, Object right) {
-        if (left instanceof Number ln && right instanceof Number rn) {
-            return ln.doubleValue() > rn.doubleValue();
-        }
-        return false;
-    }
-
-    private boolean gte(Object left, Object right) {
-        if (left instanceof Number ln && right instanceof Number rn) {
-            return ln.doubleValue() >= rn.doubleValue();
-        }
-        return false;
-    }
-
-    private boolean lt(Object left, Object right) {
-        if (left instanceof Number ln && right instanceof Number rn) {
-            return ln.doubleValue() < rn.doubleValue();
-        }
-        return false;
-    }
-
-    private boolean lte(Object left, Object right) {
-        if (left instanceof Number ln && right instanceof Number rn) {
-            return ln.doubleValue() <= rn.doubleValue();
-        }
-        return false;
-    }
-
-    private Object add(Object left, Object right) {
-        if (left instanceof Number ln && right instanceof Number rn) {
-            if (left instanceof Integer && right instanceof Integer) {
-                return ln.intValue() + rn.intValue();
-            }
-            return ln.doubleValue() + rn.doubleValue();
-        }
-        return null;
-    }
-
-    private Object sub(Object left, Object right) {
-        if (left instanceof Number ln && right instanceof Number rn) {
-            if (left instanceof Integer && right instanceof Integer) {
-                return ln.intValue() - rn.intValue();
-            }
-            return ln.doubleValue() - rn.doubleValue();
-        }
-        return null;
-    }
-
-    private Object mul(Object left, Object right) {
-        if (left instanceof Number ln && right instanceof Number rn) {
-            if (left instanceof Integer && right instanceof Integer) {
-                return ln.intValue() * rn.intValue();
-            }
-            return ln.doubleValue() * rn.doubleValue();
-        }
-        return null;
-    }
-
     private Object div(Object left, Object right) {
         if (left instanceof Number ln && right instanceof Number rn) {
-            return ln.doubleValue() / rn.doubleValue();
+            double divisor = rn.doubleValue();
+            if (divisor == 0) {
+                return null;
+            }
+            double result = ln.doubleValue() / divisor;
+            if (!Double.isFinite(result)) {
+                return null;
+            }
+            return coerceWholeNumber(left, right, result);
         }
         return null;
     }
 
     private Object mod(Object left, Object right) {
         if (left instanceof Number ln && right instanceof Number rn) {
-            return ln.doubleValue() % rn.doubleValue();
+            double divisor = rn.doubleValue();
+            if (divisor == 0) {
+                return null;
+            }
+            double result = ln.doubleValue() % divisor;
+            return coerceWholeNumber(left, right, result);
         }
         return null;
     }
 
     private Object abs(Object value) {
         if (value instanceof Number n) {
-            return Math.abs(n.doubleValue());
+            double result = Math.abs(n.doubleValue());
+            return Double.isFinite(result) ? result : null;
         }
         return null;
     }
 
     private Object neg(Object value) {
         if (value instanceof Number n) {
-            if (value instanceof Integer) {
-                return -n.intValue();
-            }
-            return -n.doubleValue();
+            double result = -n.doubleValue();
+            return Double.isFinite(result) ? result : null;
         }
         return null;
     }
 
     private Object round(Object value) {
         if (value instanceof Number n) {
-            return Math.round(n.doubleValue());
+            return (double) Math.round(n.doubleValue());
         }
         return null;
     }
@@ -355,7 +304,10 @@ public final class RuntimePatchEvaluatorLite {
         StringBuilder builder = new StringBuilder();
         for (Map<String, Object> arg : args) {
             Object value = evaluateExpr(arg, snapshot);
-            builder.append(value == null ? "null" : value.toString());
+            if (!(value instanceof String)) {
+                return null;
+            }
+            builder.append(value);
         }
         return builder.toString();
     }
@@ -374,11 +326,12 @@ public final class RuntimePatchEvaluatorLite {
         Double min = null;
         for (Map<String, Object> arg : args) {
             Object value = evaluateExpr(arg, snapshot);
-            if (value instanceof Number n) {
-                double num = n.doubleValue();
-                if (min == null || num < min) {
-                    min = num;
-                }
+            if (!(value instanceof Number n)) {
+                return null;
+            }
+            double num = n.doubleValue();
+            if (min == null || num < min) {
+                min = num;
             }
         }
         return min;
@@ -388,11 +341,12 @@ public final class RuntimePatchEvaluatorLite {
         Double max = null;
         for (Map<String, Object> arg : args) {
             Object value = evaluateExpr(arg, snapshot);
-            if (value instanceof Number n) {
-                double num = n.doubleValue();
-                if (max == null || num > max) {
-                    max = num;
-                }
+            if (!(value instanceof Number n)) {
+                return null;
+            }
+            double num = n.doubleValue();
+            if (max == null || num > max) {
+                max = num;
             }
         }
         return max;
@@ -426,17 +380,21 @@ public final class RuntimePatchEvaluatorLite {
         if (value instanceof String s) {
             return s.trim();
         }
-        return value;
+        return null;
     }
 
     private Object toLowerCase(Object value) {
-        if (value == null) return null;
-        return String.valueOf(value).toLowerCase();
+        if (value instanceof String s) {
+            return s.toLowerCase();
+        }
+        return null;
     }
 
     private Object toUpperCase(Object value) {
-        if (value == null) return null;
-        return String.valueOf(value).toUpperCase();
+        if (value instanceof String s) {
+            return s.toUpperCase();
+        }
+        return null;
     }
 
     private Object pow(Object base, Object exponent) {
@@ -448,7 +406,8 @@ public final class RuntimePatchEvaluatorLite {
 
     private Object sqrt(Object value) {
         if (value instanceof Number n) {
-            return Math.sqrt(n.doubleValue());
+            double result = Math.sqrt(n.doubleValue());
+            return Double.isFinite(result) ? result : null;
         }
         return null;
     }
@@ -480,29 +439,31 @@ public final class RuntimePatchEvaluatorLite {
     private Object slice(Map<String, Object> expr, SnapshotContext snapshot) {
         Object arrayValue = evaluateExpr(castMap(expr.get("array")), snapshot);
         if (!(arrayValue instanceof List<?> list)) {
-            return List.of();
+            return null;
         }
-        int start = 0;
-        int end = list.size();
-        if (expr.containsKey("start")) {
-            Object s = evaluateExpr(castMap(expr.get("start")), snapshot);
-            if (s instanceof Number n) start = n.intValue();
+        Object s = evaluateExpr(castMap(expr.get("start")), snapshot);
+        if (!(s instanceof Number n)) {
+            return null;
         }
-        if (expr.containsKey("end")) {
-            Object e = evaluateExpr(castMap(expr.get("end")), snapshot);
-            if (e instanceof Number n) end = n.intValue();
+        int start = n.intValue();
+        if (!expr.containsKey("end")) {
+            return list.subList(start, list.size());
         }
-        start = Math.max(0, start);
-        end = Math.min(end, list.size());
+        Object e = evaluateExpr(castMap(expr.get("end")), snapshot);
+        if (!(e instanceof Number en)) {
+            return null;
+        }
+        int end = en.intValue();
         return list.subList(start, end);
     }
 
     private Object append(Map<String, Object> expr, SnapshotContext snapshot) {
         Object arrayValue = evaluateExpr(castMap(expr.get("array")), snapshot);
         List<Object> result = new ArrayList<>();
-        if (arrayValue instanceof List<?> list) {
-            result.addAll(list);
+        if (!(arrayValue instanceof List<?> list)) {
+            return null;
         }
+        result.addAll(list);
         List<Map<String, Object>> items = castList(expr.get("items"));
         for (Map<String, Object> item : items) {
             result.add(evaluateExpr(item, snapshot));
@@ -513,16 +474,21 @@ public final class RuntimePatchEvaluatorLite {
     private Object filter(Map<String, Object> expr, SnapshotContext snapshot) {
         Object arrayValue = evaluateExpr(castMap(expr.get("array")), snapshot);
         if (!(arrayValue instanceof List<?> list)) {
-            return List.of();
+            return null;
         }
         List<Object> result = new ArrayList<>();
         for (int i = 0; i < list.size(); i++) {
             Object item = list.get(i);
             SnapshotContext ctx = snapshot.withCollection(item, i, list);
             Object pred = evaluateExpr(castMap(expr.get("predicate")), ctx);
-            if (truthy(pred)) {
+            if (Boolean.TRUE.equals(pred)) {
                 result.add(item);
+                continue;
             }
+            if (Boolean.FALSE.equals(pred)) {
+                continue;
+            }
+            return null;
         }
         return result;
     }
@@ -530,13 +496,13 @@ public final class RuntimePatchEvaluatorLite {
     private Object map(Map<String, Object> expr, SnapshotContext snapshot) {
         Object arrayValue = evaluateExpr(castMap(expr.get("array")), snapshot);
         if (!(arrayValue instanceof List<?> list)) {
-            return List.of();
+            return null;
         }
         List<Object> result = new ArrayList<>();
         for (int i = 0; i < list.size(); i++) {
             Object item = list.get(i);
             SnapshotContext ctx = snapshot.withCollection(item, i, list);
-            result.add(evaluateExpr(castMap(expr.get("transform")), ctx));
+            result.add(evaluateExpr(castMap(expr.get("mapper")), ctx));
         }
         return result;
     }
@@ -550,9 +516,13 @@ public final class RuntimePatchEvaluatorLite {
             Object item = list.get(i);
             SnapshotContext ctx = snapshot.withCollection(item, i, list);
             Object pred = evaluateExpr(castMap(expr.get("predicate")), ctx);
-            if (truthy(pred)) {
+            if (Boolean.TRUE.equals(pred)) {
                 return item;
             }
+            if (Boolean.FALSE.equals(pred)) {
+                continue;
+            }
+            return null;
         }
         return null;
     }
@@ -560,14 +530,19 @@ public final class RuntimePatchEvaluatorLite {
     private Object some(Map<String, Object> expr, SnapshotContext snapshot) {
         Object arrayValue = evaluateExpr(castMap(expr.get("array")), snapshot);
         if (!(arrayValue instanceof List<?> list)) {
-            return false;
+            return null;
         }
         for (int i = 0; i < list.size(); i++) {
             Object item = list.get(i);
             SnapshotContext ctx = snapshot.withCollection(item, i, list);
-            if (truthy(evaluateExpr(castMap(expr.get("predicate")), ctx))) {
+            Object result = evaluateExpr(castMap(expr.get("predicate")), ctx);
+            if (Boolean.TRUE.equals(result)) {
                 return true;
             }
+            if (Boolean.FALSE.equals(result)) {
+                continue;
+            }
+            return null;
         }
         return false;
     }
@@ -575,13 +550,17 @@ public final class RuntimePatchEvaluatorLite {
     private Object every(Map<String, Object> expr, SnapshotContext snapshot) {
         Object arrayValue = evaluateExpr(castMap(expr.get("array")), snapshot);
         if (!(arrayValue instanceof List<?> list)) {
-            return false;
+            return null;
         }
         for (int i = 0; i < list.size(); i++) {
             Object item = list.get(i);
             SnapshotContext ctx = snapshot.withCollection(item, i, list);
-            if (!truthy(evaluateExpr(castMap(expr.get("predicate")), ctx))) {
+            Object result = evaluateExpr(castMap(expr.get("predicate")), ctx);
+            if (Boolean.FALSE.equals(result)) {
                 return false;
+            }
+            if (!Boolean.TRUE.equals(result)) {
+                return null;
             }
         }
         return true;
@@ -589,11 +568,16 @@ public final class RuntimePatchEvaluatorLite {
 
     private Object includes(Map<String, Object> expr, SnapshotContext snapshot) {
         Object arrayValue = evaluateExpr(castMap(expr.get("array")), snapshot);
-        Object value = evaluateExpr(castMap(expr.get("value")), snapshot);
+        Object value = evaluateExpr(castMap(expr.get("item")), snapshot);
         if (arrayValue instanceof List<?> list) {
-            return list.contains(value);
+            for (Object item : list) {
+                if (Boolean.TRUE.equals(deepEqual(item, value))) {
+                    return true;
+                }
+            }
+            return false;
         }
-        return false;
+        return null;
     }
 
     private Object object(Map<String, Object> expr, SnapshotContext snapshot) {
@@ -612,10 +596,11 @@ public final class RuntimePatchEvaluatorLite {
         Map<String, Object> merged = new LinkedHashMap<>();
         for (Map<String, Object> object : objects) {
             Object value = evaluateExpr(object, snapshot);
-            if (value instanceof Map<?, ?> map) {
-                for (Map.Entry<?, ?> entry : map.entrySet()) {
-                    merged.put(String.valueOf(entry.getKey()), entry.getValue());
-                }
+            if (!(value instanceof Map<?, ?> map)) {
+                return null;
+            }
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                merged.put(String.valueOf(entry.getKey()), entry.getValue());
             }
         }
         return merged;
@@ -635,7 +620,7 @@ public final class RuntimePatchEvaluatorLite {
         return 0.0;
     }
 
-    private int len(Object value) {
+    private Object len(Object value) {
         if (value instanceof List<?> list) {
             return list.size();
         }
@@ -645,11 +630,14 @@ public final class RuntimePatchEvaluatorLite {
         if (value instanceof String s) {
             return s.length();
         }
-        return 0;
+        return null;
     }
 
-    private int strLen(Object value) {
-        return value == null ? 0 : String.valueOf(value).length();
+    private Object strLen(Object value) {
+        if (value instanceof String s) {
+            return s.length();
+        }
+        return null;
     }
 
     private String toStringValue(Object value) {
@@ -658,11 +646,14 @@ public final class RuntimePatchEvaluatorLite {
 
     private Object sumArray(Object value) {
         if (!(value instanceof List<?> list)) {
-            return 0.0;
+            return null;
         }
         double sum = 0.0;
         for (Object item : list) {
-            sum += toNumber(item);
+            if (!(item instanceof Number n)) {
+                return null;
+            }
+            sum += n.doubleValue();
         }
         return sum;
     }
@@ -673,7 +664,10 @@ public final class RuntimePatchEvaluatorLite {
         }
         double min = Double.POSITIVE_INFINITY;
         for (Object item : list) {
-            min = Math.min(min, toNumber(item));
+            if (!(item instanceof Number n)) {
+                return null;
+            }
+            min = Math.min(min, n.doubleValue());
         }
         return min == Double.POSITIVE_INFINITY ? null : min;
     }
@@ -684,9 +678,151 @@ public final class RuntimePatchEvaluatorLite {
         }
         double max = Double.NEGATIVE_INFINITY;
         for (Object item : list) {
-            max = Math.max(max, toNumber(item));
+            if (!(item instanceof Number n)) {
+                return null;
+            }
+            max = Math.max(max, n.doubleValue());
         }
         return max == Double.NEGATIVE_INFINITY ? null : max;
+    }
+
+    private Object not(Object value) {
+        if (value instanceof Boolean b) {
+            return !b;
+        }
+        return null;
+    }
+
+    private Object ifExpr(Map<String, Object> expr, SnapshotContext snapshot) {
+        Object cond = evaluateExpr(castMap(expr.get("cond")), snapshot);
+        if (Boolean.TRUE.equals(cond)) {
+            return evaluateExpr(castMap(expr.get("then")), snapshot);
+        }
+        if (Boolean.FALSE.equals(cond)) {
+            return evaluateExpr(castMap(expr.get("else")), snapshot);
+        }
+        return null;
+    }
+
+    private Object compareNumber(Map<String, Object> expr, SnapshotContext snapshot, java.util.function.BiFunction<Double, Double, Boolean> op) {
+        Object left = evaluateExpr(castMap(expr.get("left")), snapshot);
+        Object right = evaluateExpr(castMap(expr.get("right")), snapshot);
+        if (!(left instanceof Number ln) || !(right instanceof Number rn)) {
+            return null;
+        }
+        return op.apply(ln.doubleValue(), rn.doubleValue());
+    }
+
+    private Object arithmetic(Map<String, Object> expr, SnapshotContext snapshot, java.util.function.BiFunction<Double, Double, Double> op) {
+        Object left = evaluateExpr(castMap(expr.get("left")), snapshot);
+        Object right = evaluateExpr(castMap(expr.get("right")), snapshot);
+        if (!(left instanceof Number ln) || !(right instanceof Number rn)) {
+            return null;
+        }
+        double result = op.apply(ln.doubleValue(), rn.doubleValue());
+        if (!Double.isFinite(result)) {
+            return null;
+        }
+        return coerceWholeNumber(left, right, result);
+    }
+
+    private Object coerceWholeNumber(Object left, Object right, double result) {
+        if (left instanceof Integer && right instanceof Integer && result == Math.floor(result)) {
+            return (int) result;
+        }
+        return result;
+    }
+
+    private Object deepEqual(Object left, Object right) {
+        if (left == right) {
+            return true;
+        }
+        if (left == null || right == null) {
+            return left == right;
+        }
+        if (left instanceof List<?> lList && right instanceof List<?> rList) {
+            if (lList.size() != rList.size()) {
+                return false;
+            }
+            for (int i = 0; i < lList.size(); i++) {
+                Object eq = deepEqual(lList.get(i), rList.get(i));
+                if (!(eq instanceof Boolean b) || !b) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        if (left instanceof Map<?, ?> lMap && right instanceof Map<?, ?> rMap) {
+            if (lMap.size() != rMap.size()) {
+                return false;
+            }
+            for (Map.Entry<?, ?> entry : lMap.entrySet()) {
+                Object key = entry.getKey();
+                if (!rMap.containsKey(key)) {
+                    return false;
+                }
+                Object eq = deepEqual(entry.getValue(), rMap.get(key));
+                if (!(eq instanceof Boolean b) || !b) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return left.equals(right);
+    }
+
+    private Map<String, Object> buildConcretePatch(String op, String path, Object value) {
+        Map<String, Object> patch = new LinkedHashMap<>();
+        if ("set".equals(op)) {
+            patch.put("op", "set");
+            patch.put("path", path);
+            patch.put("value", value);
+            return patch;
+        }
+        if ("unset".equals(op)) {
+            patch.put("op", "unset");
+            patch.put("path", path);
+            return patch;
+        }
+        if ("merge".equals(op)) {
+            if (value instanceof Map<?, ?> mapValue && !(value instanceof List<?>)) {
+                patch.put("op", "merge");
+                patch.put("path", path);
+                patch.put("value", mapValue);
+                return patch;
+            }
+            patch.put("op", "set");
+            patch.put("path", path);
+            patch.put("value", null);
+            return patch;
+        }
+        return null;
+    }
+
+    private Map<String, Object> deepCopyMap(Map<String, Object> input) {
+        Map<String, Object> copy = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> entry : input.entrySet()) {
+            copy.put(entry.getKey(), deepCopyValue(entry.getValue()));
+        }
+        return copy;
+    }
+
+    private Object deepCopyValue(Object value) {
+        if (value instanceof Map<?, ?> map) {
+            Map<String, Object> copy = new LinkedHashMap<>();
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                copy.put(String.valueOf(entry.getKey()), deepCopyValue(entry.getValue()));
+            }
+            return copy;
+        }
+        if (value instanceof List<?> list) {
+            List<Object> copy = new ArrayList<>();
+            for (Object item : list) {
+                copy.add(deepCopyValue(item));
+            }
+            return copy;
+        }
+        return value;
     }
 
     @SuppressWarnings("unchecked")

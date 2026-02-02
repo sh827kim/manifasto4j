@@ -126,6 +126,30 @@ public class ExprEvaluator {
         if (expr instanceof Max max) {
             return evaluateMax(max.args(), ctx);
         }
+        if (expr instanceof SumArray sumArray) {
+            return evaluateSumArray(sumArray.array(), ctx);
+        }
+        if (expr instanceof MinArray minArray) {
+            return evaluateMinArray(minArray.array(), ctx);
+        }
+        if (expr instanceof MaxArray maxArray) {
+            return evaluateMaxArray(maxArray.array(), ctx);
+        }
+        if (expr instanceof Floor floor) {
+            return evaluateFloor(floor.arg(), ctx);
+        }
+        if (expr instanceof Ceil ceil) {
+            return evaluateCeil(ceil.arg(), ctx);
+        }
+        if (expr instanceof Round round) {
+            return evaluateRound(round.arg(), ctx);
+        }
+        if (expr instanceof Sqrt sqrt) {
+            return evaluateSqrt(sqrt.arg(), ctx);
+        }
+        if (expr instanceof Pow pow) {
+            return evaluatePow(pow.base(), pow.exponent(), ctx);
+        }
         if (expr instanceof Abs abs) {
             return evaluateAbs(abs.arg(), ctx);
         }
@@ -142,6 +166,18 @@ public class ExprEvaluator {
         }
         if (expr instanceof Trim trim) {
             return evaluateTrim(trim.str(), ctx);
+        }
+        if (expr instanceof ToLowerCase toLowerCase) {
+            return evaluateToLowerCase(toLowerCase.str(), ctx);
+        }
+        if (expr instanceof ToUpperCase toUpperCase) {
+            return evaluateToUpperCase(toUpperCase.str(), ctx);
+        }
+        if (expr instanceof StrLen strLen) {
+            return evaluateStrLen(strLen.str(), ctx);
+        }
+        if (expr instanceof ToString toStringExpr) {
+            return evaluateToString(toStringExpr.arg(), ctx);
         }
 
         // ===== Collection =====
@@ -460,6 +496,102 @@ public class ExprEvaluator {
         return Result.ok(max);
     }
 
+    private static Result<Object, ErrorValue> evaluateSumArray(ExprNode arrayExpr, EvalContext ctx) {
+        Result<Object, ErrorValue> result = evaluateExpr(arrayExpr, ctx);
+        if (result.isErr()) return result;
+
+        Object value = result.unwrap();
+        if (!(value instanceof List<?> list)) {
+            return Result.ok(null);
+        }
+        if (list.isEmpty()) {
+            return Result.ok(0.0);
+        }
+        double sum = 0.0;
+        for (Object item : list) {
+            sum += toNumber(item);
+        }
+        return Result.ok(sum);
+    }
+
+    private static Result<Object, ErrorValue> evaluateMinArray(ExprNode arrayExpr, EvalContext ctx) {
+        Result<Object, ErrorValue> result = evaluateExpr(arrayExpr, ctx);
+        if (result.isErr()) return result;
+
+        Object value = result.unwrap();
+        if (!(value instanceof List<?> list)) {
+            return Result.ok(null);
+        }
+        if (list.isEmpty()) {
+            return Result.ok(null);
+        }
+        double min = Double.POSITIVE_INFINITY;
+        for (Object item : list) {
+            double num = toNumber(item);
+            if (num < min) {
+                min = num;
+            }
+        }
+        return Result.ok(min);
+    }
+
+    private static Result<Object, ErrorValue> evaluateMaxArray(ExprNode arrayExpr, EvalContext ctx) {
+        Result<Object, ErrorValue> result = evaluateExpr(arrayExpr, ctx);
+        if (result.isErr()) return result;
+
+        Object value = result.unwrap();
+        if (!(value instanceof List<?> list)) {
+            return Result.ok(null);
+        }
+        if (list.isEmpty()) {
+            return Result.ok(null);
+        }
+        double max = Double.NEGATIVE_INFINITY;
+        for (Object item : list) {
+            double num = toNumber(item);
+            if (num > max) {
+                max = num;
+            }
+        }
+        return Result.ok(max);
+    }
+
+    private static Result<Object, ErrorValue> evaluateFloor(ExprNode arg, EvalContext ctx) {
+        Result<Object, ErrorValue> result = evaluateExpr(arg, ctx);
+        if (result.isErr()) return result;
+        return Result.ok(Math.floor(toNumber(result.unwrap())));
+    }
+
+    private static Result<Object, ErrorValue> evaluateCeil(ExprNode arg, EvalContext ctx) {
+        Result<Object, ErrorValue> result = evaluateExpr(arg, ctx);
+        if (result.isErr()) return result;
+        return Result.ok(Math.ceil(toNumber(result.unwrap())));
+    }
+
+    private static Result<Object, ErrorValue> evaluateRound(ExprNode arg, EvalContext ctx) {
+        Result<Object, ErrorValue> result = evaluateExpr(arg, ctx);
+        if (result.isErr()) return result;
+        return Result.ok((double) Math.round(toNumber(result.unwrap())));
+    }
+
+    private static Result<Object, ErrorValue> evaluateSqrt(ExprNode arg, EvalContext ctx) {
+        Result<Object, ErrorValue> result = evaluateExpr(arg, ctx);
+        if (result.isErr()) return result;
+        double value = toNumber(result.unwrap());
+        if (value < 0) {
+            return Result.ok(null);
+        }
+        return Result.ok(Math.sqrt(value));
+    }
+
+    private static Result<Object, ErrorValue> evaluatePow(ExprNode base, ExprNode exponent, EvalContext ctx) {
+        Result<Object, ErrorValue> baseResult = evaluateExpr(base, ctx);
+        if (baseResult.isErr()) return baseResult;
+        Result<Object, ErrorValue> expResult = evaluateExpr(exponent, ctx);
+        if (expResult.isErr()) return expResult;
+        return Result.ok(Math.pow(toNumber(baseResult.unwrap()), toNumber(expResult.unwrap())));
+    }
+
     private static Result<Object, ErrorValue> evaluateAbs(ExprNode arg, EvalContext ctx) {
         Result<Object, ErrorValue> result = evaluateExpr(arg, ctx);
         if (result.isErr()) return result;
@@ -595,6 +727,30 @@ public class ExprEvaluator {
         Result<Object, ErrorValue> result = evaluateExpr(str, ctx);
         if (result.isErr()) return result;
         return Result.ok(toString(result.unwrap()).trim());
+    }
+
+    private static Result<Object, ErrorValue> evaluateToLowerCase(ExprNode str, EvalContext ctx) {
+        Result<Object, ErrorValue> result = evaluateExpr(str, ctx);
+        if (result.isErr()) return result;
+        return Result.ok(toString(result.unwrap()).toLowerCase());
+    }
+
+    private static Result<Object, ErrorValue> evaluateToUpperCase(ExprNode str, EvalContext ctx) {
+        Result<Object, ErrorValue> result = evaluateExpr(str, ctx);
+        if (result.isErr()) return result;
+        return Result.ok(toString(result.unwrap()).toUpperCase());
+    }
+
+    private static Result<Object, ErrorValue> evaluateStrLen(ExprNode str, EvalContext ctx) {
+        Result<Object, ErrorValue> result = evaluateExpr(str, ctx);
+        if (result.isErr()) return result;
+        return Result.ok((double) toString(result.unwrap()).length());
+    }
+
+    private static Result<Object, ErrorValue> evaluateToString(ExprNode arg, EvalContext ctx) {
+        Result<Object, ErrorValue> result = evaluateExpr(arg, ctx);
+        if (result.isErr()) return result;
+        return Result.ok(toString(result.unwrap()));
     }
 
     // ===== Collection Operations =====

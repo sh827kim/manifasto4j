@@ -20,23 +20,31 @@ public final class LoweringContext {
         this.fnTableVersion = fnTableVersion;
     }
 
-    public static LoweringContext defaultContext() {
-        return new LoweringContext(new HashSet<>(List.of("meta", "input")), false, "default", "1.0");
+    public static LoweringContext defaultSchemaContext() {
+        return new LoweringContext(new HashSet<>(List.of("meta", "input")), false, "schema", "1.0");
+    }
+
+    public static LoweringContext defaultActionContext() {
+        return new LoweringContext(new HashSet<>(List.of("meta", "input")), false, "action", "1.0");
     }
 
     public static LoweringContext effectArgsContext() {
-        return new LoweringContext(new HashSet<>(List.of("meta", "input")), true, "effectArgs", "1.0");
+        return new LoweringContext(new HashSet<>(List.of("meta", "input")), true, "action", "1.0");
     }
 
     public static LoweringContext fromPatchOptions(CompilePatchOptions options) {
         if (options == null) {
-            return defaultContext();
+            return defaultActionContext();
         }
         Set<String> prefixes = options.allowSysPrefixes() == null || options.allowSysPrefixes().isEmpty()
             ? new HashSet<>(List.of("meta", "input"))
             : new HashSet<>(options.allowSysPrefixes());
         String version = options.fnTableVersion() == null ? "1.0" : options.fnTableVersion();
-        return new LoweringContext(prefixes, false, "default", version);
+        return new LoweringContext(prefixes, false, "action", version);
+    }
+
+    public LoweringContext withModeAndAllowItem(String mode, boolean allowItem) {
+        return new LoweringContext(new HashSet<>(allowSysPrefixes), allowItem, mode, fnTableVersion);
     }
 
     public Set<String> getAllowSysPrefixes() {
