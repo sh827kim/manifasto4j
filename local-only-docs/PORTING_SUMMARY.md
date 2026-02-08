@@ -117,9 +117,8 @@
 - **상태**: projection/intent 변환 최소 구조 제공
   - event kind 라우팅 + fallback projection 경로 추가
   - bridge 단위 테스트에 routed projection 시나리오 추가
-  - Spring AI 입력 어댑터 1차 추가
-    - `ExternalEventAdapter`
-    - `SpringAiMessageAdapter` (`type/eventId/payload/metadata` 정규화)
+  - framework-neutral 외부 이벤트 어댑터 계약 추가
+    - `ExternalEventAdapter` (입력 검증/매핑/오류 경계 계약)
     - adapter 단위 테스트 추가
 
 ### builder
@@ -189,7 +188,7 @@
 ### host/app/bridge
 - host 운영정책 1차 보강(retry/timeout, host error state) 반영 완료
 - app/bridge runtime 계층은 1차 구현 완료
-- bridge의 Spring AI 입력 정규화 어댑터 1차 반영 완료
+- bridge의 framework-neutral 입력 어댑터 계약 1차 반영 완료
 
 ---
 

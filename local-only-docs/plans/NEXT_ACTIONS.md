@@ -5,26 +5,25 @@
 
 ---
 
-## 1. Action 1 - Spring AI Bridge Adapter 정의
+## 1. Action 1 - Framework-neutral Bridge Adapter 계약 정의
 
 목표:
-- Spring AI 입력을 `SourceEvent`로 정규화하는 표준 어댑터를 bridge 모듈에 추가한다.
+- 특정 프레임워크에 종속되지 않는 `ExternalEventAdapter` 계약을 정의한다.
 
 실행 아이템:
 1. 외부 이벤트 어댑터 인터페이스 추가
-2. Spring AI 스타일 입력 맵(`type/eventId/payload/metadata`) 정규화 구현
-3. 매핑/검증 단위 테스트 추가
-4. `./gradlew :manifesto-bridge:test` 통과
+2. 구현체가 따라야 하는 입력 검증/매핑/오류 경계 규칙을 인터페이스 문서에 명시
+3. `./gradlew :manifesto-bridge:test` 통과
 
 완료 기준:
-- adapter 경로가 테스트로 고정되고, 잘못된 type 입력이 명시적으로 거부됨
+- adapter 계약만으로 구현 요건이 명확히 이해되고, bridge 모듈은 프레임워크 중립성을 유지함
 
 상태:
 - [x] 완료 (2026-02-08)
 - 산출물:
   - `manifesto-bridge/src/main/java/ai/manifesto/bridge/ExternalEventAdapter.java`
-  - `manifesto-bridge/src/main/java/ai/manifesto/bridge/SpringAiMessageAdapter.java`
-  - `manifesto-bridge/src/test/java/ai/manifesto/bridge/SpringAiMessageAdapterTest.java`
+- 검증:
+  - `./gradlew :manifesto-bridge:test` 통과
 
 ---
 
