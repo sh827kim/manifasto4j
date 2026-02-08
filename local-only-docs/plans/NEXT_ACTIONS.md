@@ -109,6 +109,12 @@
 2. Java 동기화 스크립트(`scripts/sync-golden.sh`) 구현
 3. CI 검증 훅 추가(벡터 불일치 fail)
 
+**진행 상태 (2026-02-08 업데이트)**
+- [x] Java 동기화 스크립트 추가: `scripts/sync-golden.sh`
+- [x] TS compiler 벡터/골든 경로 자동 탐색 + 복사/누락 보고 기능 반영
+- [ ] TS 레포 벡터 dump 경로 확정 후 실제 동기화 검증
+- [ ] CI 훅 추가
+
 ---
 
 ### 1-4. Host 경계 안정화

@@ -172,6 +172,10 @@
 3) **compiler lowering/evaluation 정식 계층 정합화**
 4) **app bootstrap genesis computed 정책 점검**
 
+최근 진행 (2026-02-08 추가):
+- Golden 동기화 스크립트 초안 추가: `scripts/sync-golden.sh`
+- TS compiler 벡터/골든 경로 자동 탐색 + 복사/누락 보고 지원
+
 ---
 
 ## 📦 패키지 역할 요약 (TS 기준)
