@@ -18,7 +18,7 @@ class BridgeRuntimeTest {
     @DisplayName("SourceEvent → Intent projection")
     void testProjection() {
         Projection projection = (event, view) ->
-            new Intent("test", Map.of("value", view.data().get("value")), "intent-1");
+            ProjectionResult.intent(new Intent("test", Map.of("value", view.data().get("value")), "intent-1"));
 
         BridgeRuntime runtime = new BridgeRuntime(projection);
 
@@ -40,9 +40,9 @@ class BridgeRuntimeTest {
     @Test
     @DisplayName("event kind별 라우팅 projection 적용")
     void testRoutedProjection() {
-        Projection uiProjection = (event, view) -> new Intent("ui.intent", Map.of(), "intent-ui");
-        Projection apiProjection = (event, view) -> new Intent("api.intent", Map.of(), "intent-api");
-        Projection fallback = (event, view) -> new Intent("fallback.intent", Map.of(), "intent-fallback");
+        Projection uiProjection = (event, view) -> ProjectionResult.intent(new Intent("ui.intent", Map.of(), "intent-ui"));
+        Projection apiProjection = (event, view) -> ProjectionResult.intent(new Intent("api.intent", Map.of(), "intent-api"));
+        Projection fallback = (event, view) -> ProjectionResult.intent(new Intent("fallback.intent", Map.of(), "intent-fallback"));
 
         BridgeRuntime runtime = new BridgeRuntime(
             Map.of(
@@ -67,5 +67,32 @@ class BridgeRuntimeTest {
         assertEquals("ui.intent", uiIntent.getType());
         assertEquals("api.intent", apiIntent.getType());
         assertEquals("fallback.intent", agentIntent.getType());
+    }
+
+    @Test
+    @DisplayName("projection none 결과를 projectResult로 반환한다")
+    void testNoneResult() {
+        Projection projection = (event, view) -> ProjectionResult.none("filtered-by-policy");
+        BridgeRuntime runtime = new BridgeRuntime(projection);
+        Snapshot snapshot = Snapshot.builder()
+            .data(new HashMap<>(Map.of("value", 7)))
+            .computed(new HashMap<>())
+            .system(SystemState.initial())
+            .input(new HashMap<>())
+            .meta(Snapshot.SnapshotMeta.create(0, System.currentTimeMillis(), "seed", "hash"))
+            .build();
+
+        ProjectionResult result = runtime.projectResult(
+            new SourceEvent(SourceEvent.Kind.API, "evt-none", Map.of(), null),
+            snapshot
+        );
+        assertTrue(!result.hasIntent());
+        assertEquals("filtered-by-policy", result.getReason());
+
+        IllegalStateException exception = assertThrows(
+            IllegalStateException.class,
+            () -> runtime.project(new SourceEvent(SourceEvent.Kind.API, "evt-none", Map.of(), null), snapshot)
+        );
+        assertEquals("Projection produced no intent: filtered-by-policy", exception.getMessage());
     }
 }

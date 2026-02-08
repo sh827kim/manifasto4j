@@ -1,83 +1,104 @@
 # NEXT_ACTIONS (다음 사이클 실행 계획)
 
 작성일: 2026-02-08
-기준: Action 1~4 완료 이후, Priority 2/3 잔여 항목을 실행한다.
+기준: bridge 프레임워크 중립성 유지 + world/compiler 정합 강화
 
 ---
 
-## 1. Action 1 - Framework-neutral Bridge Adapter 계약 정의
+## 1. Action 1 - Bridge ProjectionResult 모델 도입
 
 목표:
-- 특정 프레임워크에 종속되지 않는 `ExternalEventAdapter` 계약을 정의한다.
+- projection 결과를 `intent`와 `none(reason)`로 명시적으로 표현한다.
 
 실행 아이템:
-1. 외부 이벤트 어댑터 인터페이스 추가
-2. 구현체가 따라야 하는 입력 검증/매핑/오류 경계 규칙을 인터페이스 문서에 명시
-3. `./gradlew :manifesto-bridge:test` 통과
+1. `ProjectionResult` 타입 추가
+2. `Projection`을 `ProjectionResult` 반환으로 확장
+3. `BridgeRuntime.projectResult()` 추가, `project()`는 호환 API로 유지
+4. none 결과/예외 경계 테스트 추가
+5. `./gradlew :manifesto-bridge:test :manifesto-app:test` 통과
 
 완료 기준:
-- adapter 계약만으로 구현 요건이 명확히 이해되고, bridge 모듈은 프레임워크 중립성을 유지함
+- Bridge에서 intent 미발행 케이스를 타입으로 표현 가능
+- 기존 app 연동 경로 회귀 없음
 
 상태:
 - [x] 완료 (2026-02-08)
 - 산출물:
-  - `manifesto-bridge/src/main/java/ai/manifesto/bridge/ExternalEventAdapter.java`
+  - `manifesto-bridge/src/main/java/ai/manifesto/bridge/ProjectionResult.java`
+  - `manifesto-bridge/src/main/java/ai/manifesto/bridge/Projection.java`
+  - `manifesto-bridge/src/main/java/ai/manifesto/bridge/BridgeRuntime.java`
+  - `manifesto-bridge/src/test/java/ai/manifesto/bridge/BridgeRuntimeTest.java`
+  - `manifesto-app/src/test/java/ai/manifesto/app/AppBridgeIntegrationTest.java`
 - 검증:
-  - `./gradlew :manifesto-bridge:test` 통과
+  - `./gradlew :manifesto-bridge:test :manifesto-app:test` 통과
 
 ---
 
-## 2. Action 2 - World TS 시나리오 2차 포팅
+## 2. Action 2 - Bridge API 최소 뼈대 추가
 
 목표:
-- TS `world.test.ts`의 query/authority 경계 시나리오를 Java 테스트로 추가 고정한다.
+- Projection 실행기를 dispatch 중심 API로 확장한다.
 
 실행 아이템:
-1. query 결과 정합 경계 테스트 2~3건 추가
-2. authority escalation 실패/복구 경계 1~2건 추가
+1. `dispatchEvent(SourceEvent)` 최소 API 정의
+2. `dispatch(IntentBody)` 또는 동등 진입점 최소 API 정의
+3. app-bridge 통합 테스트 1~2건 추가
+
+완료 기준:
+- 브리지 호출 경로가 projection 직접 호출 없이도 재현 가능
+
+상태:
+- [ ] 진행 예정
+
+---
+
+## 3. Action 3 - World TS 시나리오 3차 포팅
+
+목표:
+- TS `world.test.ts` 남은 query/authority/branch edge를 추가 고정한다.
+
+실행 아이템:
+1. query edge 2건 이상
+2. authority/branch edge 2건 이상
 3. `./gradlew :manifesto-world:test` 통과
 
 완료 기준:
-- world 회귀 방어력이 확대되고, edge case가 테스트로 문서화됨
+- world 회귀 방어력 강화
 
 상태:
-- [x] 완료 (2026-02-08)
-- 산출물:
-  - `manifesto-world/src/test/java/ai/manifesto/world/ManifestoWorldTest.java`
-    - `queryApisReturnNullForMissingIds`
-    - `updateActorBindingReplacesPolicyAndRejectsUnknownActor`
-- 검증:
-  - `./gradlew :manifesto-world:test` 통과
+- [ ] 진행 예정
 
 ---
 
-## 3. Action 3 - Compiler 벡터 동기화 파이프라인 보강
+## 4. Action 4 - Compiler strict 계층 2차
 
 목표:
-- TS 변경점 유입 시 compiler golden/vector 동기화 누락을 자동 점검한다.
+- strict lowering/evaluation 규칙의 오류 코드/trace 정합을 확장한다.
 
 실행 아이템:
-1. `scripts/check-golden-sync.sh` 출력 보강(누락 유형 분류)
-2. Gradle 체크 task 리포트 메시지 정리
-3. 문서에 운영 절차(로컬 실행 순서) 반영
+1. strict 오류 코드 체계 보강
+2. trace/skip reason 정합 테스트 추가
+3. `./gradlew :manifesto-compiler:test` 통과
 
 완료 기준:
-- 동기화 누락 시 원인 파악이 즉시 가능하고, 문서 절차와 도구 출력이 일치함
+- strict API에서 오류/trace 규칙이 테스트로 고정
 
 상태:
-- [x] 완료 (2026-02-08)
-- 산출물:
-  - `scripts/check-golden-sync.sh`
-    - missing source/destination/mismatched 분류 리포트 추가
-  - `local-only-docs/impl/IMPL_RESULT_COMPILER.md`
-    - 로컬 운영 절차(동기화/검증 명령) 반영
-- 검증:
-  - `./gradlew checkGoldenSync` 통과
+- [ ] 진행 예정
 
 ---
 
-## 실행 순서
+## 5. Action 5 - 문서 동기화
 
-1. [완료] Action 1
-2. [완료] Action 2
-3. [완료] Action 3
+목표:
+- 구현 상태와 문서 상태를 일치시킨다.
+
+실행 아이템:
+1. `PORTING_SUMMARY`, `IMPL_RESULT_*`, 리포트 문서 갱신
+2. 사이클 종료 체크리스트 갱신
+
+완료 기준:
+- 문서-코드 불일치 항목 0개
+
+상태:
+- [ ] 진행 예정

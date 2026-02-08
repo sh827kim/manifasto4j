@@ -32,7 +32,7 @@ public final class BridgeRuntime {
         this.defaultProjection = fallback;
     }
 
-    public Intent project(SourceEvent event, Snapshot snapshot) {
+    public ProjectionResult projectResult(SourceEvent event, Snapshot snapshot) {
         Objects.requireNonNull(event, "event is required");
         Objects.requireNonNull(snapshot, "snapshot is required");
 
@@ -45,5 +45,13 @@ public final class BridgeRuntime {
             throw new IllegalArgumentException("No projection route for event kind: " + event.kind());
         }
         return defaultProjection.project(event, view);
+    }
+
+    public Intent project(SourceEvent event, Snapshot snapshot) {
+        ProjectionResult result = projectResult(event, snapshot);
+        if (!result.hasIntent()) {
+            throw new IllegalStateException("Projection produced no intent: " + result.getReason());
+        }
+        return result.getIntent();
     }
 }

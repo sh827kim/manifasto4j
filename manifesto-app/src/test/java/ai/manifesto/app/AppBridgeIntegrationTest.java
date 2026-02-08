@@ -1,6 +1,7 @@
 package ai.manifesto.app;
 
 import ai.manifesto.bridge.BridgeRuntime;
+import ai.manifesto.bridge.ProjectionResult;
 import ai.manifesto.bridge.SourceEvent;
 import ai.manifesto.core.Intent;
 import ai.manifesto.core.Snapshot;
@@ -54,9 +55,13 @@ class AppBridgeIntegrationTest {
         BridgeRuntime bridge = new BridgeRuntime(
             Map.of(
                 SourceEvent.Kind.UI,
-                (event, view) -> new Intent("setFromUi", Map.of("value", "ui"), UUID.randomUUID().toString()),
+                (event, view) -> ProjectionResult.intent(
+                    new Intent("setFromUi", Map.of("value", "ui"), UUID.randomUUID().toString())
+                ),
                 SourceEvent.Kind.API,
-                (event, view) -> new Intent("setFromApi", Map.of("value", "api"), UUID.randomUUID().toString())
+                (event, view) -> ProjectionResult.intent(
+                    new Intent("setFromApi", Map.of("value", "api"), UUID.randomUUID().toString())
+                )
             ),
             null
         );

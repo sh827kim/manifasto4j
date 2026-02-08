@@ -10,13 +10,15 @@ TypeScript `packages/bridge` 대비 Java `manifesto-bridge` 구현 상태를 비
 - `manifesto-bridge/src/main/java/ai/manifesto/bridge`
 
 ## 구현됨 (요약)
-- `Projection` 인터페이스 (SourceEvent + SnapshotView → Intent)
+- `Projection` 인터페이스 (SourceEvent + SnapshotView → ProjectionResult)
+- `ProjectionResult` 모델 도입 (`intent` | `none(reason)`)
 - `SnapshotView` (data + computed)
 - `SourceEvent` (kind, eventId, payload, occurredAt)
 - `BridgeRuntime` (Projection 실행기)
 - `BridgeRuntime` routed projection 지원
   - event kind별 projection 라우팅
   - fallback projection
+  - `projectResult` API 추가
 
 ## 미구현
 ### 1) Bridge API 전체 부재
@@ -42,7 +44,8 @@ TypeScript `packages/bridge` 대비 Java `manifesto-bridge` 구현 상태를 비
 
 ### 5) Projection Result 타입
 - TS는 `ProjectionResult`(none/intent)와 reason, scopeProposal 등을 포함
-- Java는 `Intent` 단일 반환 (none/intent 구분 불가)
+- Java는 `ProjectionResult` 1차 반영 완료 (`intent`/`none(reason)`)
+- scopeProposal 등 부가 필드는 아직 미구현
 
 ### 6) Action Catalog (v1.1)
 - TS는 Action Catalog projector, pruning 옵션, hash 제공
@@ -77,3 +80,7 @@ TypeScript `packages/bridge` 대비 Java `manifesto-bridge` 구현 상태를 비
   - `ExternalEventAdapter` 인터페이스 추가
   - 입력 검증/`SourceEvent` 매핑/오류 경계/결정성 요구사항을 Javadoc 계약으로 명시
   - 브리지 코어 모듈은 특정 프레임워크 구현체를 포함하지 않음
+- `ProjectionResult` 1차 도입
+  - `Projection` 반환 타입을 `ProjectionResult`로 확장
+  - `BridgeRuntime.projectResult()` 추가
+  - none 결과는 `project()` 호출 시 명시적 예외로 노출
