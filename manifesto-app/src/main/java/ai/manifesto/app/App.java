@@ -2,6 +2,8 @@ package ai.manifesto.app;
 
 import ai.manifesto.core.*;
 import ai.manifesto.core.schema.DomainSchema;
+import ai.manifesto.world.ManifestoWorld;
+import ai.manifesto.world.schema.WorldId;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -19,4 +21,12 @@ public interface App {
     Snapshot getSnapshot();
 
     DomainSchema getSchema();
+
+    default ManifestoWorld getWorld() {
+        return null;
+    }
+
+    default void switchBranch(WorldId worldId) {
+        throw new UnsupportedOperationException("World integration is not enabled for this app");
+    }
 }

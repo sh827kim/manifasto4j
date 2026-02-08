@@ -79,8 +79,28 @@
 - **상태**: effect handler 유틸 최소 구현
 
 ### world
-- **상태**: 미구현 (필수 범위로 승격)
-- **필요**: Proposal/Decision/Lineage/Authority MVP
+- **상태**: 정식 구현 진행 중 (Phase 0~6 1차 완료)
+- **완료**:
+  - `manifesto-world` 모듈 생성 및 멀티모듈 빌드 연결
+  - schema/types 1차 골격 구현 (`World/Proposal/Decision/Actor/Authority/Binding`)
+  - Proposal 상태기계 + ProposalQueue 1차 구현
+  - `WORLD-HASH-*` 1차 구현 (`computeSnapshotHash`, `computeWorldId`)
+  - Factory 1차 구현 (`createGenesisWorld`, `createWorldFromExecution`, `createDecisionRecord`)
+  - ActorRegistry 구현 (등록/조회/바인딩 갱신/불변식)
+  - WorldLineage DAG 구현 (genesis/edge/ancestors/descendants)
+  - `WorldStore`/`MemoryWorldStore` 구현 (world/snapshot/edge/proposal/decision/binding)
+  - Authority 서브시스템 1차 구현 (`auto/policy/hitl/tribunal`, evaluator)
+  - `ManifestoWorld` 오케스트레이터 1차 구현
+    - `createGenesis`
+    - `submitProposal`
+    - `processHITLDecision`
+    - tribunal vote 처리 경로
+    - 승인 시 HostExecutor 실행 및 world/lineage/store 반영
+  - `:manifesto-world:test` 통과
+- **다음 필요**:
+  - TS `world.test.ts` 시나리오 포팅 지속 확대(coverage 확장)
+  - authority escalation 정책 고도화(현재는 authorityId 기반 단일 홉 + loop guard)
+  - world/app 경계 장애 시나리오(재시도/중복 실행키) 하드닝
 
 ---
 
@@ -91,8 +111,8 @@
 - Evaluation 정합화 필요 (trace/skip reason/total-eval 규칙)
 - IR generator v0.5.0 타입/필드 확장 필요
 
-### world (필수 신규 구현)
-- Proposal/Decision/Lineage/Authority MVP 필요
+### world (정식 구현 진행 중)
+- Phase 8 하드닝 1차 완료, 잔여 edge case 보강 필요
 
 ### host/app/bridge
 - ActionHandle 진행 상태/구독 옵션 보강 필요
@@ -116,7 +136,7 @@
 
 ## ▶️ 다음 작업 제안 (요약)
 
-1) **world MVP 구현**
+1) **world 정식 구현 (Phase 8+)**
 2) **golden 벡터 동기화 자동화**
 3) **compiler lowering/evaluation 정식 계층 정합화**
 4) **app bootstrap genesis computed 정책 점검**

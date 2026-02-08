@@ -42,16 +42,17 @@
 - 상태:
   - 완료 (2026-02-08)
 
-**P1-2. World 최소 구현(MVP) 설계 및 구현**
+**P1-2. World 정식 구현 (TS 정합 기준)**
 - 목적: 승인/라인리지 기반 거버넌스 확보
-- 최소 기능:
-  - Proposal 기록
-  - Authority 평가(Policy 기반)
-  - Decision 기록
-  - Lineage(World DAG) 유지
+- 현재 상태:
+  - Phase 0~1 1차 완료 (모듈/타입/상태기계/queue)
+- 다음 단계:
+  - Phase 2: hash/factory
+  - Phase 3~4: registry + lineage + persistence
+  - Phase 5~6: authority + orchestrator
 - 완료 기준:
-  - Intent가 World를 통과하지 않으면 실행 불가
-  - Decision/Proposal 기록이 남음
+  - TS `packages/world` 주요 시나리오 동치
+  - Proposal/Decision/Lineage/Authority/Execution 경로 통합 테스트 통과
 
 ---
 
@@ -98,7 +99,7 @@
 
 ## 2. 실행 순서 제안 (Milestones)
 
-1. **World MVP 구현** (P1-2)
+1. **World 정식 구현 (Phase 2+)** (P1-2)
 2. **Bridge MVP 확장** (P2-1)
 3. **Host 정책/실패 처리 강화** (P2-2)
 4. **Compiler 정합성 테스트** (P3-1)
@@ -115,7 +116,7 @@
 | 항목 | 우선순위 | 예상 기간 | 담당 역할(예시) | 완료 기준 |
 | --- | --- | --- | --- | --- |
 | P1-1 Core System time 제거 | P1 | 완료 | Core 엔지니어 | 동일 입력 → 동일 결과 재현 |
-| P1-2 World MVP 구현 | P1 | 3~5주 | 플랫폼/거버넌스 | Proposal/Decision 기록 가능 |
+| P1-2 World 정식 구현 | P1 | 4~8주 | 플랫폼/거버넌스 | TS world 시나리오 정합 통과 |
 | P2-1 Bridge 확장 | P2 | 2~4주 | 통합/플랫폼 | Intent 구조화 + Snapshot 구독 |
 | P2-2 Host 확장 | P2 | 2~4주 | 런타임/플랫폼 | 실패/재시도 정책 동작 |
 | P3-1 Compiler 정합성 | P3 | 3~6주 | 컴파일러 | Golden test 통과 |
@@ -135,4 +136,5 @@
 ## 5. 관련 문서
 
 - 설계 초안: `local-only-docs/design/porting-design-drafts.ko.md`
-- World MVP 설계: `local-only-docs/design/world-mvp-design.ko.md`
+- World MVP 설계(참고): `local-only-docs/design/world-mvp-design.ko.md`
+- World 정식 구현 계획: `local-only-docs/plans/WORLD_FULL_IMPLEMENTATION_PLAN_2026-02-08.md`

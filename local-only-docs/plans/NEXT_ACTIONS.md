@@ -18,6 +18,25 @@
   - `manifesto-core/src/test/java/ai/manifesto/core/core/GoldenComputeTest.java`
 - Core/Compiler 골든 테스트는 **TS 테스트 구조를 참조**하여 구성함.
 - World MVP 설계 문서 작성 완료 (`local-only-docs/design/world-mvp-design.ko.md`).
+- World 정식 구현 1차 착수 완료
+  - `manifesto-world` 모듈 추가 + `settings.gradle` 연결
+  - schema/types 골격 구현
+  - proposal 상태기계/queue 구현
+  - hash/factory 1차 구현 (`computeSnapshotHash`, `computeWorldId`, genesis/execution world, decision record)
+  - actor registry 구현
+  - lineage DAG 구현
+  - world store/memory store 구현
+  - authority evaluator 구현(auto/policy/hitl/tribunal)
+  - `ManifestoWorld` 오케스트레이터 1차 구현(createGenesis/submitProposal/processHITLDecision/execute)
+  - `manifesto-app`에 World 주입 경로 1차 구현 (`createWorldApp`, `DefaultApp` world path)
+  - epoch/branch switch + world event sink 1차 구현
+  - query API 보강 (`getProposal`, `getDecisionByProposal`, `getEvaluatingProposals`, `getWorld`, `getSnapshot`, `getGenesis`)
+  - authority timeout 처리(`tick`) + stale pending drop 구현
+  - policy escalation 구현 (authorityId target 라우팅, loop guard, escalation event)
+  - execution key/idempotency 보강 테스트 추가
+  - branch/event payload envelope 표준화(`schemaHash`, `epoch`)
+  - app/world 통합 테스트 추가 및 안정화
+  - `:manifesto-world:test` 통과
 - TS 변경점 반영 진행 완료
   - Core schema hash에 meta namespace 반영
   - Compiler `onceIntent` 지원(parser/analyzer/IR/renderer/test)
@@ -46,7 +65,25 @@
 
 ---
 
-### 1-2. App bootstrap genesis computed 정합화
+### 1-2. World 정식 구현 진행 (MVP 아님)
+**근거 문서**: `local-only-docs/plans/WORLD_FULL_IMPLEMENTATION_PLAN_2026-02-08.md`
+
+**목표**
+- TS `packages/world` 구조와 테스트 시나리오 기준의 정식 구현
+
+**즉시 할 일 (일곱 번째 사이클)**
+1. TS `world.test.ts` 시나리오 포팅 확대 (authority/lineage/query matrix)
+2. authority escalation 정책 고도화(멀티 홉/정책별 fallback 정의)
+3. execution key 재시도 정책 추가(현재 `:1` 고정)
+4. app-world-host 장애 경계 테스트 강화
+
+**완료 기준 (일곱 번째 사이클)**
+- TS world 포팅 coverage 증가(핵심 시나리오 대부분 대응)
+- hardening 케이스(타임아웃/분기/중복 worldId/실패 경계) 회귀 통과
+
+---
+
+### 1-3. App bootstrap genesis computed 정합화
 **목표**: TS READY-8(`539b5b8`)와 초기 snapshot computed 평가 정책 정렬
 
 **할 일**
@@ -58,18 +95,7 @@
 
 ## 2. 다음 우선 작업 (2순위)
 
-### 2-1. World MVP 구현
-**근거 문서**: `local-only-docs/design/world-mvp-design.ko.md`
-
-**구현 대상**
-- `manifesto-world` 모듈 추가
-- Proposal/Decision/WorldRecord 데이터 모델
-- PolicyAuthority/RoleAuthority/ManualAuthority(placeholder)
-- `WorldRuntime.submitProposal(...)` API
-
----
-
-### 2-2. Golden 테스트 확장
+### 2-1. Golden 테스트 확장
 
 **대상**
 - Validate (V-002, V-005, V-008)
@@ -101,5 +127,5 @@
 
 - [ ] Golden 벡터 자동 생성/동기화 구현 착수 여부
 - [ ] App bootstrap genesis computed 정합화 착수 여부
-- [ ] World MVP 구현 착수 여부
+- [ ] World 정식 구현 Phase 8 확장 착수 여부
 - [ ] Golden 테스트 확장 대상 결정 (compiler/host/world 포함)
