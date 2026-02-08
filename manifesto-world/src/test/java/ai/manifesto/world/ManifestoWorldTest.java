@@ -419,6 +419,99 @@ class ManifestoWorldTest {
         assertThrows(IllegalStateException.class, () -> world.createGenesis(genesisSnapshot));
     }
 
+    @Test
+    void escalationSupportsMultiHopChain() {
+        HostExecutor executor = (executionKey, baseSnapshot, intent, options) ->
+                HostExecutionResult.completed(baseSnapshot.withData(Map.of("count", 1)));
+        ManifestoWorld world = new ManifestoWorld("schema-hash", executor, null);
+        World genesis = world.createGenesis(genesisSnapshot);
+
+        ActorRef approver = new ActorRef("approver", ActorKind.HUMAN);
+        world.registerActor(approver, new AutoApprovePolicy("final approve"));
+
+        ActorRef policyB = new ActorRef("policy-b", ActorKind.AGENT);
+        world.registerActor(policyB, new PolicyRulesPolicy(
+                List.of(new PolicyRule(
+                        PolicyCondition.intentType(Set.of("needs-escalation")),
+                        PolicyRuleDecision.ESCALATE,
+                        "escalate to approver"
+                )),
+                PolicyRuleDecision.REJECT,
+                new AuthorityRef("auth-approver", AuthorityKind.AUTO)
+        ));
+
+        ActorRef policyA = new ActorRef("policy-a", ActorKind.AGENT);
+        world.registerActor(policyA, new PolicyRulesPolicy(
+                List.of(new PolicyRule(
+                        PolicyCondition.intentType(Set.of("needs-escalation")),
+                        PolicyRuleDecision.ESCALATE,
+                        "escalate to policy-b"
+                )),
+                PolicyRuleDecision.REJECT,
+                new AuthorityRef("auth-policy-b", AuthorityKind.POLICY)
+        ));
+
+        IntentInstance intent = createIntentInstance(policyA, "needs-escalation", "intent-hop", "event-hop");
+        ProposalResult result = world.submitProposal(policyA.getActorId(), intent, genesis.getWorldId(), null);
+
+        assertEquals(ProposalStatus.COMPLETED, result.getProposal().getStatus());
+        assertNotNull(result.getDecision());
+        assertEquals("auth-approver", result.getDecision().getAuthority().getAuthorityId());
+    }
+
+    @Test
+    void escalationFailureFallsBackToRejectedAndEmitsFailureEvent() {
+        HostExecutor executor = (executionKey, baseSnapshot, intent, options) ->
+                HostExecutionResult.completed(baseSnapshot.withData(Map.of("count", 1)));
+        List<WorldEvent> events = new ArrayList<>();
+        ManifestoWorld world = new ManifestoWorld("schema-hash", executor, null, events::add);
+        World genesis = world.createGenesis(genesisSnapshot);
+
+        ActorRef policyA = new ActorRef("policy-a", ActorKind.AGENT);
+        world.registerActor(policyA, new PolicyRulesPolicy(
+                List.of(new PolicyRule(
+                        PolicyCondition.intentType(Set.of("needs-escalation")),
+                        PolicyRuleDecision.ESCALATE,
+                        "escalate to missing authority"
+                )),
+                PolicyRuleDecision.REJECT,
+                new AuthorityRef("auth-missing", AuthorityKind.POLICY)
+        ));
+
+        IntentInstance intent = createIntentInstance(policyA, "needs-escalation", "intent-esc-fail", "event-esc-fail");
+        ProposalResult result = world.submitProposal(policyA.getActorId(), intent, genesis.getWorldId(), null);
+
+        assertEquals(ProposalStatus.REJECTED, result.getProposal().getStatus());
+        assertNotNull(result.getDecision());
+        assertEquals(ai.manifesto.world.schema.FinalDecisionKind.REJECTED, result.getDecision().getDecision().getKind());
+        assertTrue(result.getDecision().getDecision().getReason().contains("no bound actors"));
+        assertTrue(events.stream().anyMatch(e -> e.getType().equals("proposal:escalation_failed")));
+    }
+
+    @Test
+    void tracksLineageDepthForSequentialProposals() {
+        final int[] counter = {0};
+        HostExecutor executor = (executionKey, baseSnapshot, intent, options) -> {
+            counter[0] += 1;
+            return HostExecutionResult.completed(baseSnapshot.withData(Map.of("count", counter[0])));
+        };
+        ManifestoWorld world = new ManifestoWorld("schema-hash", executor, null);
+        World genesis = world.createGenesis(genesisSnapshot);
+
+        ActorRef actor = new ActorRef("human-lineage", ActorKind.HUMAN);
+        world.registerActor(actor, new AutoApprovePolicy());
+
+        ProposalResult r1 = world.submitProposal(actor.getActorId(), createIntentInstance(actor, "a1", "intent-l1", "event-l1"), genesis.getWorldId(), null);
+        ProposalResult r2 = world.submitProposal(actor.getActorId(), createIntentInstance(actor, "a2", "intent-l2", "event-l2"), r1.getResultWorld().getWorldId(), null);
+        ProposalResult r3 = world.submitProposal(actor.getActorId(), createIntentInstance(actor, "a3", "intent-l3", "event-l3"), r2.getResultWorld().getWorldId(), null);
+
+        assertEquals(3, world.getLineage().getDepth(r3.getResultWorld().getWorldId()));
+        assertTrue(world.getLineage().isDescendant(r3.getResultWorld().getWorldId(), genesis.getWorldId()));
+        var path = world.getLineage().findPath(genesis.getWorldId(), r3.getResultWorld().getWorldId());
+        assertNotNull(path);
+        assertEquals(3, path.edges().size());
+    }
+
     private IntentInstance createIntentInstance(ActorRef actor, String type, String intentId, String eventId) {
         IntentBody body = new IntentBody(type, Map.of(), null);
         String intentKey = IntentKeys.computeIntentKey("schema-hash", body);

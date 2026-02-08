@@ -109,8 +109,14 @@
   - execution key 정책 주입 구조 1차 반영
     - `ExecutionKeyPolicy` 인터페이스 추가
     - `ManifestoWorld` 기본 정책 + custom 정책 주입 경로 제공
+  - escalation 정책 고도화 1차 반영
+    - 멀티 홉 escalation 경로 처리
+    - escalation 실패 fallback 처리 + `proposal:escalation_failed` 이벤트
+    - escalation hop limit 가드 추가
   - TS world 시나리오 포팅 확대
     - unregistered actor / non-existent base world / duplicate genesis 거부 테스트 추가
+    - escalation multi-hop/fallback 시나리오 추가
+    - lineage depth/isDescendant/findPath 시나리오 추가
   - `:manifesto-world:test` 통과
 - **다음 필요**:
   - TS `world.test.ts` 시나리오 포팅 지속 확대(coverage 확장)

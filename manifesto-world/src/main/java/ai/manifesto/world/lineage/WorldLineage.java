@@ -20,6 +20,8 @@ import java.util.Set;
 import java.util.UUID;
 
 public final class WorldLineage {
+    public record PathResult(List<WorldEdge> edges, List<World> worlds) {}
+
     private final Map<String, World> worlds = new LinkedHashMap<>();
     private final Map<String, WorldEdge> edges = new LinkedHashMap<>();
     private final Map<String, String> parentEdgeByChild = new HashMap<>();
@@ -208,6 +210,64 @@ public final class WorldLineage {
             current = getParent(current.getWorldId());
         }
         return depth;
+    }
+
+    public boolean isDescendant(WorldId candidate, WorldId ancestor) {
+        Objects.requireNonNull(candidate, "candidate is required");
+        Objects.requireNonNull(ancestor, "ancestor is required");
+        if (candidate.equals(ancestor)) {
+            return true;
+        }
+        World current = getParent(candidate);
+        while (current != null) {
+            if (current.getWorldId().equals(ancestor)) {
+                return true;
+            }
+            current = getParent(current.getWorldId());
+        }
+        return false;
+    }
+
+    public PathResult findPath(WorldId from, WorldId to) {
+        Objects.requireNonNull(from, "from is required");
+        Objects.requireNonNull(to, "to is required");
+        if (!hasWorld(from) || !hasWorld(to)) {
+            return null;
+        }
+        if (from.equals(to)) {
+            return new PathResult(List.of(), List.of(getWorld(from)));
+        }
+        if (!isDescendant(to, from)) {
+            return null;
+        }
+
+        List<WorldEdge> reversedEdges = new ArrayList<>();
+        List<World> reversedWorlds = new ArrayList<>();
+        WorldId cursor = to;
+        reversedWorlds.add(getWorld(cursor));
+
+        while (!cursor.equals(from)) {
+            WorldEdge edge = getParentEdge(cursor);
+            if (edge == null) {
+                return null;
+            }
+            reversedEdges.add(edge);
+            cursor = edge.getFromWorld();
+            World world = getWorld(cursor);
+            if (world != null) {
+                reversedWorlds.add(world);
+            }
+        }
+
+        List<WorldEdge> edges = new ArrayList<>();
+        for (int i = reversedEdges.size() - 1; i >= 0; i--) {
+            edges.add(reversedEdges.get(i));
+        }
+        List<World> worlds = new ArrayList<>();
+        for (int i = reversedWorlds.size() - 1; i >= 0; i--) {
+            worlds.add(reversedWorlds.get(i));
+        }
+        return new PathResult(List.copyOf(edges), List.copyOf(worlds));
     }
 
     public void clear() {

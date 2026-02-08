@@ -52,6 +52,7 @@ import java.util.UUID;
 
 public final class ManifestoWorld {
     private static final String ESCALATE_PREFIX = "ESCALATE:";
+    private static final int MAX_ESCALATION_HOPS = 8;
 
     private final String schemaHash;
     private final WorldStore store;
@@ -428,27 +429,31 @@ public final class ManifestoWorld {
         AuthorityResponse currentResponse = initialResponse;
         Set<String> visitedAuthorityIds = new HashSet<>();
         visitedAuthorityIds.add(currentAuthority.getAuthorityId());
+        int hops = 0;
 
         while (isEscalationResponse(currentResponse)) {
-            String targetAuthorityId = extractEscalationTarget(currentResponse.getReason());
-            if (targetAuthorityId == null || targetAuthorityId.isBlank()) {
-                return new EvaluationOutcome(
+            hops += 1;
+            if (hops > MAX_ESCALATION_HOPS) {
+                return escalationFailure(
+                        proposal,
                         currentAuthority,
-                        AuthorityResponse.rejected("Invalid escalation target")
+                        "Escalation hop limit exceeded: " + MAX_ESCALATION_HOPS
                 );
             }
+            String targetAuthorityId = extractEscalationTarget(currentResponse.getReason());
+            if (targetAuthorityId == null || targetAuthorityId.isBlank()) {
+                return escalationFailure(proposal, currentAuthority, "Invalid escalation target");
+            }
             if (visitedAuthorityIds.contains(targetAuthorityId)) {
-                return new EvaluationOutcome(
-                        currentAuthority,
-                        AuthorityResponse.rejected("Escalation loop detected: " + targetAuthorityId)
-                );
+                return escalationFailure(proposal, currentAuthority, "Escalation loop detected: " + targetAuthorityId);
             }
 
             List<ActorRef> escalationActors = registry.getActorsByAuthority(targetAuthorityId);
             if (escalationActors.isEmpty()) {
-                return new EvaluationOutcome(
+                return escalationFailure(
+                        proposal,
                         currentAuthority,
-                        AuthorityResponse.rejected("Escalation target authority has no bound actors: " + targetAuthorityId)
+                        "Escalation target authority has no bound actors: " + targetAuthorityId
                 );
             }
 
@@ -466,10 +471,31 @@ public final class ManifestoWorld {
 
             currentAuthority = escalationBinding.getAuthority();
             visitedAuthorityIds.add(currentAuthority.getAuthorityId());
-            currentResponse = authorityEvaluator.evaluate(proposal, escalationBinding);
+            try {
+                currentResponse = authorityEvaluator.evaluate(proposal, escalationBinding);
+            } catch (Exception error) {
+                String message = error.getMessage() != null ? error.getMessage() : error.getClass().getSimpleName();
+                return escalationFailure(proposal, currentAuthority, "Escalation evaluation failed: " + message);
+            }
         }
 
         return new EvaluationOutcome(currentAuthority, currentResponse);
+    }
+
+    private EvaluationOutcome escalationFailure(
+            Proposal proposal,
+            AuthorityRef authority,
+            String reason
+    ) {
+        emitEvent(
+                "proposal:escalation_failed",
+                Map.of(
+                        "proposalId", proposal.getProposalId().value(),
+                        "authorityId", authority.getAuthorityId(),
+                        "reason", reason
+                )
+        );
+        return new EvaluationOutcome(authority, AuthorityResponse.rejected(reason));
     }
 
     private boolean isEscalationResponse(AuthorityResponse response) {
