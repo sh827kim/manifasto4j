@@ -13,7 +13,7 @@
 4. [04. Core API 개념 가이드 (Java)](./04-core-api.md)
 5. [05. 모듈 및 폴더 구성 가이드](./05-packages.md)
 6. [06. MEL 문법 입문 (포팅 관점)](./06-mel.md)
-7. [07. LLM 프레임워크와 결합 시 기대 효과](./07-langchain-langgraph.md)
+7. [07. LLM 통합 시 기대 효과](./07-llm-integration.md)
 
 **Java 포팅 관점의 핵심 키워드**
 - 불변(Immutable) 모델링과 순수 함수 기반 계산
