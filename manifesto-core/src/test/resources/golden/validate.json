@@ -1,0 +1,23 @@
+[
+  {
+    "name": "v002-computed-cycle",
+    "expected": {
+      "isValid": false,
+      "errorCodes": ["V-002"]
+    }
+  },
+  {
+    "name": "v005-call-graph-cycle",
+    "expected": {
+      "isValid": false,
+      "errorCodes": ["V-005"]
+    }
+  },
+  {
+    "name": "v008-schema-hash-mismatch",
+    "expected": {
+      "isValid": false,
+      "errorCodes": ["V-008"]
+    }
+  }
+]

@@ -1,0 +1,20 @@
+[
+  {
+    "name": "approve-terminal-creates-world",
+    "expected": {
+      "proposalStatus": "COMPLETED",
+      "decisionKind": "APPROVED",
+      "hasResultWorld": true,
+      "worldCount": 2
+    }
+  },
+  {
+    "name": "reject-terminal-without-result-world",
+    "expected": {
+      "proposalStatus": "REJECTED",
+      "decisionKind": "REJECTED",
+      "hasResultWorld": false,
+      "worldCount": 1
+    }
+  }
+]

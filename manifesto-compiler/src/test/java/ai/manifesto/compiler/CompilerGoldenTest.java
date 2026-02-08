@@ -32,9 +32,26 @@ class CompilerGoldenTest {
 
         for (Map<String, Object> vector : vectors) {
             String name = String.valueOf(vector.get("name"));
-            String source = String.valueOf(vector.get("source"));
             Boolean expectSuccess = (Boolean) vector.getOrDefault("expectSuccess", Boolean.TRUE);
             Boolean expectHashDeterminism = (Boolean) vector.getOrDefault("expectHashDeterminism", Boolean.FALSE);
+            Boolean expectHashDifferent = (Boolean) vector.getOrDefault("expectHashDifferent", Boolean.FALSE);
+
+            if (expectHashDifferent) {
+                String sourceA = String.valueOf(vector.get("sourceA"));
+                String sourceB = String.valueOf(vector.get("sourceB"));
+                CompilationResult resultA = compiler.compileDomain(sourceA);
+                CompilationResult resultB = compiler.compileDomain(sourceB);
+                assertTrue(resultA.isOk(), "Expected compile success for sourceA: " + name);
+                assertTrue(resultB.isOk(), "Expected compile success for sourceB: " + name);
+                assertNotEquals(
+                    resultA.getSchema().getHash(),
+                    resultB.getSchema().getHash(),
+                    "Schema hash must differ when namespace/domain name changes: " + name
+                );
+                continue;
+            }
+
+            String source = String.valueOf(vector.get("source"));
 
             CompilationResult result = compiler.compileDomain(source);
 

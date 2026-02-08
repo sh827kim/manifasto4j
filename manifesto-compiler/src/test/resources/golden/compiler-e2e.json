@@ -45,10 +45,26 @@
     }
   },
   {
+    "name": "onceintent-contextual-edge",
+    "source": "domain OnceIntentEdge {\n  state {\n    onceIntent: string = \"\"\n  }\n\n  action record() {\n    onceIntent {\n      patch onceIntent = $meta.intentId\n    }\n    once(onceIntent) {\n      patch onceIntent = $meta.intentId\n    }\n  }\n}\n",
+    "expected": {
+      "id": "mel:onceintentedge",
+      "version": "1.0.0",
+      "dataFields": ["onceIntent"],
+      "actions": ["record"]
+    }
+  },
+  {
     "name": "error-system-in-computed",
     "source": "domain Test {\n  computed id = $system.uuid\n}\n",
     "expectSuccess": false,
     "expectedErrors": ["E001"]
+  },
+  {
+    "name": "namespace-hash-impact",
+    "expectHashDifferent": true,
+    "sourceA": "domain NamespaceAlpha {\n  state { x: number = 0 }\n  computed doubled = mul(x, 2)\n}\n",
+    "sourceB": "domain NamespaceBeta {\n  state { x: number = 0 }\n  computed doubled = mul(x, 2)\n}\n"
   },
   {
     "name": "hash-determinism",
