@@ -27,28 +27,48 @@ if [[ ! -d "$VECTOR_DEST" ]]; then
 fi
 
 out_of_sync=0
+missing_sources=()
+missing_destinations=()
+mismatched_files=()
+synced_files=()
+
 for file in "${VECTOR_FILES[@]}"; do
   src="$VECTOR_SOURCE/$file"
   dst="$VECTOR_DEST/$file"
   if [[ ! -f "$src" ]]; then
     echo "[check-golden-sync] missing source file: $src" >&2
+    missing_sources+=("$file")
     out_of_sync=1
     continue
   fi
   if [[ ! -f "$dst" ]]; then
     echo "[check-golden-sync] missing destination file: $dst" >&2
+    missing_destinations+=("$file")
     out_of_sync=1
     continue
   fi
   if ! cmp -s "$src" "$dst"; then
     echo "[check-golden-sync] out-of-sync: $file" >&2
+    mismatched_files+=("$file")
     out_of_sync=1
+  else
+    synced_files+=("$file")
   fi
 done
 
 if [[ "$out_of_sync" -ne 0 ]]; then
+  echo "[check-golden-sync] summary: missing_source=${#missing_sources[@]} missing_destination=${#missing_destinations[@]} mismatched=${#mismatched_files[@]}" >&2
+  if [[ "${#missing_sources[@]}" -gt 0 ]]; then
+    printf '[check-golden-sync] missing_source_files: %s\n' "${missing_sources[*]}" >&2
+  fi
+  if [[ "${#missing_destinations[@]}" -gt 0 ]]; then
+    printf '[check-golden-sync] missing_destination_files: %s\n' "${missing_destinations[*]}" >&2
+  fi
+  if [[ "${#mismatched_files[@]}" -gt 0 ]]; then
+    printf '[check-golden-sync] mismatched_files: %s\n' "${mismatched_files[*]}" >&2
+  fi
   echo "[check-golden-sync] vectors are not synchronized. run: ./scripts/sync-golden.sh \"$TS_REPO\"" >&2
   exit 1
 fi
 
-echo "[check-golden-sync] vectors are synchronized"
+echo "[check-golden-sync] vectors are synchronized (${#synced_files[@]} files)"

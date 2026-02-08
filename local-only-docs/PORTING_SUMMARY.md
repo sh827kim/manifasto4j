@@ -224,6 +224,8 @@
 - Golden 동기화 스크립트 초안 추가: `scripts/sync-golden.sh`
 - TS compiler 벡터/골든 경로 자동 탐색 + 복사/누락 보고 지원
 - `scripts/check-golden-sync.sh` + Gradle task(`checkGoldenSync`, `syncGoldenVectors`) 추가
+- `check-golden-sync.sh` 출력 보강
+  - 누락 유형 분류(`missing_source`, `missing_destination`, `mismatched`) 및 요약 카운트 제공
 
 ---
 

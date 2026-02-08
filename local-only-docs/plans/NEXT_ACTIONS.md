@@ -66,7 +66,14 @@
 - 동기화 누락 시 원인 파악이 즉시 가능하고, 문서 절차와 도구 출력이 일치함
 
 상태:
-- [ ] 진행 예정
+- [x] 완료 (2026-02-08)
+- 산출물:
+  - `scripts/check-golden-sync.sh`
+    - missing source/destination/mismatched 분류 리포트 추가
+  - `local-only-docs/impl/IMPL_RESULT_COMPILER.md`
+    - 로컬 운영 절차(동기화/검증 명령) 반영
+- 검증:
+  - `./gradlew checkGoldenSync` 통과
 
 ---
 
@@ -74,4 +81,4 @@
 
 1. [완료] Action 1
 2. [완료] Action 2
-3. [진행 예정] Action 3
+3. [완료] Action 3

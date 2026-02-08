@@ -64,3 +64,14 @@ TypeScript `packages/compiler` 대비 Java `manifesto-compiler` 구현 상태를
 - lowering/evaluation strict API 1차 보강
   - `LoweringLiteStrictTest`
   - `RuntimePatchEvaluatorLiteTest` strict 오류 케이스
+- golden/vector 동기화 점검 스크립트 출력 보강
+  - `scripts/check-golden-sync.sh`
+  - 누락 유형 분류: `missing_source`, `missing_destination`, `mismatched`
+
+## 로컬 운영 절차 (Golden/Vector 동기화)
+1. TS 리포 기준 동기화
+   - `./scripts/sync-golden.sh /workspace/core`
+2. 동기화 검증
+   - `./gradlew checkGoldenSync`
+3. compiler 테스트 검증
+   - `./gradlew :manifesto-compiler:test`
