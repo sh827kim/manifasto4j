@@ -47,25 +47,67 @@
 
 ## 1. 다음 우선 작업 (1순위)
 
-### 1-1. Golden 벡터 자동 생성/동기화 구현
-**목표**: TS → JSON 벡터 생성, Java → 소비 자동화
+기준 점검 문서:
+- `local-only-docs/reports/next-cycle-review-2026-02-08.md`
+
+### 1-1. World P0 하드닝 (최우선)
+**목표**: TS world 정합에 필요한 필수 안전장치 보강
 
 **할 일**
-1. TS 레포에 벡터 덤프 모드 추가
-   - MEL 입력 → schema 결과를 JSON 저장
-   - `vectorVersion` 필드 포함
-2. Java 레포에 동기화 스크립트 추가
-   - 예: `scripts/sync-golden.sh`
-   - TS 벡터 → `manifesto-compiler/src/test/resources/golden/`로 복사
-3. CI에서 동기화 검증 추가
+1. `submitProposal` 검증 강화
+   - base world의 `pendingRequirements` 존재 시 거부
+   - `intent.meta.origin.actor`와 submit actor 일치 검증
+   - `intent.intentKey` 정합 검증(스키마 해시 + intent body 기반)
+2. `executeProposal` 실패 경계 보강
+   - executor 예외 시 failed world 생성/저장
+   - `execution:failed` 이벤트 발행
+   - proposal terminal status를 `FAILED`로 전이
+3. 하드닝 회귀 테스트 추가
+   - invalid base world / invalid origin / invalid intentKey
+   - executor exception boundary
 
-**필수 확인 사항**
-- 동치성 기준: `local-only-docs/golden/golden-test-schema-equivalence.ko.md`
-- 벡터 포맷: `local-only-docs/golden/golden-test-vector-format.ko.md`
+**완료 기준**
+- `:manifesto-world:test` 통과
+- TS 기준 동작과 주요 실패 경계가 일치
+
+**진행 상태 (2026-02-08 업데이트)**
+- [x] `submitProposal` 검증 강화 반영
+  - base world pending requirements 차단
+  - origin actor 일치 검증
+  - intentKey 검증
+- [x] `executeProposal` 예외 경계 반영
+  - 실패 world 생성/저장
+  - `execution:failed` 이벤트 발행
+  - proposal `FAILED` terminal 전이
+- [x] 하드닝 회귀 테스트 추가 + `:manifesto-world:test`, `:manifesto-app:test` 통과
 
 ---
 
-### 1-2. World 정식 구현 진행 (MVP 아님)
+### 1-2. App bootstrap genesis computed 정합화
+**목표**: TS READY-8(`539b5b8`)와 초기 snapshot computed 평가 정책 정렬
+
+**할 일**
+1. `manifesto-app` 초기화 경로에서 computed 평가 시점 정렬
+2. 초기 snapshot 생성 정책 문서화 (computed 포함 여부)
+3. 최소 회귀 테스트 추가
+
+**진행 상태 (2026-02-08 업데이트)**
+- [x] `DefaultApp.ready()`에서 genesis 생성 직전 computed 평가 반영
+- [x] world-app 통합 테스트에 READY-8 회귀 케이스 추가
+- [x] `:manifesto-app:test`, `:manifesto-world:test` 통과
+
+---
+
+### 1-3. Execution key 정책 확장
+
+**할 일**
+1. execution key 생성 정책 인터페이스 도입
+2. 기본 정책(`proposalId:1`) 유지 + 정책 주입 포인트 추가
+3. attempt 확장(재시도) 대비 테스트 보강
+
+---
+
+### 1-4. World 정식 구현 진행 (MVP 아님)
 **근거 문서**: `local-only-docs/plans/WORLD_FULL_IMPLEMENTATION_PLAN_2026-02-08.md`
 
 **목표**
@@ -83,13 +125,21 @@
 
 ---
 
-### 1-3. App bootstrap genesis computed 정합화
-**목표**: TS READY-8(`539b5b8`)와 초기 snapshot computed 평가 정책 정렬
+### 1-5. Golden 벡터 자동 생성/동기화 구현
+**목표**: TS → JSON 벡터 생성, Java → 소비 자동화
 
 **할 일**
-1. `manifesto-app` 초기화 경로에서 computed 평가 시점 점검
-2. 초기 snapshot 생성 정책 문서화 (computed 포함 여부)
-3. 최소 회귀 테스트 추가
+1. TS 레포에 벡터 덤프 모드 추가
+   - MEL 입력 → schema 결과를 JSON 저장
+   - `vectorVersion` 필드 포함
+2. Java 레포에 동기화 스크립트 추가
+   - 예: `scripts/sync-golden.sh`
+   - TS 벡터 → `manifesto-compiler/src/test/resources/golden/`로 복사
+3. CI에서 동기화 검증 추가
+
+**필수 확인 사항**
+- 동치성 기준: `local-only-docs/golden/golden-test-schema-equivalence.ko.md`
+- 벡터 포맷: `local-only-docs/golden/golden-test-vector-format.ko.md`
 
 ---
 

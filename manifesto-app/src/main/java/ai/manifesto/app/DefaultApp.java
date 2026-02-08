@@ -5,6 +5,7 @@ import ai.manifesto.core.ComputeStatus;
 import ai.manifesto.core.Intent;
 import ai.manifesto.core.Snapshot;
 import ai.manifesto.core.TraceGraph;
+import ai.manifesto.core.evaluator.ComputedEvaluator;
 import ai.manifesto.core.schema.DomainSchema;
 import ai.manifesto.host.HostRuntime;
 import ai.manifesto.world.ManifestoWorld;
@@ -18,6 +19,7 @@ import ai.manifesto.world.schema.IntentSource;
 import ai.manifesto.world.schema.ProposalStatus;
 import ai.manifesto.world.schema.World;
 import ai.manifesto.world.schema.WorldId;
+import ai.manifesto.world.types.IntentKeys;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,7 +66,8 @@ public final class DefaultApp implements App {
 
         World genesis = world.getStore().getGenesis();
         if (genesis == null) {
-            genesis = world.createGenesis(snapshot);
+            Snapshot genesisSnapshot = evaluateGenesisComputed(snapshot);
+            genesis = world.createGenesis(genesisSnapshot);
         }
         this.currentWorldId = genesis.getWorldId();
 
@@ -93,7 +96,7 @@ public final class DefaultApp implements App {
         IntentInstance intentInstance = new IntentInstance(
                 new IntentBody(intent.getType(), intent.getInput(), null),
                 intent.getIntentId(),
-                "intent-key-" + intent.getIntentId(),
+                IntentKeys.computeIntentKey(world.getSchemaHash(), new IntentBody(intent.getType(), intent.getInput(), null)),
                 new IntentMeta(new IntentOrigin(
                         "app:default",
                         new IntentSource("app", "event-" + intent.getIntentId()),
@@ -190,6 +193,14 @@ public final class DefaultApp implements App {
             Object value = sub.selector.apply(snapshot);
             sub.handler.accept(value);
         }
+    }
+
+    private Snapshot evaluateGenesisComputed(Snapshot baseSnapshot) {
+        var computedResult = ComputedEvaluator.evaluateComputed(schema, baseSnapshot);
+        if (computedResult.isOk()) {
+            return baseSnapshot.withComputed(computedResult.unwrap());
+        }
+        return baseSnapshot;
     }
 
     private record Subscription(Function<Snapshot, Object> selector, Consumer<Object> handler) {}

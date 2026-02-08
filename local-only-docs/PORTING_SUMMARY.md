@@ -68,6 +68,9 @@
 
 ### app
 - **상태**: ready/act/subscribe 등 최소 API 제공
+- **최근 진행**: READY-8 정합화 1차 완료
+  - `DefaultApp.ready()`에서 genesis snapshot computed 평가 반영
+  - world 통합 테스트에 genesis computed 회귀 케이스 추가
 
 ### bridge
 - **상태**: projection/intent 변환 최소 구조 제공
@@ -96,11 +99,21 @@
     - `processHITLDecision`
     - tribunal vote 처리 경로
     - 승인 시 HostExecutor 실행 및 world/lineage/store 반영
+  - P0 하드닝 1차 완료 (2026-02-08)
+    - `submitProposal` 입력 검증 보강(base world pending/origin actor/intentKey)
+    - `executeProposal` executor 예외 경계 보강(failed world + failed event + failed terminal)
+    - 관련 회귀 테스트 추가
   - `:manifesto-world:test` 통과
 - **다음 필요**:
   - TS `world.test.ts` 시나리오 포팅 지속 확대(coverage 확장)
   - authority escalation 정책 고도화(현재는 authorityId 기반 단일 홉 + loop guard)
   - world/app 경계 장애 시나리오(재시도/중복 실행키) 하드닝
+  - `submitProposal` 입력 검증 정합화(base world pendingRequirements/origin actor/intentKey)
+  - `executeProposal` executor 예외 경계 정합화(failed world + failed event + terminal failed)
+  - READY-8(app bootstrap genesis computed) 정합화
+
+점검 근거:
+- `local-only-docs/reports/next-cycle-review-2026-02-08.md`
 
 ---
 

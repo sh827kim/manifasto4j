@@ -9,6 +9,7 @@ import ai.manifesto.core.expr.literal.Get;
 import ai.manifesto.core.expr.literal.Lit;
 import ai.manifesto.core.flow.FlowNode;
 import ai.manifesto.core.schema.ActionSpec;
+import ai.manifesto.core.schema.ComputedFieldDef;
 import ai.manifesto.core.schema.DomainSchema;
 import ai.manifesto.core.schema.FieldSpec;
 import ai.manifesto.host.EffectResult;
@@ -41,7 +42,10 @@ class AppWorldIntegrationTest {
                 "urn:test:world-app",
                 "1.0.0",
                 new ActionSpec[]{action},
-                new FieldSpec[]{new FieldSpec("status", "string", false, "")}
+                new FieldSpec[]{new FieldSpec("status", "string", false, "")},
+                new ComputedFieldDef[]{
+                        ComputedFieldDef.simple("computed.genesisFlag", new Lit("ok"))
+                }
         );
 
         Snapshot snapshot = Snapshot.builder()
@@ -73,11 +77,38 @@ class AppWorldIntegrationTest {
         assertEquals("", app.getSnapshot().getData().get("status"));
     }
 
+    @Test
+    void worldReadyEvaluatesComputedAtGenesis() throws Exception {
+        DomainSchema schema = buildSchemaWithHash(
+                "urn:test:world-ready8",
+                "1.0.0",
+                new ActionSpec[]{new ActionSpec.Builder("noop").flow(FlowNode.Halt.of("done")).build()},
+                new FieldSpec[]{new FieldSpec("status", "string", false, "")},
+                new ComputedFieldDef[]{
+                        ComputedFieldDef.simple("computed.genesisValue", new Lit(42))
+                }
+        );
+
+        Snapshot snapshot = Snapshot.builder()
+                .data(new HashMap<>(Map.of("status", "")))
+                .computed(new HashMap<>())
+                .system(SystemState.initial())
+                .input(new HashMap<>())
+                .meta(Snapshot.SnapshotMeta.create(0, 100L, "seed", schema.getHash()))
+                .build();
+
+        App app = AppFactory.createWorldApp(schema, snapshot, new HostRuntime(), "human-1", ActorKind.HUMAN);
+        app.ready();
+
+        assertEquals(42, app.getSnapshot().getComputed().get("computed.genesisValue"));
+    }
+
     private DomainSchema buildSchemaWithHash(
             String id,
             String version,
             ActionSpec[] actions,
-            FieldSpec[] dataFields
+            FieldSpec[] dataFields,
+            ComputedFieldDef[] computedFields
     ) {
         DomainSchema.Builder tempBuilder = new DomainSchema.Builder(id, version);
         for (ActionSpec action : actions) {
@@ -85,6 +116,9 @@ class AppWorldIntegrationTest {
         }
         for (FieldSpec field : dataFields) {
             tempBuilder.addDataField(field);
+        }
+        for (ComputedFieldDef computedField : computedFields) {
+            tempBuilder.addComputedField(computedField);
         }
         DomainSchema tempSchema = tempBuilder.hash("").build();
         String hash = ValidationUtils.computeSchemaHash(tempSchema);
@@ -95,6 +129,9 @@ class AppWorldIntegrationTest {
         }
         for (FieldSpec field : dataFields) {
             builder.addDataField(field);
+        }
+        for (ComputedFieldDef computedField : computedFields) {
+            builder.addComputedField(computedField);
         }
         return builder.build();
     }

@@ -1,6 +1,7 @@
 package ai.manifesto.world;
 
 import ai.manifesto.core.Intent;
+import ai.manifesto.core.Requirement;
 import ai.manifesto.core.Snapshot;
 import ai.manifesto.core.SystemState;
 import ai.manifesto.world.events.WorldEvent;
@@ -27,6 +28,7 @@ import ai.manifesto.world.schema.AuthorityRef;
 import ai.manifesto.world.types.HostExecutionOptions;
 import ai.manifesto.world.types.HostExecutionResult;
 import ai.manifesto.world.types.HostExecutor;
+import ai.manifesto.world.types.IntentKeys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -39,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ManifestoWorldTest {
     private Snapshot genesisSnapshot;
@@ -70,13 +73,7 @@ class ManifestoWorldTest {
         ActorRef actor = new ActorRef("human-1", ActorKind.HUMAN);
         world.registerActor(actor, new AutoApprovePolicy());
 
-        IntentInstance intent = new IntentInstance(
-                new IntentBody("increment", Map.of(), null),
-                "intent-1",
-                "intent-key-1",
-                new IntentMeta(new IntentOrigin("projection", new IntentSource("ui", "event-1"), actor))
-        );
-
+        IntentInstance intent = createIntentInstance(actor, "increment", "intent-1", "event-1");
         ProposalResult result = world.submitProposal("human-1", intent, genesis.getWorldId(), null);
 
         assertNotNull(result.getDecision());
@@ -97,13 +94,7 @@ class ManifestoWorldTest {
         ActorRef agent = new ActorRef("agent-1", ActorKind.AGENT);
         world.registerActor(agent, new HitlPolicy(owner, null, TimeoutAction.REJECT));
 
-        IntentInstance intent = new IntentInstance(
-                new IntentBody("update", Map.of(), null),
-                "intent-2",
-                "intent-key-2",
-                new IntentMeta(new IntentOrigin("projection", new IntentSource("ui", "event-2"), agent))
-        );
-
+        IntentInstance intent = createIntentInstance(agent, "update", "intent-2", "event-2");
         ProposalResult pending = world.submitProposal("agent-1", intent, genesis.getWorldId(), null);
         assertEquals("PENDING", world.getAuthorityEvaluator().getHitlHandler().isPending(pending.getProposal().getProposalId().value()) ? "PENDING" : "OTHER");
 
@@ -131,12 +122,7 @@ class ManifestoWorldTest {
         World genesis = world.createGenesis(genesisSnapshot);
         world.registerActor(new ActorRef("human-1", ActorKind.HUMAN), new AutoApprovePolicy());
 
-        IntentInstance intent = new IntentInstance(
-                new IntentBody("increment", Map.of(), null),
-                "intent-3",
-                "intent-key-3",
-                new IntentMeta(new IntentOrigin("projection", new IntentSource("ui", "event-3"), new ActorRef("human-1", ActorKind.HUMAN)))
-        );
+        IntentInstance intent = createIntentInstance(new ActorRef("human-1", ActorKind.HUMAN), "increment", "intent-3", "event-3");
         world.submitProposal("human-1", intent, genesis.getWorldId(), null);
 
         long before = world.getEpoch();
@@ -174,13 +160,7 @@ class ManifestoWorldTest {
         );
         world.registerActor(agent, policy);
 
-        IntentInstance intent = new IntentInstance(
-                new IntentBody("danger-action", Map.of(), null),
-                "intent-escalate",
-                "intent-key-escalate",
-                new IntentMeta(new IntentOrigin("projection", new IntentSource("ui", "event-escalate"), agent))
-        );
-
+        IntentInstance intent = createIntentInstance(agent, "danger-action", "intent-escalate", "event-escalate");
         ProposalResult result = world.submitProposal("agent-esc", intent, genesis.getWorldId(), null);
 
         assertEquals(ProposalStatus.COMPLETED, result.getProposal().getStatus());
@@ -198,18 +178,8 @@ class ManifestoWorldTest {
         ActorRef actor = new ActorRef("human-dup", ActorKind.HUMAN);
         world.registerActor(actor, new AutoApprovePolicy());
 
-        IntentInstance intent1 = new IntentInstance(
-                new IntentBody("same-output", Map.of(), null),
-                "intent-dup-1",
-                "intent-key-dup-1",
-                new IntentMeta(new IntentOrigin("projection", new IntentSource("ui", "event-dup-1"), actor))
-        );
-        IntentInstance intent2 = new IntentInstance(
-                new IntentBody("same-output", Map.of(), null),
-                "intent-dup-2",
-                "intent-key-dup-2",
-                new IntentMeta(new IntentOrigin("projection", new IntentSource("ui", "event-dup-2"), actor))
-        );
+        IntentInstance intent1 = createIntentInstance(actor, "same-output", "intent-dup-1", "event-dup-1");
+        IntentInstance intent2 = createIntentInstance(actor, "same-output", "intent-dup-2", "event-dup-2");
 
         ProposalResult result1 = world.submitProposal("human-dup", intent1, genesis.getWorldId(), null);
         ProposalResult result2 = world.submitProposal("human-dup", intent2, genesis.getWorldId(), null);
@@ -230,18 +200,8 @@ class ManifestoWorldTest {
         ActorRef actor = new ActorRef("human-ek", ActorKind.HUMAN);
         world.registerActor(actor, new AutoApprovePolicy());
 
-        IntentInstance intent1 = new IntentInstance(
-                new IntentBody("act-1", Map.of(), null),
-                "intent-ek-1",
-                "intent-key-ek-1",
-                new IntentMeta(new IntentOrigin("projection", new IntentSource("ui", "event-ek-1"), actor))
-        );
-        IntentInstance intent2 = new IntentInstance(
-                new IntentBody("act-2", Map.of(), null),
-                "intent-ek-2",
-                "intent-key-ek-2",
-                new IntentMeta(new IntentOrigin("projection", new IntentSource("ui", "event-ek-2"), actor))
-        );
+        IntentInstance intent1 = createIntentInstance(actor, "act-1", "intent-ek-1", "event-ek-1");
+        IntentInstance intent2 = createIntentInstance(actor, "act-2", "intent-ek-2", "event-ek-2");
 
         ProposalResult result1 = world.submitProposal("human-ek", intent1, genesis.getWorldId(), null);
         ProposalResult result2 = world.submitProposal("human-ek", intent2, genesis.getWorldId(), null);
@@ -264,12 +224,7 @@ class ManifestoWorldTest {
         ActorRef actor = new ActorRef("human-1", ActorKind.HUMAN);
         world.registerActor(actor, new AutoApprovePolicy());
 
-        IntentInstance intent = new IntentInstance(
-                new IntentBody("increment", Map.of(), null),
-                "intent-q1",
-                "intent-key-q1",
-                new IntentMeta(new IntentOrigin("projection", new IntentSource("ui", "event-q1"), actor))
-        );
+        IntentInstance intent = createIntentInstance(actor, "increment", "intent-q1", "event-q1");
         ProposalResult result = world.submitProposal("human-1", intent, genesis.getWorldId(), null);
 
         assertEquals(1, world.getRegisteredActors().size());
@@ -293,13 +248,7 @@ class ManifestoWorldTest {
         ActorRef agent = new ActorRef("agent-timeout", ActorKind.AGENT);
         world.registerActor(agent, new HitlPolicy(owner, 0L, TimeoutAction.REJECT));
 
-        IntentInstance intent = new IntentInstance(
-                new IntentBody("update", Map.of(), null),
-                "intent-timeout",
-                "intent-key-timeout",
-                new IntentMeta(new IntentOrigin("projection", new IntentSource("ui", "event-timeout"), agent))
-        );
-
+        IntentInstance intent = createIntentInstance(agent, "update", "intent-timeout", "event-timeout");
         ProposalResult pending = world.submitProposal("agent-timeout", intent, genesis.getWorldId(), null);
         assertEquals(ProposalStatus.EVALUATING, pending.getProposal().getStatus());
 
@@ -323,13 +272,7 @@ class ManifestoWorldTest {
         ActorRef agent = new ActorRef("agent-stale", ActorKind.AGENT);
         world.registerActor(agent, new HitlPolicy(owner, null, TimeoutAction.REJECT));
 
-        IntentInstance intent = new IntentInstance(
-                new IntentBody("update", Map.of(), null),
-                "intent-stale",
-                "intent-key-stale",
-                new IntentMeta(new IntentOrigin("projection", new IntentSource("ui", "event-stale"), agent))
-        );
-
+        IntentInstance intent = createIntentInstance(agent, "update", "intent-stale", "event-stale");
         ProposalResult pending = world.submitProposal("agent-stale", intent, genesis.getWorldId(), null);
         String pendingId = pending.getProposal().getProposalId().value();
         assertTrue(world.getAuthorityEvaluator().getHitlHandler().isPending(pendingId));
@@ -338,5 +281,99 @@ class ManifestoWorldTest {
 
         assertNull(world.getProposal(pendingId));
         assertTrue(!world.getAuthorityEvaluator().getHitlHandler().isPending(pendingId));
+    }
+
+    @Test
+    void rejectsProposalWhenOriginActorDoesNotMatchSubmitActor() {
+        HostExecutor executor = (executionKey, baseSnapshot, intent, options) -> HostExecutionResult.completed(baseSnapshot);
+        ManifestoWorld world = new ManifestoWorld("schema-hash", executor, null);
+        World genesis = world.createGenesis(genesisSnapshot);
+
+        ActorRef submitter = new ActorRef("human-origin", ActorKind.HUMAN);
+        ActorRef differentOrigin = new ActorRef("other-origin", ActorKind.HUMAN);
+        world.registerActor(submitter, new AutoApprovePolicy());
+
+        IntentInstance intent = createIntentInstance(differentOrigin, "increment", "intent-origin-mismatch", "event-origin-mismatch");
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> world.submitProposal(submitter.getActorId(), intent, genesis.getWorldId(), null)
+        );
+    }
+
+    @Test
+    void rejectsProposalWhenIntentKeyDoesNotMatchBody() {
+        HostExecutor executor = (executionKey, baseSnapshot, intent, options) -> HostExecutionResult.completed(baseSnapshot);
+        ManifestoWorld world = new ManifestoWorld("schema-hash", executor, null);
+        World genesis = world.createGenesis(genesisSnapshot);
+
+        ActorRef actor = new ActorRef("human-key", ActorKind.HUMAN);
+        world.registerActor(actor, new AutoApprovePolicy());
+
+        IntentBody body = new IntentBody("increment", Map.of("n", 1), null);
+        IntentInstance invalid = new IntentInstance(
+                body,
+                "intent-invalid-key",
+                "not-matching-key",
+                new IntentMeta(new IntentOrigin("projection", new IntentSource("ui", "event-invalid-key"), actor))
+        );
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> world.submitProposal(actor.getActorId(), invalid, genesis.getWorldId(), null)
+        );
+    }
+
+    @Test
+    void rejectsProposalWhenBaseWorldHasPendingRequirements() {
+        HostExecutor executor = (executionKey, baseSnapshot, intent, options) -> HostExecutionResult.completed(baseSnapshot);
+        ManifestoWorld world = new ManifestoWorld("schema-hash", executor, null);
+
+        Snapshot pendingSnapshot = genesisSnapshot.withSystem(
+                genesisSnapshot.getSystem().addPendingRequirement(
+                        Requirement.builder().id("req-1").type("effect.test").build()
+                )
+        );
+        World genesis = world.createGenesis(pendingSnapshot);
+
+        ActorRef actor = new ActorRef("human-pending", ActorKind.HUMAN);
+        world.registerActor(actor, new AutoApprovePolicy());
+        IntentInstance intent = createIntentInstance(actor, "increment", "intent-pending", "event-pending");
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> world.submitProposal(actor.getActorId(), intent, genesis.getWorldId(), null)
+        );
+    }
+
+    @Test
+    void marksProposalFailedWhenExecutorThrows() {
+        HostExecutor executor = (executionKey, baseSnapshot, intent, options) -> {
+            throw new RuntimeException("executor boom");
+        };
+        List<WorldEvent> events = new ArrayList<>();
+        ManifestoWorld world = new ManifestoWorld("schema-hash", executor, null, events::add);
+        World genesis = world.createGenesis(genesisSnapshot);
+
+        ActorRef actor = new ActorRef("human-fail", ActorKind.HUMAN);
+        world.registerActor(actor, new AutoApprovePolicy());
+        IntentInstance intent = createIntentInstance(actor, "increment", "intent-fail", "event-fail");
+
+        ProposalResult result = world.submitProposal(actor.getActorId(), intent, genesis.getWorldId(), null);
+
+        assertEquals(ProposalStatus.FAILED, result.getProposal().getStatus());
+        assertNotNull(result.getResultWorld());
+        assertNotNull(result.getError());
+        assertTrue(events.stream().anyMatch(e -> e.getType().equals("execution:failed")));
+    }
+
+    private IntentInstance createIntentInstance(ActorRef actor, String type, String intentId, String eventId) {
+        IntentBody body = new IntentBody(type, Map.of(), null);
+        String intentKey = IntentKeys.computeIntentKey("schema-hash", body);
+        return new IntentInstance(
+                body,
+                intentId,
+                intentKey,
+                new IntentMeta(new IntentOrigin("projection", new IntentSource("ui", eventId), actor))
+        );
     }
 }

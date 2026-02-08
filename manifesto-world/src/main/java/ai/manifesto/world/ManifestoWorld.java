@@ -39,6 +39,7 @@ import ai.manifesto.world.types.ExecutionKeys;
 import ai.manifesto.world.types.HostExecutionOptions;
 import ai.manifesto.world.types.HostExecutionResult;
 import ai.manifesto.world.types.HostExecutor;
+import ai.manifesto.world.types.IntentKeys;
 
 import java.util.Objects;
 import java.util.Map;
@@ -160,6 +161,24 @@ public final class ManifestoWorld {
         if (!store.hasWorld(baseWorld)) {
             throw new IllegalArgumentException("Base world not found: " + baseWorld.value());
         }
+        Snapshot baseSnapshot = store.getSnapshot(baseWorld);
+        if (baseSnapshot == null) {
+            throw new IllegalStateException("Snapshot not found for base world: " + baseWorld.value());
+        }
+        if (!baseSnapshot.getSystem().getPendingRequirements().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Base world has pending requirements and cannot be used as base world: " + baseWorld.value()
+            );
+        }
+        ActorRef originActor = intent.getMeta().getOrigin().getActor();
+        if (!binding.getActor().getActorId().equals(originActor.getActorId())
+                || binding.getActor().getKind() != originActor.getKind()) {
+            throw new IllegalArgumentException("Intent origin actor must match proposal actor");
+        }
+        String expectedIntentKey = IntentKeys.computeIntentKey(schemaHash, intent.getBody());
+        if (!expectedIntentKey.equals(intent.getIntentKey())) {
+            throw new IllegalArgumentException("Intent key does not match computed value");
+        }
 
         ProposalId proposalId = ProposalId.of("prop-" + UUID.randomUUID());
         String executionKey = ExecutionKeys.createExecutionKey(proposalId, 1);
@@ -279,51 +298,102 @@ public final class ManifestoWorld {
                 executing.getIntent().getIntentId()
         );
 
-        HostExecutionResult executionResult = executor.execute(
-                executing.getExecutionKey(),
-                baseSnapshot,
-                hostIntent,
-                new HostExecutionOptions(executing.getApprovedScope())
-        );
-
-        Snapshot terminalSnapshot = executionResult.getTerminalSnapshot();
-        String finalStatus = deriveOutcome(terminalSnapshot);
-
-        long createdAt = terminalSnapshot.getMeta() != null ? terminalSnapshot.getMeta().getTimestamp() : System.currentTimeMillis();
-        World resultWorld = WorldFactories.createWorldFromExecution(schemaHash, terminalSnapshot, proposalId, createdAt);
-        if (!store.hasWorld(resultWorld.getWorldId())) {
-            ensureSuccess(store.saveWorld(resultWorld));
-            lineage.addWorldWithEdge(
-                    resultWorld,
-                    executing.getBaseWorld(),
-                    proposalId,
-                    decisionRecord.getDecisionId(),
-                    System.currentTimeMillis()
+        try {
+            HostExecutionResult executionResult = executor.execute(
+                    executing.getExecutionKey(),
+                    baseSnapshot,
+                    hostIntent,
+                    new HostExecutionOptions(executing.getApprovedScope())
             );
-            var parentEdge = lineage.getParentEdge(resultWorld.getWorldId());
-            if (parentEdge != null) {
-                ensureSuccess(store.saveEdge(parentEdge));
+            if (executionResult == null || executionResult.getTerminalSnapshot() == null) {
+                throw new IllegalStateException("Executor returned empty terminal snapshot");
             }
+
+            Snapshot terminalSnapshot = executionResult.getTerminalSnapshot();
+            String finalStatus = deriveOutcome(terminalSnapshot);
+
+            long createdAt = terminalSnapshot.getMeta() != null ? terminalSnapshot.getMeta().getTimestamp() : System.currentTimeMillis();
+            World resultWorld = WorldFactories.createWorldFromExecution(schemaHash, terminalSnapshot, proposalId, createdAt);
+            if (!store.hasWorld(resultWorld.getWorldId())) {
+                ensureSuccess(store.saveWorld(resultWorld));
+                lineage.addWorldWithEdge(
+                        resultWorld,
+                        executing.getBaseWorld(),
+                        proposalId,
+                        decisionRecord.getDecisionId(),
+                        System.currentTimeMillis()
+                );
+                var parentEdge = lineage.getParentEdge(resultWorld.getWorldId());
+                if (parentEdge != null) {
+                    ensureSuccess(store.saveEdge(parentEdge));
+                }
+            }
+            ensureSuccess(store.saveSnapshot(resultWorld.getWorldId(), terminalSnapshot));
+            emitEvent(
+                    "world:created",
+                    Map.of(
+                            "worldId", resultWorld.getWorldId().value(),
+                            "proposalId", proposalId.value(),
+                            "outcome", finalStatus
+                    )
+            );
+
+            ProposalStatus status = "completed".equals(finalStatus) ? ProposalStatus.COMPLETED : ProposalStatus.FAILED;
+            TransitionUpdates terminalUpdates = TransitionUpdates.empty()
+                    .withResultWorld(resultWorld.getWorldId())
+                    .withCompletedAt(System.currentTimeMillis());
+
+            Proposal completed = proposalQueue.transition(proposalId, status, terminalUpdates);
+            ensureSuccess(store.updateProposal(proposalId, terminalUpdates, status));
+            emitEvent("execution:" + finalStatus, Map.of("proposalId", proposalId.value(), "worldId", resultWorld.getWorldId().value()));
+            return ProposalResult.of(completed, decisionRecord, resultWorld);
+        } catch (Exception error) {
+            long createdAt = baseSnapshot.getMeta() != null ? baseSnapshot.getMeta().getTimestamp() : System.currentTimeMillis();
+            World failedWorld = WorldFactories.createWorldFromExecution(schemaHash, baseSnapshot, proposalId, createdAt);
+            if (!store.hasWorld(failedWorld.getWorldId())) {
+                ensureSuccess(store.saveWorld(failedWorld));
+                lineage.addWorldWithEdge(
+                        failedWorld,
+                        executing.getBaseWorld(),
+                        proposalId,
+                        decisionRecord.getDecisionId(),
+                        System.currentTimeMillis()
+                );
+                var parentEdge = lineage.getParentEdge(failedWorld.getWorldId());
+                if (parentEdge != null) {
+                    ensureSuccess(store.saveEdge(parentEdge));
+                }
+            }
+            ensureSuccess(store.saveSnapshot(failedWorld.getWorldId(), baseSnapshot));
+            emitEvent(
+                    "world:created",
+                    Map.of(
+                            "worldId", failedWorld.getWorldId().value(),
+                            "proposalId", proposalId.value(),
+                            "outcome", "failed"
+                    )
+            );
+            emitEvent(
+                    "execution:failed",
+                    Map.of(
+                            "proposalId", proposalId.value(),
+                            "worldId", failedWorld.getWorldId().value(),
+                            "error", error.getMessage() != null ? error.getMessage() : error.getClass().getSimpleName()
+                    )
+            );
+
+            TransitionUpdates terminalUpdates = TransitionUpdates.empty()
+                    .withResultWorld(failedWorld.getWorldId())
+                    .withCompletedAt(System.currentTimeMillis());
+            Proposal failed = proposalQueue.transition(proposalId, ProposalStatus.FAILED, terminalUpdates);
+            ensureSuccess(store.updateProposal(proposalId, terminalUpdates, ProposalStatus.FAILED));
+            return new ProposalResult(
+                    failed,
+                    decisionRecord,
+                    failedWorld,
+                    error.getMessage() != null ? error.getMessage() : "Execution failed"
+            );
         }
-        ensureSuccess(store.saveSnapshot(resultWorld.getWorldId(), terminalSnapshot));
-        emitEvent(
-                "world:created",
-                Map.of(
-                        "worldId", resultWorld.getWorldId().value(),
-                        "proposalId", proposalId.value(),
-                        "outcome", finalStatus
-                )
-        );
-
-        ProposalStatus status = "completed".equals(finalStatus) ? ProposalStatus.COMPLETED : ProposalStatus.FAILED;
-        TransitionUpdates terminalUpdates = TransitionUpdates.empty()
-                .withResultWorld(resultWorld.getWorldId())
-                .withCompletedAt(System.currentTimeMillis());
-
-        Proposal completed = proposalQueue.transition(proposalId, status, terminalUpdates);
-        ensureSuccess(store.updateProposal(proposalId, terminalUpdates, status));
-        emitEvent("execution:" + finalStatus, Map.of("proposalId", proposalId.value(), "worldId", resultWorld.getWorldId().value()));
-        return ProposalResult.of(completed, decisionRecord, resultWorld);
     }
 
     private EvaluationOutcome resolveEscalation(
