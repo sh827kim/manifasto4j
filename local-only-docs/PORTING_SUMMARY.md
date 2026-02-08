@@ -62,6 +62,10 @@
 - **완료**: parser/analyzer/IR generator 초안, patch fragment/schema patch 렌더링
 - **아직 부족**: lowering/evaluation 정식 계층과 오류/제약/trace 정합
 - **최근 진행**: `onceIntent` 지원 + compiler golden 통과 정합화
+- **최근 진행(추가)**:
+  - `RuntimePatchEvaluatorLite` trace 확장 (`evaluateWithTrace`)
+  - skip reason code 정규화 + applied/skipped/dropped trace 이벤트 기록
+  - 관련 단위 테스트 추가
 
 ### host
 - **상태**: compute-loop/patch 적용/requirement 처리 최소 구현

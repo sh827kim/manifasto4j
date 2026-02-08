@@ -10,8 +10,14 @@ import java.util.Map;
  */
 public final class RuntimePatchEvaluatorLite {
     public EvaluationResult evaluate(List<Map<String, Object>> patches, SnapshotContext snapshot) {
+        EvaluationTraceResult traced = evaluateWithTrace(patches, snapshot);
+        return new EvaluationResult(traced.patches(), traced.skipped(), traced.finalSnapshot());
+    }
+
+    public EvaluationTraceResult evaluateWithTrace(List<Map<String, Object>> patches, SnapshotContext snapshot) {
         List<Map<String, Object>> outPatches = new ArrayList<>();
         List<Map<String, Object>> skipped = new ArrayList<>();
+        List<Map<String, Object>> trace = new ArrayList<>();
         SnapshotContext workingSnapshot = snapshot;
 
         for (int i = 0; i < patches.size(); i++) {
@@ -19,12 +25,20 @@ public final class RuntimePatchEvaluatorLite {
             if (patch.containsKey("condition")) {
                 Object cond = evaluateExpr(castMap(patch.get("condition")), workingSnapshot);
                 if (!(cond instanceof Boolean) || !((Boolean) cond)) {
-                    String reason = cond == null ? "null" : (cond instanceof Boolean ? "false" : "non-boolean");
+                    String reason = cond == null
+                        ? "COND_NULL"
+                        : (cond instanceof Boolean ? "COND_FALSE" : "COND_NON_BOOLEAN");
                     Map<String, Object> skipInfo = new LinkedHashMap<>();
                     skipInfo.put("index", i);
                     skipInfo.put("path", patch.get("path"));
                     skipInfo.put("reason", reason);
                     skipped.add(skipInfo);
+                    Map<String, Object> traceEntry = new LinkedHashMap<>();
+                    traceEntry.put("index", i);
+                    traceEntry.put("path", patch.get("path"));
+                    traceEntry.put("event", "skipped");
+                    traceEntry.put("reason", reason);
+                    trace.add(traceEntry);
                     continue;
                 }
             }
@@ -38,10 +52,23 @@ public final class RuntimePatchEvaluatorLite {
             if (out != null) {
                 outPatches.add(out);
                 workingSnapshot = applyToWorkingSnapshot(out, workingSnapshot);
+                Map<String, Object> traceEntry = new LinkedHashMap<>();
+                traceEntry.put("index", i);
+                traceEntry.put("path", path);
+                traceEntry.put("event", "applied");
+                traceEntry.put("op", op);
+                trace.add(traceEntry);
+            } else {
+                Map<String, Object> traceEntry = new LinkedHashMap<>();
+                traceEntry.put("index", i);
+                traceEntry.put("path", path);
+                traceEntry.put("event", "dropped");
+                traceEntry.put("reason", "UNSUPPORTED_PATCH");
+                trace.add(traceEntry);
             }
         }
 
-        return new EvaluationResult(outPatches, skipped, workingSnapshot);
+        return new EvaluationTraceResult(outPatches, skipped, trace, workingSnapshot);
     }
 
     public Object evaluateExpr(Map<String, Object> expr, SnapshotContext snapshot) {
@@ -860,4 +887,9 @@ public final class RuntimePatchEvaluatorLite {
     public record EvaluationResult(List<Map<String, Object>> patches,
                                    List<Map<String, Object>> skipped,
                                    SnapshotContext finalSnapshot) {}
+
+    public record EvaluationTraceResult(List<Map<String, Object>> patches,
+                                        List<Map<String, Object>> skipped,
+                                        List<Map<String, Object>> trace,
+                                        SnapshotContext finalSnapshot) {}
 }

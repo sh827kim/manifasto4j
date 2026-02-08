@@ -93,6 +93,12 @@
 - `:manifesto-compiler:test` 통과
 - 주요 lowering/eval 시나리오가 TS 케이스와 정렬
 
+**진행 상태 (2026-02-08 업데이트)**
+- [x] `RuntimePatchEvaluatorLite`에 trace 포함 평가 API(`evaluateWithTrace`) 추가
+- [x] skip reason code 정규화(`COND_FALSE`, `COND_NULL`, `COND_NON_BOOLEAN`)
+- [x] applied/skipped/dropped trace 이벤트 기록 추가
+- [x] 단위 테스트 추가(`RuntimePatchEvaluatorLiteTest`) + `:manifesto-compiler:test` 통과
+
 ---
 
 ### 1-3. Golden 벡터 자동 동기화
