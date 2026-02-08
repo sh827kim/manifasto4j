@@ -14,6 +14,9 @@ TypeScript `packages/bridge` 대비 Java `manifesto-bridge` 구현 상태를 비
 - `SnapshotView` (data + computed)
 - `SourceEvent` (kind, eventId, payload, occurredAt)
 - `BridgeRuntime` (Projection 실행기)
+- `BridgeRuntime` routed projection 지원
+  - event kind별 projection 라우팅
+  - fallback projection
 
 ## 미구현
 ### 1) Bridge API 전체 부재
@@ -31,7 +34,7 @@ TypeScript `packages/bridge` 대비 Java `manifesto-bridge` 구현 상태를 비
 
 ### 3) Projection Registry / Recorder
 - TS는 projection registry(등록/라우팅)와 recorder(감사/리플레이 로그) 제공
-- Java는 registry/recorder 계층 없음
+- Java는 기본 routed map 수준만 지원 (정식 registry/recorder는 미구현)
 
 ### 4) Schema/Validation/Zod 기반 타입
 - TS는 `SourceEvent`, `SnapshotView`, `ProjectionResult` 등 Zod 스키마 기반 검증 제공
@@ -69,4 +72,4 @@ TypeScript `packages/bridge` 대비 Java `manifesto-bridge` 구현 상태를 비
 4. Action Catalog projector 대응
 
 ## 최근 업데이트 (2026-02-08)
-- 별도 기능 확장 없음 (최소 projection 실행기 상태 유지)
+- routed projection 기능 추가 + 단위 테스트 보강

@@ -27,11 +27,14 @@ TypeScript `packages/compiler` 대비 Java `manifesto-compiler` 구현 상태를
 
 ### 2) Lowering 계층 (정식)
 - TS는 `lowerExprNode`, `lowerRuntimePatches`, `lowerPatchFragments`를 **컨텍스트/제약/오류 코드**와 함께 제공
-- Java는 `LoweringLite` 중심 (정식 API/오류 코드/shape 검증은 제한적)
+- Java는 `LoweringLite` 중심이지만 strict API 1차 반영
+  - `lowerRuntimePatchesStrict` 추가 (op/path/value shape 검증)
 
 ### 3) Evaluation 계층 (정식)
 - TS는 `evaluateExpr`, `evaluateRuntimePatches`, `evaluateRuntimePatchesWithTrace` 제공
-- Java는 `RuntimePatchEvaluatorLite`만 존재 (trace/스킵 사유 분류 미지원)
+- Java는 `RuntimePatchEvaluatorLite` 중심이며 strict API 1차 반영
+  - `evaluateStrict` 추가
+  - shape 오류 코드(`RPV001~RPV007`) 추가
 
 ### 4) CLI/Formatter
 - TS CLI/formatter 모듈 존재 → Java 구현 없음
@@ -58,3 +61,6 @@ TypeScript `packages/compiler` 대비 Java `manifesto-compiler` 구현 상태를
 - compiler golden 케이스 확장
   - `onceIntent` contextual edge 케이스
   - namespace/domain name 변경 시 schema hash 영향 케이스
+- lowering/evaluation strict API 1차 보강
+  - `LoweringLiteStrictTest`
+  - `RuntimePatchEvaluatorLiteTest` strict 오류 케이스

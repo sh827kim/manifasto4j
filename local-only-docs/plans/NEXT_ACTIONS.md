@@ -80,7 +80,17 @@
 - 기존 golden/vector 회귀 없음
 
 상태:
-- [ ] 대기
+- [x] 완료 (2026-02-08)
+- 산출물:
+  - `manifesto-compiler/src/main/java/ai/manifesto/compiler/LoweringLite.java`
+    - `lowerRuntimePatchesStrict` API 추가
+  - `manifesto-compiler/src/main/java/ai/manifesto/compiler/RuntimePatchEvaluatorLite.java`
+    - `evaluateStrict` API + shape 오류 코드(`RPV00x`) 추가
+  - `manifesto-compiler/src/test/java/ai/manifesto/compiler/LoweringLiteStrictTest.java`
+  - `manifesto-compiler/src/test/java/ai/manifesto/compiler/RuntimePatchEvaluatorLiteTest.java`
+    - strict shape 오류 테스트 추가
+- 검증:
+  - `./gradlew :manifesto-compiler:test` 통과
 
 ---
 
@@ -100,7 +110,23 @@
 - 문서와 구현의 용어/역할이 정합
 
 상태:
-- [ ] 대기
+- [x] 완료 (2026-02-08)
+- 산출물:
+  - `manifesto-bridge/src/main/java/ai/manifesto/bridge/BridgeRuntime.java`
+    - event kind 라우팅 + fallback projection 지원
+  - `manifesto-bridge/src/test/java/ai/manifesto/bridge/BridgeRuntimeTest.java`
+    - routed projection 테스트 추가
+  - `manifesto-app/src/main/java/ai/manifesto/app/AppSnapshotStore.java`
+  - `manifesto-app/src/main/java/ai/manifesto/app/InMemoryAppSnapshotStore.java`
+  - `manifesto-app/src/main/java/ai/manifesto/app/DefaultApp.java`
+    - session snapshot load/save 경로 추가
+  - `manifesto-app/src/main/java/ai/manifesto/app/AppFactory.java`
+    - session/store 주입 오버로드 추가
+  - `manifesto-app/src/test/java/ai/manifesto/app/AppBridgeIntegrationTest.java`
+    - app-bridge 통합 + session restore 테스트 추가
+- 검증:
+  - `./gradlew :manifesto-bridge:test` 통과
+  - `./gradlew :manifesto-app:test` 통과
 
 ---
 
@@ -108,5 +134,5 @@
 
 1. [완료] Action 1
 2. [완료] Action 2
-3. Action 3
-4. Action 4
+3. [완료] Action 3
+4. [완료] Action 4

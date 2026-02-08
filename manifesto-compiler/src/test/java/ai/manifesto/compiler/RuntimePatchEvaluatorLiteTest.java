@@ -63,4 +63,32 @@ class RuntimePatchEvaluatorLiteTest {
         assertTrue(result.trace().stream().anyMatch(e -> "dropped".equals(e.get("event"))));
         assertEquals(1, result.finalSnapshot().data().get("count"));
     }
+
+    @Test
+    void evaluateStrictCollectsShapeErrors() {
+        RuntimePatchEvaluatorLite evaluator = new RuntimePatchEvaluatorLite();
+        RuntimePatchEvaluatorLite.SnapshotContext snapshot = new RuntimePatchEvaluatorLite.SnapshotContext(
+                new LinkedHashMap<>(Map.of("count", 0)),
+                new LinkedHashMap<>(),
+                new LinkedHashMap<>(),
+                new LinkedHashMap<>()
+        );
+
+        Map<String, Object> validValue = new LinkedHashMap<>();
+        validValue.put("kind", "lit");
+        validValue.put("value", 1);
+
+        List<Map<String, Object>> patches = List.of(
+                new LinkedHashMap<>(Map.of("op", "set", "path", "count", "value", validValue)),
+                new LinkedHashMap<>(Map.of("op", "set", "path", "count")),
+                new LinkedHashMap<>(Map.of("op", "", "path", "count", "value", validValue))
+        );
+
+        RuntimePatchEvaluatorLite.StrictEvaluationResult result = evaluator.evaluateStrict(patches, snapshot);
+
+        assertEquals(1, result.patches().size());
+        assertEquals(2, result.errors().size());
+        assertTrue(result.errors().stream().anyMatch(e -> "RPV006".equals(e.get("code"))));
+        assertTrue(result.errors().stream().anyMatch(e -> "RPV002".equals(e.get("code"))));
+    }
 }

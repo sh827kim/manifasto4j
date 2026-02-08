@@ -35,13 +35,15 @@ public final class DefaultApp implements App {
     private final HostRuntime host;
     private Snapshot snapshot;
     private final List<Subscription> subscriptions = new ArrayList<>();
+    private final String sessionId;
+    private final AppSnapshotStore snapshotStore;
 
     private final ManifestoWorld world;
     private final ActorRef appActor;
     private WorldId currentWorldId;
 
     public DefaultApp(DomainSchema schema, Snapshot initialSnapshot, HostRuntime host) {
-        this(schema, initialSnapshot, host, null, null);
+        this(schema, initialSnapshot, host, null, null, null, null);
     }
 
     public DefaultApp(
@@ -51,11 +53,29 @@ public final class DefaultApp implements App {
             ManifestoWorld world,
             ActorRef appActor
     ) {
+        this(schema, initialSnapshot, host, world, appActor, null, null);
+    }
+
+    public DefaultApp(
+            DomainSchema schema,
+            Snapshot initialSnapshot,
+            HostRuntime host,
+            ManifestoWorld world,
+            ActorRef appActor,
+            String sessionId,
+            AppSnapshotStore snapshotStore
+    ) {
         this.schema = Objects.requireNonNull(schema, "schema is required");
         this.snapshot = Objects.requireNonNull(initialSnapshot, "snapshot is required");
         this.host = Objects.requireNonNull(host, "host is required");
         this.world = world;
         this.appActor = appActor;
+        this.sessionId = sessionId;
+        this.snapshotStore = snapshotStore;
+        Snapshot restored = loadSessionSnapshot();
+        if (restored != null) {
+            this.snapshot = restored;
+        }
     }
 
     @Override
@@ -74,6 +94,7 @@ public final class DefaultApp implements App {
         Snapshot genesisSnapshot = world.getStore().getSnapshot(genesis.getWorldId());
         if (genesisSnapshot != null) {
             this.snapshot = genesisSnapshot;
+            persistSessionSnapshot();
         }
     }
 
@@ -82,6 +103,7 @@ public final class DefaultApp implements App {
         if (world == null) {
             ComputeResult result = host.run(schema, snapshot, intent, 5);
             snapshot = result.getSnapshot();
+            persistSessionSnapshot();
             notifySubscribers(snapshot);
             return new ActionHandle(result);
         }
@@ -119,6 +141,7 @@ public final class DefaultApp implements App {
             Snapshot terminalSnapshot = world.getStore().getSnapshot(currentWorldId);
             if (terminalSnapshot != null) {
                 snapshot = terminalSnapshot;
+                persistSessionSnapshot();
                 notifySubscribers(snapshot);
             }
         }
@@ -165,8 +188,23 @@ public final class DefaultApp implements App {
         Snapshot branchSnapshot = world.getStore().getSnapshot(worldId);
         if (branchSnapshot != null) {
             this.snapshot = branchSnapshot;
+            persistSessionSnapshot();
             notifySubscribers(snapshot);
         }
+    }
+
+    private Snapshot loadSessionSnapshot() {
+        if (sessionId == null || snapshotStore == null) {
+            return null;
+        }
+        return snapshotStore.load(sessionId);
+    }
+
+    private void persistSessionSnapshot() {
+        if (sessionId == null || snapshotStore == null) {
+            return;
+        }
+        snapshotStore.save(sessionId, snapshot);
     }
 
     private ComputeStatus toComputeStatus(ProposalStatus status) {

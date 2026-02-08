@@ -15,6 +15,11 @@ TypeScript `packages/app` 대비 Java `manifesto-app` 구현 상태를 비교 �
 - AppFactory: `schema + initialSnapshot + host`로 App 생성
 - World 연동 경로: `createWorldApp(...)`, `switchBranch(...)`, `getWorld()`
 - READY-8 정합화 1차: `ready()`에서 genesis 생성 전 computed 평가 반영
+- session/store 최소 경로:
+  - `AppSnapshotStore`, `InMemoryAppSnapshotStore`
+  - `AppFactory` session/store 주입 오버로드
+  - `DefaultApp`에서 session snapshot load/save
+- app-bridge 통합 테스트 추가 (`AppBridgeIntegrationTest`)
 
 ## 미구현
 ### 1) v2 App API 및 구성
@@ -31,7 +36,7 @@ TypeScript `packages/app` 대비 Java `manifesto-app` 구현 상태를 비교 �
 ### 3) Runtime 기능군
 - TS `runtime/*`
   - system facade/runtime, memory facade/hub, policy service, subscription, session 등
-- Java에 해당 기능 없음
+- Java는 session snapshot store 최소 구현만 존재
 
 ### 4) Storage/World/Branch
 - TS `storage/*`
@@ -66,3 +71,5 @@ TypeScript `packages/app` 대비 Java `manifesto-app` 구현 상태를 비교 �
 ## 최근 업데이트 (2026-02-08)
 - `createWorldApp` + `DefaultApp` world 연동 경로 반영
 - READY-8(genesis computed) 1차 정합화 반영
+- session snapshot store 경로 1차 반영
+- app-bridge 통합 테스트 추가

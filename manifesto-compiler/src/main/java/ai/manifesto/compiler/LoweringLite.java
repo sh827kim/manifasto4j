@@ -41,6 +41,33 @@ public final class LoweringLite {
         return lowerRuntimePatches(patches, LoweringContext.defaultActionContext());
     }
 
+    public List<Map<String, Object>> lowerRuntimePatchesStrict(List<Map<String, Object>> patches) {
+        return lowerRuntimePatchesStrict(patches, LoweringContext.defaultActionContext());
+    }
+
+    public List<Map<String, Object>> lowerRuntimePatchesStrict(List<Map<String, Object>> patches, CompilePatchOptions options) {
+        return lowerRuntimePatchesStrict(patches, LoweringContext.fromPatchOptions(options));
+    }
+
+    public List<Map<String, Object>> lowerRuntimePatchesStrict(List<Map<String, Object>> patches, LoweringContext ctx) {
+        List<Map<String, Object>> lowered = lowerRuntimePatches(patches, ctx);
+        for (int i = 0; i < lowered.size(); i++) {
+            Map<String, Object> patch = lowered.get(i);
+            String op = requireString(patch.get("op"), "Runtime patch missing 'op'");
+            String path = requireString(patch.get("path"), "Runtime patch missing 'path'");
+            if (path.isBlank()) {
+                throw LoweringError.invalidShape("Runtime patch 'path' must not be blank");
+            }
+            if (!"set".equals(op) && !"unset".equals(op) && !"merge".equals(op)) {
+                throw LoweringError.invalidShape("Runtime patch op is not supported: " + op);
+            }
+            if (("set".equals(op) || "merge".equals(op)) && !patch.containsKey("value")) {
+                throw LoweringError.invalidShape("Runtime patch '" + op + "' requires 'value'");
+            }
+        }
+        return lowered;
+    }
+
     public List<Map<String, Object>> lowerRuntimePatches(List<Map<String, Object>> patches, CompilePatchOptions options) {
         return lowerRuntimePatches(patches, LoweringContext.fromPatchOptions(options));
     }

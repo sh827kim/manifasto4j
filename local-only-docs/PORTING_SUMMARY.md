@@ -72,6 +72,9 @@
   - compiler golden 확장:
     - `onceIntent` contextual edge 케이스 추가
     - namespace/domain name 변경 시 schema hash 차이 케이스 추가
+  - lowering/evaluation strict API 1차 확장:
+    - `lowerRuntimePatchesStrict`
+    - `evaluateStrict` + shape 오류 코드(`RPV00x`)
 
 ### host
 - **상태**: compute-loop/patch 적용/requirement 처리 최소 구현
@@ -105,9 +108,15 @@
 - **최근 진행**: READY-8 정합화 1차 완료
   - `DefaultApp.ready()`에서 genesis snapshot computed 평가 반영
   - world 통합 테스트에 genesis computed 회귀 케이스 추가
+  - runtime/session/store 1차 추가:
+    - `AppSnapshotStore`, `InMemoryAppSnapshotStore`
+    - session 기준 snapshot load/save 경로
+    - app-bridge 통합 테스트 추가
 
 ### bridge
 - **상태**: projection/intent 변환 최소 구조 제공
+  - event kind 라우팅 + fallback projection 경로 추가
+  - bridge 단위 테스트에 routed projection 시나리오 추가
 
 ### builder
 - **상태**: DomainSchema DSL 최소 구현
@@ -173,7 +182,8 @@
 - Phase 8 하드닝 1차 완료, 잔여 edge case 보강 필요
 
 ### host/app/bridge
-- ActionHandle 진행 상태/구독 옵션 보강 필요
+- host 운영정책 1차 보강(retry/timeout, host error state) 반영 완료
+- app/bridge runtime 계층은 1차 구현 완료, 확장 설계 잔여
 
 ---
 

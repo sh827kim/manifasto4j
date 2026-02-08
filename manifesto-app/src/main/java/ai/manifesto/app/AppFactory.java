@@ -21,10 +21,20 @@ public final class AppFactory {
     private AppFactory() {}
 
     public static App createApp(DomainSchema schema, Snapshot initialSnapshot, HostRuntime host) {
+        return createApp(schema, initialSnapshot, host, null, null);
+    }
+
+    public static App createApp(
+            DomainSchema schema,
+            Snapshot initialSnapshot,
+            HostRuntime host,
+            String sessionId,
+            AppSnapshotStore snapshotStore
+    ) {
         Objects.requireNonNull(schema, "schema is required");
         Objects.requireNonNull(initialSnapshot, "initialSnapshot is required");
         Objects.requireNonNull(host, "host is required");
-        return new DefaultApp(schema, initialSnapshot, host);
+        return new DefaultApp(schema, initialSnapshot, host, null, null, sessionId, snapshotStore);
     }
 
     public static App createWorldApp(
@@ -33,6 +43,18 @@ public final class AppFactory {
             HostRuntime host,
             String actorId,
             ActorKind actorKind
+    ) {
+        return createWorldApp(schema, initialSnapshot, host, actorId, actorKind, null, null);
+    }
+
+    public static App createWorldApp(
+            DomainSchema schema,
+            Snapshot initialSnapshot,
+            HostRuntime host,
+            String actorId,
+            ActorKind actorKind,
+            String sessionId,
+            AppSnapshotStore snapshotStore
     ) {
         Objects.requireNonNull(schema, "schema is required");
         Objects.requireNonNull(initialSnapshot, "initialSnapshot is required");
@@ -61,6 +83,6 @@ public final class AppFactory {
         ActorRef actor = new ActorRef(actorId, actorKind);
         world.registerActor(actor, new AutoApprovePolicy("app default actor"));
 
-        return new DefaultApp(schema, initialSnapshot, host, world, actor);
+        return new DefaultApp(schema, initialSnapshot, host, world, actor, sessionId, snapshotStore);
     }
 }

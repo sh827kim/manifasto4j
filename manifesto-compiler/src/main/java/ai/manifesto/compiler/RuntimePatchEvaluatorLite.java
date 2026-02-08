@@ -71,6 +71,83 @@ public final class RuntimePatchEvaluatorLite {
         return new EvaluationTraceResult(outPatches, skipped, trace, workingSnapshot);
     }
 
+    public StrictEvaluationResult evaluateStrict(List<Map<String, Object>> patches, SnapshotContext snapshot) {
+        List<Map<String, Object>> outPatches = new ArrayList<>();
+        List<Map<String, Object>> skipped = new ArrayList<>();
+        List<Map<String, Object>> trace = new ArrayList<>();
+        List<Map<String, Object>> errors = new ArrayList<>();
+        SnapshotContext workingSnapshot = snapshot;
+
+        for (int i = 0; i < patches.size(); i++) {
+            Map<String, Object> patch = patches.get(i);
+            Map<String, Object> shapeError = validatePatchShape(patch, i);
+            if (shapeError != null) {
+                errors.add(shapeError);
+                Map<String, Object> dropped = new LinkedHashMap<>();
+                dropped.put("index", i);
+                dropped.put("path", patch != null ? patch.get("path") : null);
+                dropped.put("event", "dropped");
+                dropped.put("reason", shapeError.get("code"));
+                trace.add(dropped);
+                continue;
+            }
+
+            if (patch.containsKey("condition")) {
+                Object cond = evaluateExpr(castMap(patch.get("condition")), workingSnapshot);
+                if (!(cond instanceof Boolean) || !((Boolean) cond)) {
+                    String reason = cond == null
+                        ? "COND_NULL"
+                        : (cond instanceof Boolean ? "COND_FALSE" : "COND_NON_BOOLEAN");
+                    Map<String, Object> skipInfo = new LinkedHashMap<>();
+                    skipInfo.put("index", i);
+                    skipInfo.put("path", patch.get("path"));
+                    skipInfo.put("reason", reason);
+                    skipped.add(skipInfo);
+                    trace.add(Map.of(
+                        "index", i,
+                        "path", patch.get("path"),
+                        "event", "skipped",
+                        "reason", reason
+                    ));
+                    continue;
+                }
+            }
+
+            String op = String.valueOf(patch.get("op"));
+            String path = String.valueOf(patch.get("path"));
+            Object concreteValue = null;
+            if (patch.containsKey("value")) {
+                concreteValue = evaluateExpr(castMap(patch.get("value")), workingSnapshot);
+            }
+            Map<String, Object> out = buildConcretePatch(op, path, concreteValue);
+            if (out != null) {
+                outPatches.add(out);
+                workingSnapshot = applyToWorkingSnapshot(out, workingSnapshot);
+                trace.add(Map.of(
+                    "index", i,
+                    "path", path,
+                    "event", "applied",
+                    "op", op
+                ));
+            } else {
+                Map<String, Object> error = new LinkedHashMap<>();
+                error.put("code", "RPV005");
+                error.put("message", "Unsupported runtime patch op: " + op);
+                error.put("index", i);
+                error.put("path", path);
+                errors.add(error);
+                trace.add(Map.of(
+                    "index", i,
+                    "path", path,
+                    "event", "dropped",
+                    "reason", "RPV005"
+                ));
+            }
+        }
+
+        return new StrictEvaluationResult(outPatches, skipped, errors, trace, workingSnapshot);
+    }
+
     public Object evaluateExpr(Map<String, Object> expr, SnapshotContext snapshot) {
         try {
             return evaluateNode(expr, snapshot);
@@ -826,6 +903,39 @@ public final class RuntimePatchEvaluatorLite {
         return null;
     }
 
+    private Map<String, Object> validatePatchShape(Map<String, Object> patch, int index) {
+        if (patch == null) {
+            return error("RPV001", "Runtime patch must not be null", index, null);
+        }
+        Object opObj = patch.get("op");
+        if (!(opObj instanceof String op) || op.isBlank()) {
+            return error("RPV002", "Runtime patch requires non-empty 'op'", index, patch.get("path"));
+        }
+        Object pathObj = patch.get("path");
+        if (!(pathObj instanceof String path) || path.isBlank()) {
+            return error("RPV003", "Runtime patch requires non-empty 'path'", index, pathObj);
+        }
+        if (patch.containsKey("condition") && !(patch.get("condition") instanceof Map<?, ?>)) {
+            return error("RPV004", "Runtime patch 'condition' must be expression node", index, pathObj);
+        }
+        if (("set".equals(opObj) || "merge".equals(opObj)) && !patch.containsKey("value")) {
+            return error("RPV006", "Runtime patch '" + opObj + "' requires 'value'", index, pathObj);
+        }
+        if (patch.containsKey("value") && !(patch.get("value") instanceof Map<?, ?>)) {
+            return error("RPV007", "Runtime patch 'value' must be expression node", index, pathObj);
+        }
+        return null;
+    }
+
+    private Map<String, Object> error(String code, String message, int index, Object path) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("code", code);
+        out.put("message", message);
+        out.put("index", index);
+        out.put("path", path);
+        return out;
+    }
+
     private Map<String, Object> deepCopyMap(Map<String, Object> input) {
         Map<String, Object> copy = new LinkedHashMap<>();
         for (Map.Entry<String, Object> entry : input.entrySet()) {
@@ -892,4 +1002,10 @@ public final class RuntimePatchEvaluatorLite {
                                         List<Map<String, Object>> skipped,
                                         List<Map<String, Object>> trace,
                                         SnapshotContext finalSnapshot) {}
+
+    public record StrictEvaluationResult(List<Map<String, Object>> patches,
+                                         List<Map<String, Object>> skipped,
+                                         List<Map<String, Object>> errors,
+                                         List<Map<String, Object>> trace,
+                                         SnapshotContext finalSnapshot) {}
 }
