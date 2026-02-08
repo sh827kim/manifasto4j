@@ -146,6 +146,12 @@
 - World (승인/거절 결과)
 - Compiler (`onceIntent` edge case, namespace hash 영향 케이스)
 
+**진행 상태 (2026-02-08 업데이트)**
+- [x] Host golden e2e 1차 추가
+  - `manifesto-host/src/test/resources/golden/host-e2e.json`
+  - `manifesto-host/src/test/java/ai/manifesto/host/HostGoldenTest.java`
+- [ ] Validate/World/Compiler golden 확장 잔여
+
 ---
 
 ## 3. 다음 우선 작업 (3순위)

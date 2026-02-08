@@ -1,0 +1,18 @@
+[
+  {
+    "name": "effect-applied-with-host-slot",
+    "expected": {
+      "status": "HALTED",
+      "dataStatus": "ok",
+      "hostCurrentIntentId": "intent-host-golden-1"
+    }
+  },
+  {
+    "name": "missing-handler-pending",
+    "expected": {
+      "status": "PENDING",
+      "dataStatus": "",
+      "hasRequirements": true
+    }
+  }
+]

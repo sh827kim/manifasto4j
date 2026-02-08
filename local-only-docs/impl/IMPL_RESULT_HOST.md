@@ -75,5 +75,6 @@ TypeScript `packages/host` 대비 Java `manifesto-host` 구현 상태를 비교 
   - `testEffectLoopGuardStopsNonConvergingExecution`
   - `testReturnsPendingWhenHandlerMissing`
   - `ApplyTest.testHostReservedPathPatchAllowedWithoutStateSpecField`
+  - `HostGoldenTest` + `golden/host-e2e.json` 추가
 - `data.$host` 정합화 설계 초안 작성:
   - `local-only-docs/design/host-runtime-boundary-hardening.ko.md`
