@@ -65,6 +65,9 @@
 
 ### host
 - **상태**: compute-loop/patch 적용/requirement 처리 최소 구현
+- **최근 진행**:
+  - 비수렴 effect 루프 가드 반영(반복 상한 기반 fail-fast)
+  - host/app 테스트 경로를 data 무접두사 규칙으로 정렬(`status`)
 
 ### app
 - **상태**: ready/act/subscribe 등 최소 API 제공

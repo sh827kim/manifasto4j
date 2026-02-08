@@ -26,7 +26,7 @@ class HostRuntimeTest {
     @DisplayName("Effect 처리 후 Patch 적용")
     void testEffectLoopAppliesPatch() throws Exception {
         FlowNode effectFlow = FlowNode.If.of(
-            new Eq(new Get("data.status"), new Lit("ok")),
+            new Eq(new Get("status"), new Lit("ok")),
             FlowNode.Halt.of("done"),
             FlowNode.Effect.of("host.notify", Map.of("message", new Lit("hi")))
         );
@@ -52,7 +52,7 @@ class HostRuntimeTest {
 
         HostRuntime host = new HostRuntime()
             .register("host.notify", params -> EffectResult.of(
-                List.of(Patch.set("data.status", "ok"))
+                List.of(Patch.set("status", "ok"))
             ));
 
         Intent intent = new Intent("notify", new HashMap<>(), UUID.randomUUID().toString());
@@ -60,6 +60,36 @@ class HostRuntimeTest {
 
         assertEquals(ComputeStatus.HALTED, result.getStatus());
         assertEquals("ok", result.getSnapshot().getData().get("status"));
+    }
+
+    @Test
+    @DisplayName("Effect 루프가 수렴하지 않으면 가드에 의해 종료")
+    void testEffectLoopGuardStopsNonConvergingExecution() throws Exception {
+        FlowNode effectOnlyFlow = FlowNode.Effect.of("host.notify", Map.of("message", new Lit("hi")));
+        ActionSpec effectAction = new ActionSpec.Builder("notify").flow(effectOnlyFlow).build();
+
+        DomainSchema schema = buildSchemaWithHash(
+            "urn:test:guard",
+            "1.0.0",
+            new ActionSpec[] { effectAction },
+            new FieldSpec[] { new FieldSpec("status", "string", false, "") }
+        );
+
+        Snapshot snapshot = Snapshot.builder()
+            .data(new HashMap<>(Map.of("status", "")))
+            .computed(new HashMap<>())
+            .system(SystemState.initial())
+            .input(new HashMap<>())
+            .meta(Snapshot.SnapshotMeta.create(0, System.currentTimeMillis(), "seed", schema.getHash()))
+            .build();
+
+        HostRuntime host = new HostRuntime()
+            .register("host.notify", params -> EffectResult.of(List.of()));
+
+        Intent intent = new Intent("notify", new HashMap<>(), UUID.randomUUID().toString());
+        ComputeResult result = host.run(schema, snapshot, intent, 1);
+
+        assertEquals(ComputeStatus.ERROR, result.getStatus());
     }
 
     private DomainSchema buildSchemaWithHash(

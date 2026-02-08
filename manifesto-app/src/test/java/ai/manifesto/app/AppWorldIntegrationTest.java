@@ -32,7 +32,7 @@ class AppWorldIntegrationTest {
     @Test
     void worldEnabledAppExecutesThroughWorldAndSupportsBranchSwitch() throws Exception {
         FlowNode effectFlow = FlowNode.If.of(
-                new Eq(new Get("data.status"), new Lit("")),
+                new Eq(new Get("status"), new Lit("")),
                 FlowNode.Effect.of("host.bump", Map.of()),
                 FlowNode.Halt.of("done")
         );
@@ -57,7 +57,7 @@ class AppWorldIntegrationTest {
                 .build();
 
         HostRuntime host = new HostRuntime().register("host.bump", params ->
-                EffectResult.of(List.of(ai.manifesto.core.Patch.set("data.status", "ok")))
+                EffectResult.of(List.of(ai.manifesto.core.Patch.set("status", "ok")))
         );
 
         App app = AppFactory.createWorldApp(schema, snapshot, host, "human-1", ActorKind.HUMAN);
@@ -65,6 +65,7 @@ class AppWorldIntegrationTest {
 
         var first = app.act(new Intent("bump", Map.of(), UUID.randomUUID().toString()));
         assertEquals(ai.manifesto.core.ComputeStatus.COMPLETE, first.getStatus());
+        assertEquals("ok", app.getSnapshot().getData().get("status"));
 
         var world = app.getWorld();
         assertNotNull(world);

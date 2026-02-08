@@ -43,6 +43,15 @@
   - Compiler 골든 테스트 통과 정합화 완료
   - Core 결정성 1차 정리 완료(`System.currentTimeMillis()` 제거)
 
+### Baseline 고정 (2026-02-08)
+- world P0 hardening 반영:
+  - `submitProposal` 검증(base world pending/origin actor/intentKey)
+  - `executeProposal` 예외 경계(failed world/event/status)
+- app READY-8 1차 반영:
+  - `DefaultApp.ready()` genesis computed 평가
+- world execution key 정책 주입 1차 반영:
+  - `ExecutionKeyPolicy` 도입 + 기본 정책 유지
+
 ---
 
 ## 1. 다음 우선 작업 (1순위)

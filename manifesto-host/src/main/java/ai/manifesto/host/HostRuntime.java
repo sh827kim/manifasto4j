@@ -30,7 +30,12 @@ public final class HostRuntime {
         Objects.requireNonNull(intent, "intent is required");
 
         Snapshot current = snapshot;
+        int iteration = 0;
+        int maxIterations = Math.max(1, timeoutSeconds * 100);
         while (true) {
+            if (iteration++ >= maxIterations) {
+                return ComputeResult.error(current, null);
+            }
             HostContext computeContext = HostContext.forSnapshot(current);
             ComputeResult result = Compute.computeSync(schema, current, intent, computeContext, timeoutSeconds);
             if (result.getStatus() != ComputeStatus.PENDING) {
