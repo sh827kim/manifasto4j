@@ -1,0 +1,52 @@
+[
+  {
+    "name": "increment",
+    "expected": {
+      "status": "COMPLETE",
+      "data": { "count": 1 },
+      "input": {},
+      "systemStatus": "IDLE",
+      "currentAction": null,
+      "pendingRequirementTypes": [],
+      "errorCode": null,
+      "metaVersion": 1,
+      "metaTimestamp": 1000
+    }
+  },
+  {
+    "name": "unknown-action",
+    "expected": {
+      "status": "ERROR",
+      "systemStatus": "ERROR",
+      "errorCode": "UNKNOWN_ACTION",
+      "metaVersion": 1,
+      "metaTimestamp": 1000
+    }
+  },
+  {
+    "name": "effect-pending",
+    "expected": {
+      "status": "PENDING",
+      "systemStatus": "PENDING",
+      "currentAction": "fetch",
+      "pendingRequirementTypes": ["api.fetch"],
+      "requirements": [
+        { "type": "api.fetch", "params": { "id": "abc" } }
+      ],
+      "metaVersion": 1,
+      "metaTimestamp": 1000
+    }
+  },
+  {
+    "name": "meta-intent",
+    "expected": {
+      "status": "COMPLETE",
+      "data": { "value": "intent-3" },
+      "input": { "name": "Alice" },
+      "systemStatus": "IDLE",
+      "currentAction": null,
+      "metaVersion": 1,
+      "metaTimestamp": 1000
+    }
+  }
+]

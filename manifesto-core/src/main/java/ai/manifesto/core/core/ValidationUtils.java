@@ -508,6 +508,9 @@ public final class ValidationUtils {
 
     private static Map<String, Object> toMetaMap(DomainMeta meta) {
         Map<String, Object> result = new LinkedHashMap<>();
+        if (meta.getNamespace() != null) {
+            result.put("namespace", meta.getNamespace());
+        }
         if (meta.getName() != null) {
             result.put("name", meta.getName());
         }

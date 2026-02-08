@@ -7,14 +7,24 @@ import java.util.Objects;
  * DomainMeta - 도메인 메타 정보
  */
 public final class DomainMeta {
+    private final String namespace;
     private final String name;
     private final String description;
     private final List<String> authors;
 
     public DomainMeta(String name, String description, List<String> authors) {
+        this(null, name, description, authors);
+    }
+
+    public DomainMeta(String namespace, String name, String description, List<String> authors) {
+        this.namespace = namespace;
         this.name = name;
         this.description = description;
         this.authors = authors != null ? List.copyOf(authors) : null;
+    }
+
+    public String getNamespace() {
+        return namespace;
     }
 
     public String getName() {
@@ -32,6 +42,8 @@ public final class DomainMeta {
     @Override
     public String toString() {
         return "DomainMeta{" +
+               "namespace='" + namespace + '\'' +
+               ", " +
                "name='" + name + '\'' +
                ", description='" + description + '\'' +
                ", authors=" + (authors != null ? authors.size() : null) +
@@ -42,13 +54,14 @@ public final class DomainMeta {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof DomainMeta that)) return false;
-        return Objects.equals(name, that.name) &&
+        return Objects.equals(namespace, that.namespace) &&
+               Objects.equals(name, that.name) &&
                Objects.equals(description, that.description) &&
                Objects.equals(authors, that.authors);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, description, authors);
+        return Objects.hash(namespace, name, description, authors);
     }
 }

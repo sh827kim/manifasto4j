@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     // No external runtime dependencies - pure computation engine
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
 }
 
 // Javadoc configuration (failOnError = false to ignore HTML/tag errors in comments)

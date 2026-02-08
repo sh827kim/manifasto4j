@@ -1,0 +1,58 @@
+[
+  {
+    "name": "counter",
+    "source": "domain Counter {\n  state {\n    count: number = 0\n    lastIntent: string | null = null\n  }\n\n  computed doubled = mul(count, 2)\n  computed isPositive = gt(count, 0)\n\n  action increment() {\n    once(lastIntent) {\n      patch count = add(count, 1)\n    }\n  }\n\n  action add(amount: number) {\n    when gte(amount, 0) {\n      patch count = add(count, amount)\n    }\n  }\n\n  action reset() {\n    when isPositive {\n      patch count = 0\n      patch lastIntent = null\n    }\n  }\n}\n",
+    "expected": {
+      "id": "mel:counter",
+      "version": "1.0.0",
+      "dataFields": ["count", "lastIntent"],
+      "computedFields": ["computed.doubled", "computed.isPositive"],
+      "actions": ["add", "increment", "reset"],
+      "actionInputs": {
+        "add": ["amount"]
+      },
+      "dataFieldTypes": {
+        "count": { "type": "number", "required": true, "default": 0 },
+        "lastIntent": { "type": "string", "required": false, "default": null }
+      }
+    }
+  },
+  {
+    "name": "task-manager",
+    "source": "domain TaskManager {\n  state {\n    tasks: Record<string, Task> = {}\n    filter: \"all\" | \"active\" | \"completed\" = \"all\"\n    lastAdded: string | null = null\n  }\n\n  computed taskCount = len(keys(tasks))\n\n  action addTask(title: string) {\n    once(lastAdded) when neq(trim(title), \"\") {\n      patch lastAdded = $meta.intentId\n    }\n  }\n\n  action setFilter(newFilter: string) {\n    when true {\n      patch filter = newFilter\n    }\n  }\n\n  action deleteTask(id: string) {\n    when isNotNull(tasks[id]) {\n      patch tasks[id] unset\n    }\n  }\n}\n",
+    "expected": {
+      "id": "mel:taskmanager",
+      "version": "1.0.0",
+      "dataFields": ["filter", "lastAdded", "tasks"],
+      "computedFields": ["computed.taskCount"],
+      "actions": ["addTask", "deleteTask", "setFilter"],
+      "dataFieldTypes": {
+        "tasks": { "type": "object", "required": true },
+        "filter": { "type": "string", "enumValues": ["all", "active", "completed"] },
+        "lastAdded": { "type": "string", "required": false, "default": null }
+      }
+    }
+  },
+  {
+    "name": "complex-expressions",
+    "source": "domain Test {\n  state { x: number = 0 }\n  computed y = mul(add(x, 1), sub(x, 1))\n  computed sign = x > 0 ? 1 : x < 0 ? -1 : 0\n  computed items = [1, 2, 3]\n}\n",
+    "expected": {
+      "computedExprKinds": {
+        "computed.y": "Mul",
+        "computed.sign": "If",
+        "computed.items": "Lit"
+      }
+    }
+  },
+  {
+    "name": "error-system-in-computed",
+    "source": "domain Test {\n  computed id = $system.uuid\n}\n",
+    "expectSuccess": false,
+    "expectedErrors": ["E001"]
+  },
+  {
+    "name": "hash-determinism",
+    "source": "domain Test {\n  state { x: number = 0 }\n  computed doubled = mul(x, 2)\n}\n",
+    "expectHashDeterminism": true
+  }
+]

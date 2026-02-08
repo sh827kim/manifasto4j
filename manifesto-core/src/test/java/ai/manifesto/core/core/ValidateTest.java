@@ -6,6 +6,7 @@ import ai.manifesto.core.expr.literal.Get;
 import ai.manifesto.core.flow.FlowNode;
 import ai.manifesto.core.schema.ActionSpec;
 import ai.manifesto.core.schema.ComputedFieldDef;
+import ai.manifesto.core.schema.DomainMeta;
 import ai.manifesto.core.schema.DomainSchema;
 import ai.manifesto.core.schema.FieldSpec;
 import org.junit.jupiter.api.BeforeEach;
@@ -213,6 +214,32 @@ class ValidateTest {
 
         assertFalse(result.isValid());
         assertTrue(result.errors().stream().anyMatch(e -> e.code().equals("V-008")));
+    }
+
+    @Test
+    @DisplayName("메타 namespace 변경 시 schema hash 변경")
+    void testSchemaHashIncludesMetaNamespace() {
+        DomainSchema.Builder baseA = new DomainSchema.Builder("urn:test-schema", "1.0.0")
+            .meta(new DomainMeta("ns.alpha", "Test", null, null));
+        applySchemaFields(
+            baseA,
+            List.of(FieldSpec.required("name", "string"), new FieldSpec("age", "integer", false, 0)),
+            List.of(new ComputedFieldDef.Builder("computed.greeting", new Get("name")).addDependency("name").build()),
+            List.of(new ActionSpec.Builder("noop").flow(FlowNode.Halt.of(null)).build())
+        );
+        String hashA = ValidationUtils.computeSchemaHash(baseA.hash("").build());
+
+        DomainSchema.Builder baseB = new DomainSchema.Builder("urn:test-schema", "1.0.0")
+            .meta(new DomainMeta("ns.beta", "Test", null, null));
+        applySchemaFields(
+            baseB,
+            List.of(FieldSpec.required("name", "string"), new FieldSpec("age", "integer", false, 0)),
+            List.of(new ComputedFieldDef.Builder("computed.greeting", new Get("name")).addDependency("name").build()),
+            List.of(new ActionSpec.Builder("noop").flow(FlowNode.Halt.of(null)).build())
+        );
+        String hashB = ValidationUtils.computeSchemaHash(baseB.hash("").build());
+
+        assertNotEquals(hashA, hashB);
     }
 
     @Test
