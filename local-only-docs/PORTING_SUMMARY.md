@@ -25,7 +25,8 @@
 - Expr 스펙 정합: TS에 없는 확장 expr 제거 및 core expr 규칙 정렬
 - data/computed 경로 규칙 정합 (data는 무접두사, computed는 full path)
 - **Validate API 범위 정렬**: `validate`는 스키마 전용, snapshot 검증은 별도 API
- - **미해결**: Core 내부 System time 사용 제거 필요 (결정성 리스크)
+- **결정성 정합화 완료 (2026-02-08)**: Core 내부 `System.currentTimeMillis()` 직접 사용 제거
+  - `HostContext`, `SnapshotMeta`, `TraceNode`, `Requirement`, `DagUtils`, `Compute` 반영
 
 ### 2) 최소 구현 완료
 - host/app/bridge/compiler/builder/effect-utils 스켈레톤 + 최소 동작
@@ -53,7 +54,7 @@
 ## ✅ 모듈별 현황 요약
 
 ### core
-- **상태**: 기능 구현 완료, 결정성 리스크 존재
+- **상태**: 기능 구현 완료, 결정성 리스크 1차 해소
 - **비고**: snapshot 검증은 별도 API로 분리되어 있음 (TS와 동일)
 
 ### compiler
@@ -115,10 +116,10 @@
 
 ## ▶️ 다음 작업 제안 (요약)
 
-1) **core 결정성 정리** (System time 제거)
-2) **world MVP 구현**
-3) **golden 벡터 동기화 자동화**
-4) **compiler lowering/evaluation 정식 계층 정합화**
+1) **world MVP 구현**
+2) **golden 벡터 동기화 자동화**
+3) **compiler lowering/evaluation 정식 계층 정합화**
+4) **app bootstrap genesis computed 정책 점검**
 
 ---
 

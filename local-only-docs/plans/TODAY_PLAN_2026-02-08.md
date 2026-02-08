@@ -47,3 +47,4 @@
 - 2026-02-08: 2번 완료 (Core schema hash에 meta namespace 반영, Validate 테스트 추가)
 - 2026-02-08: 3번 완료 (Compiler `onceIntent` parser/analyzer/IR/renderer + 테스트 반영)
 - 2026-02-08: 컴파일러 골든 테스트 실패 원인 보완 완료 (`computed.*` 경로, number literal 정규화, `isNotNull` lowering, literal union type 정합)
+- 2026-02-08: Core 결정성 1차 정리 완료 (`System.currentTimeMillis()` 제거, `:manifesto-core:test`/`:manifesto-compiler:test` 통과)

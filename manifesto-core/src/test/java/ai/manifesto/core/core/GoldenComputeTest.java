@@ -194,10 +194,16 @@ class GoldenComputeTest {
             out.put("errorCode", error == null ? null : error.getCode());
         }
         if (expected.containsKey("metaVersion")) {
-            out.put("metaVersion", result.getSnapshot().getMeta().getVersion());
+            out.put("metaVersion", coerceNumberType(
+                expected.get("metaVersion"),
+                result.getSnapshot().getMeta().getVersion()
+            ));
         }
         if (expected.containsKey("metaTimestamp")) {
-            out.put("metaTimestamp", result.getSnapshot().getMeta().getTimestamp());
+            out.put("metaTimestamp", coerceNumberType(
+                expected.get("metaTimestamp"),
+                result.getSnapshot().getMeta().getTimestamp()
+            ));
         }
 
         return out;
@@ -209,6 +215,19 @@ class GoldenComputeTest {
         if (!expectedNode.equals(actualNode)) {
             throw new AssertionError(message + "\nExpected: " + expectedNode + "\nActual: " + actualNode);
         }
+    }
+
+    private Number coerceNumberType(Object expected, long actual) {
+        if (expected instanceof Integer) {
+            return (int) actual;
+        }
+        if (expected instanceof Long) {
+            return actual;
+        }
+        if (expected instanceof Double) {
+            return (double) actual;
+        }
+        return actual;
     }
 
     private List<Map<String, Object>> loadVectors(String resourcePath) throws Exception {

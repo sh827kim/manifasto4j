@@ -252,7 +252,7 @@ public class Compute {
 
         long duration = context.getDurationMs() != null
             ? context.getDurationMs()
-            : System.currentTimeMillis() - startTime;
+            : 0L;
 
         TraceGraph trace = TraceBuilder.buildGraph(
             flowResult.trace(),
@@ -322,7 +322,7 @@ public class Compute {
             intent,
             snapshot.getMeta().getVersion(),
             errorSnapshot.getMeta().getVersion(),
-            context.getDurationMs() != null ? context.getDurationMs() : System.currentTimeMillis() - startTime,
+            context.getDurationMs() != null ? context.getDurationMs() : 0L,
             TraceGraph.TraceTermination.ERROR
         );
 

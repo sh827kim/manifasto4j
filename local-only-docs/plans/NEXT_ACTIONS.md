@@ -22,29 +22,13 @@
   - Core schema hash에 meta namespace 반영
   - Compiler `onceIntent` 지원(parser/analyzer/IR/renderer/test)
   - Compiler 골든 테스트 통과 정합화 완료
+  - Core 결정성 1차 정리 완료(`System.currentTimeMillis()` 제거)
 
 ---
 
 ## 1. 다음 우선 작업 (1순위)
 
-### 1-1. Core 결정성(System time) 제거
-**목표**: Core에서 `System.currentTimeMillis()` 직접 사용 제거
-
-**수정 대상**
-- `manifesto-core/src/main/java/ai/manifesto/core/HostContext.java`
-- `manifesto-core/src/main/java/ai/manifesto/core/Snapshot.java`
-- `manifesto-core/src/main/java/ai/manifesto/core/TraceNode.java`
-- `manifesto-core/src/main/java/ai/manifesto/core/Requirement.java`
-- `manifesto-core/src/main/java/ai/manifesto/core/utils/DagUtils.java`
-- `manifesto-core/src/main/java/ai/manifesto/core/core/Compute.java`
-
-**수정 원칙**
-- Core 내부에서 시간은 `HostContext.getNow()` 기반만 사용
-- 기본 생성자에서 시스템 시간 호출 제거
-
----
-
-### 1-2. Golden 벡터 자동 생성/동기화 구현
+### 1-1. Golden 벡터 자동 생성/동기화 구현
 **목표**: TS → JSON 벡터 생성, Java → 소비 자동화
 
 **할 일**
@@ -59,6 +43,16 @@
 **필수 확인 사항**
 - 동치성 기준: `local-only-docs/golden/golden-test-schema-equivalence.ko.md`
 - 벡터 포맷: `local-only-docs/golden/golden-test-vector-format.ko.md`
+
+---
+
+### 1-2. App bootstrap genesis computed 정합화
+**목표**: TS READY-8(`539b5b8`)와 초기 snapshot computed 평가 정책 정렬
+
+**할 일**
+1. `manifesto-app` 초기화 경로에서 computed 평가 시점 점검
+2. 초기 snapshot 생성 정책 문서화 (computed 포함 여부)
+3. 최소 회귀 테스트 추가
 
 ---
 
@@ -105,7 +99,7 @@
 
 ## 5. 빠른 체크리스트 (다음 대화 시작 시)
 
-- [ ] Core System time 제거 진행 여부
 - [ ] Golden 벡터 자동 생성/동기화 구현 착수 여부
+- [ ] App bootstrap genesis computed 정합화 착수 여부
 - [ ] World MVP 구현 착수 여부
 - [ ] Golden 테스트 확장 대상 결정 (compiler/host/world 포함)

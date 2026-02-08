@@ -98,7 +98,7 @@ public class TraceNode {
         private Map<String, Object> inputs = new HashMap<>();
         private Object output;
         private List<TraceNode> children = new ArrayList<>();
-        private long timestamp = System.currentTimeMillis();
+        private long timestamp;
 
         public Builder id(String id) {
             this.id = id;

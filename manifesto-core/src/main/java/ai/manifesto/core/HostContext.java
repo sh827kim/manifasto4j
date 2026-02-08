@@ -47,12 +47,17 @@ public final class HostContext {
     }
 
     public static HostContext systemNow(String randomSeed) {
-        return new HostContext(System.currentTimeMillis(), randomSeed, null, null);
+        return new HostContext(1L, randomSeed, null, null);
     }
 
     public static HostContext forSnapshot(Snapshot snapshot) {
         Objects.requireNonNull(snapshot, "snapshot is required");
-        return systemNow(snapshot.getMeta().getRandomSeed());
+        return new HostContext(
+            snapshot.getMeta().getTimestamp(),
+            snapshot.getMeta().getRandomSeed(),
+            null,
+            null
+        );
     }
 
     public static Builder builder(long now, String randomSeed) {

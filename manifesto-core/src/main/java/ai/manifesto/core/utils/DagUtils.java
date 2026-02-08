@@ -223,7 +223,7 @@ public class DagUtils {
                     "Cyclic dependency detected in computed fields: " + remaining,
                     null,
                     remaining.isEmpty() ? null : remaining.get(0),
-                    System.currentTimeMillis()
+                    0L
             );
             return Result.err(error);
         }

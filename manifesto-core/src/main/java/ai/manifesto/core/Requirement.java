@@ -104,7 +104,7 @@ public class Requirement {
         private Map<String, Object> params = new HashMap<>();
         private String actionId;
         private FlowPosition flowPosition;
-        private long createdAt = System.currentTimeMillis();
+        private long createdAt;
 
         public Builder id(String id) {
             this.id = id;

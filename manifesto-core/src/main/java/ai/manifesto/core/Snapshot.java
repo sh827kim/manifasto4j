@@ -226,7 +226,8 @@ public class Snapshot {
         }
 
         public static SnapshotMeta create(long version) {
-            return new SnapshotMeta(version, System.currentTimeMillis(), "", "");
+            long deterministicTimestamp = version + 1;
+            return new SnapshotMeta(version, deterministicTimestamp, "", "");
         }
 
         public static SnapshotMeta create(long version, long timestamp,
@@ -244,8 +245,7 @@ public class Snapshot {
          * 버전을 증가시킨 새로운 메타데이터 생성
          */
         public SnapshotMeta nextVersion() {
-            return new SnapshotMeta(version + 1, System.currentTimeMillis(),
-                randomSeed, schemaHash);
+            return new SnapshotMeta(version + 1, timestamp + 1, randomSeed, schemaHash);
         }
 
         /**
