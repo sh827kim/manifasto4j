@@ -28,6 +28,7 @@ import ai.manifesto.world.schema.AuthorityRef;
 import ai.manifesto.world.types.HostExecutionOptions;
 import ai.manifesto.world.types.HostExecutionResult;
 import ai.manifesto.world.types.HostExecutor;
+import ai.manifesto.world.types.ExecutionKeyPolicy;
 import ai.manifesto.world.types.IntentKeys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -364,6 +365,58 @@ class ManifestoWorldTest {
         assertNotNull(result.getResultWorld());
         assertNotNull(result.getError());
         assertTrue(events.stream().anyMatch(e -> e.getType().equals("execution:failed")));
+    }
+
+    @Test
+    void supportsCustomExecutionKeyPolicy() {
+        HostExecutor executor = (executionKey, baseSnapshot, intent, options) ->
+                HostExecutionResult.completed(baseSnapshot.withData(Map.of("count", 1)));
+        ExecutionKeyPolicy customPolicy = (proposalId, actorId, baseWorld, attempt) ->
+                "custom:" + actorId + ":" + baseWorld.value() + ":" + attempt;
+
+        ManifestoWorld world = new ManifestoWorld("schema-hash", executor, null, null, customPolicy);
+        World genesis = world.createGenesis(genesisSnapshot);
+
+        ActorRef actor = new ActorRef("human-custom-key", ActorKind.HUMAN);
+        world.registerActor(actor, new AutoApprovePolicy());
+        IntentInstance intent = createIntentInstance(actor, "increment", "intent-custom-key", "event-custom-key");
+
+        ProposalResult result = world.submitProposal(actor.getActorId(), intent, genesis.getWorldId(), null);
+        assertTrue(result.getProposal().getExecutionKey().startsWith("custom:human-custom-key:"));
+    }
+
+    @Test
+    void rejectsSubmissionFromUnregisteredActor() {
+        ManifestoWorld world = new ManifestoWorld("schema-hash");
+        World genesis = world.createGenesis(genesisSnapshot);
+        ActorRef actor = new ActorRef("human-unknown", ActorKind.HUMAN);
+        IntentInstance intent = createIntentInstance(actor, "increment", "intent-unreg", "event-unreg");
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> world.submitProposal("not-registered", intent, genesis.getWorldId(), null)
+        );
+    }
+
+    @Test
+    void rejectsSubmissionToNonExistentBaseWorld() {
+        ManifestoWorld world = new ManifestoWorld("schema-hash");
+        world.createGenesis(genesisSnapshot);
+        ActorRef actor = new ActorRef("human-no-base", ActorKind.HUMAN);
+        world.registerActor(actor, new AutoApprovePolicy());
+        IntentInstance intent = createIntentInstance(actor, "increment", "intent-no-base", "event-no-base");
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> world.submitProposal(actor.getActorId(), intent, ai.manifesto.world.schema.WorldId.of("missing-world"), null)
+        );
+    }
+
+    @Test
+    void rejectsCreatingGenesisTwice() {
+        ManifestoWorld world = new ManifestoWorld("schema-hash");
+        world.createGenesis(genesisSnapshot);
+        assertThrows(IllegalStateException.class, () -> world.createGenesis(genesisSnapshot));
     }
 
     private IntentInstance createIntentInstance(ActorRef actor, String type, String intentId, String eventId) {

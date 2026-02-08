@@ -105,6 +105,11 @@
 2. 기본 정책(`proposalId:1`) 유지 + 정책 주입 포인트 추가
 3. attempt 확장(재시도) 대비 테스트 보강
 
+**진행 상태 (2026-02-08 업데이트)**
+- [x] `ExecutionKeyPolicy` 주입 인터페이스 추가
+- [x] `ManifestoWorld` 생성자에 정책 주입 경로 추가 (기본 정책 유지)
+- [x] custom execution key 정책 테스트 추가 및 통과
+
 ---
 
 ### 1-4. World 정식 구현 진행 (MVP 아님)
@@ -122,6 +127,12 @@
 **완료 기준 (일곱 번째 사이클)**
 - TS world 포팅 coverage 증가(핵심 시나리오 대부분 대응)
 - hardening 케이스(타임아웃/분기/중복 worldId/실패 경계) 회귀 통과
+
+**진행 상태 (2026-02-08 업데이트)**
+- [x] TS `world.test.ts` 기반 기본 시나리오 추가 포팅
+  - unregistered actor 제출 거부
+  - non-existent base world 제출 거부
+  - genesis 중복 생성 거부
 
 ---
 

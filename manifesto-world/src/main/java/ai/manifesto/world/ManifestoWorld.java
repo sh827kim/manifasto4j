@@ -36,6 +36,7 @@ import ai.manifesto.world.schema.ProposalTrace;
 import ai.manifesto.world.schema.World;
 import ai.manifesto.world.schema.WorldId;
 import ai.manifesto.world.types.ExecutionKeys;
+import ai.manifesto.world.types.ExecutionKeyPolicy;
 import ai.manifesto.world.types.HostExecutionOptions;
 import ai.manifesto.world.types.HostExecutionResult;
 import ai.manifesto.world.types.HostExecutor;
@@ -56,6 +57,7 @@ public final class ManifestoWorld {
     private final WorldStore store;
     private final HostExecutor executor;
     private final WorldEventSink eventSink;
+    private final ExecutionKeyPolicy executionKeyPolicy;
     private long epoch = 0L;
 
     private final ActorRegistry registry = new ActorRegistry();
@@ -64,18 +66,31 @@ public final class ManifestoWorld {
     private final WorldLineage lineage = new WorldLineage();
 
     public ManifestoWorld(String schemaHash) {
-        this(schemaHash, null, null, null);
+        this(schemaHash, null, null, null, null);
     }
 
     public ManifestoWorld(String schemaHash, HostExecutor executor, WorldStore store) {
-        this(schemaHash, executor, store, null);
+        this(schemaHash, executor, store, null, null);
     }
 
     public ManifestoWorld(String schemaHash, HostExecutor executor, WorldStore store, WorldEventSink eventSink) {
+        this(schemaHash, executor, store, eventSink, null);
+    }
+
+    public ManifestoWorld(
+            String schemaHash,
+            HostExecutor executor,
+            WorldStore store,
+            WorldEventSink eventSink,
+            ExecutionKeyPolicy executionKeyPolicy
+    ) {
         this.schemaHash = Objects.requireNonNull(schemaHash, "schemaHash is required");
         this.executor = executor;
         this.store = store != null ? store : new MemoryWorldStore();
         this.eventSink = eventSink != null ? eventSink : new NoopWorldEventSink();
+        this.executionKeyPolicy = executionKeyPolicy != null
+                ? executionKeyPolicy
+                : (proposalId, actorId, baseWorld, attempt) -> ExecutionKeys.createExecutionKey(proposalId, attempt);
     }
 
     public void registerActor(ActorRef actor, AuthorityPolicy policy) {
@@ -181,7 +196,15 @@ public final class ManifestoWorld {
         }
 
         ProposalId proposalId = ProposalId.of("prop-" + UUID.randomUUID());
-        String executionKey = ExecutionKeys.createExecutionKey(proposalId, 1);
+        String executionKey = executionKeyPolicy.createExecutionKey(
+                proposalId,
+                binding.getActor().getActorId(),
+                baseWorld,
+                1
+        );
+        if (executionKey == null || executionKey.isBlank()) {
+            throw new IllegalStateException("Execution key policy returned empty key");
+        }
         long submittedAt = System.currentTimeMillis();
         Proposal proposal = proposalQueue.submit(proposalId, executionKey, binding.getActor(), intent, baseWorld, trace, epoch, submittedAt);
         ensureSuccess(store.saveProposal(proposal));

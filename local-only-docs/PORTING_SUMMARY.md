@@ -103,6 +103,11 @@
     - `submitProposal` 입력 검증 보강(base world pending/origin actor/intentKey)
     - `executeProposal` executor 예외 경계 보강(failed world + failed event + failed terminal)
     - 관련 회귀 테스트 추가
+  - execution key 정책 주입 구조 1차 반영
+    - `ExecutionKeyPolicy` 인터페이스 추가
+    - `ManifestoWorld` 기본 정책 + custom 정책 주입 경로 제공
+  - TS world 시나리오 포팅 확대
+    - unregistered actor / non-existent base world / duplicate genesis 거부 테스트 추가
   - `:manifesto-world:test` 통과
 - **다음 필요**:
   - TS `world.test.ts` 시나리오 포팅 지속 확대(coverage 확장)
