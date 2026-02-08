@@ -60,6 +60,10 @@ class HostRuntimeTest {
 
         assertEquals(ComputeStatus.HALTED, result.getStatus());
         assertEquals("ok", result.getSnapshot().getData().get("status"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> hostState = (Map<String, Object>) result.getSnapshot().getData().get("$host");
+        assertNotNull(hostState);
+        assertEquals(intent.getIntentId(), hostState.get("currentIntentId"));
     }
 
     @Test

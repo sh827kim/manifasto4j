@@ -65,6 +65,9 @@ public final class HostRuntime {
                 return result;
             }
             List<Patch> patches = new java.util.ArrayList<>();
+            patches.add(Patch.set("$host.currentIntentId", intent.getIntentId()));
+            patches.add(Patch.set("$host.intentSlots." + intent.getIntentId() + ".type", intent.getType()));
+            patches.add(Patch.set("$host.intentSlots." + intent.getIntentId() + ".input", intent.getInput()));
             for (Requirement requirement : requirements) {
                 EffectHandler handler = handlers.get(requirement.getType());
                 if (handler == null) {

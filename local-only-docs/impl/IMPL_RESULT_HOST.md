@@ -26,7 +26,10 @@ TypeScript `packages/host` 대비 Java `manifesto-host` 구현 상태를 비교 
 
 ### 3) Host-owned state namespace
 - TS는 host 상태를 `data.$host`에 저장 (HOST-NS-1)
-- Java는 `system.pendingRequirements` 패치로 요구사항을 지우는 방식 (스펙과 불일치)
+- Java는 `data.$host` 1차 반영 완료
+  - `currentIntentId`, `intentSlots` 기록 경로 추가
+  - Core `Apply`에서 `$host` 예약 경로 허용
+- 단, TS의 전체 HostOwnedState(`lastError/errors` 포함)까지는 미완료
 
 ### 4) Effect 실행 모델
 - TS는 registry/executor, handler 옵션, auto-effect 비활성화, fulfill/inject 흐름 제공
@@ -47,7 +50,8 @@ TypeScript `packages/host` 대비 Java `manifesto-host` 구현 상태를 비교 
 ## 불일치
 ### 1) Host-owned state namespace
 - TS는 host 상태를 `data.$host`에 저장 (HOST-NS-1)
-- Java는 `system.pendingRequirements` 패치로 요구사항을 지우는 방식 (스펙과 불일치)
+- Java도 `data.$host` 1차 반영 완료 (intent slot 기록)
+- 남은 과제: host 에러 누적(`lastError/errors`) 및 stale slot lifecycle 정합화
 
 ## 정리
 - Java host는 **최소 동기 런타임** 수준
@@ -66,8 +70,10 @@ TypeScript `packages/host` 대비 Java `manifesto-host` 구현 상태를 비교 
 - pending 경계 보강:
   - missing handler 시 `PENDING` 반환 유지
   - `PENDING + empty requirements` 조기 반환
+- `$host` 예약 경로 허용 및 HostRuntime intent slot 기록 반영
 - 관련 테스트 보강:
   - `testEffectLoopGuardStopsNonConvergingExecution`
   - `testReturnsPendingWhenHandlerMissing`
+  - `ApplyTest.testHostReservedPathPatchAllowedWithoutStateSpecField`
 - `data.$host` 정합화 설계 초안 작성:
   - `local-only-docs/design/host-runtime-boundary-hardening.ko.md`

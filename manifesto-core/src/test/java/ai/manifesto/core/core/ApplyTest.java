@@ -183,4 +183,22 @@ class ApplyTest {
         assertEquals("second", updated.getData().get("name"));
         assertEquals(1, updated.getMeta().getVersion());
     }
+
+    @Test
+    @DisplayName("$host 예약 네임스페이스 patch는 state spec 없이도 허용")
+    void testHostReservedPathPatchAllowedWithoutStateSpecField() {
+        Result<Snapshot, ErrorValue> result = Apply.apply(
+            schema,
+            snapshot,
+            Patch.set("$host.currentIntentId", "intent-1"),
+            Patch.set("$host.intentSlots.intent-1.type", "notify")
+        );
+
+        assertTrue(result.isOk());
+        Snapshot updated = result.unwrap();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> hostState = (Map<String, Object>) updated.getData().get("$host");
+        assertNotNull(hostState);
+        assertEquals("intent-1", hostState.get("currentIntentId"));
+    }
 }

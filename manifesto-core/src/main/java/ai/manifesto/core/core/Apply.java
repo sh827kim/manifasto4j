@@ -59,7 +59,9 @@ public class Apply {
             switch (path.root) {
                 case DATA -> {
                     String normalized = path.subPath;
-                    if (validateDataPaths && !ValidationUtils.pathExistsInStateSpec(schema.getDataFields(), normalized)) {
+                    if (validateDataPaths
+                        && !isHostReservedPath(normalized)
+                        && !ValidationUtils.pathExistsInStateSpec(schema.getDataFields(), normalized)) {
                         validationErrors.add(ErrorValue.create(
                             "PATH_NOT_FOUND",
                             "Unknown patch path: " + patch.getPath(),
@@ -202,6 +204,13 @@ public class Apply {
             return new PatchPath(PatchRoot.META, path.equals("meta") ? "" : path.substring(5));
         }
         return new PatchPath(PatchRoot.DATA, path);
+    }
+
+    private static boolean isHostReservedPath(String path) {
+        if (path == null) {
+            return false;
+        }
+        return path.equals("$host") || path.startsWith("$host.");
     }
 
     private static Map<String, Object> applyPatchToMap(

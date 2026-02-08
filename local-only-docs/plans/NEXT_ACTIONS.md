@@ -130,6 +130,7 @@
 - [x] `HostRuntimeOptions` 도입으로 timeout/maxIterations 정책 분리
 - [x] host pending/missing-handler/non-converging 경계 테스트 보강
 - [x] host namespace(`data.$host`) 정합화 설계 초안 작성
+- [x] `data.$host` 1차 구현 반영 (Core `$host` patch 허용 + HostRuntime intent slot 기록)
   - `local-only-docs/design/host-runtime-boundary-hardening.ko.md`
   - TS 기준 참조: `/workspace/core/packages/host/src/types/host-state.ts`
 
@@ -170,5 +171,5 @@
 - [x] Golden 벡터 자동 생성/동기화 구현 착수 여부
 - [x] App bootstrap genesis computed 정합화 착수 여부
 - [x] World 정식 구현 Phase 8 확장 착수 여부
-- [ ] Host `data.$host` 실제 반영 구현 착수 여부
+- [x] Host `data.$host` 실제 반영 구현 착수 여부
 - [ ] Golden 테스트 확장 대상 결정 (compiler/host/world 포함)

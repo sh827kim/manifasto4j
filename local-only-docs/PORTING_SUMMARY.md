@@ -76,6 +76,9 @@
   - pending 경계 보강:
     - missing handler 시 pending 유지 반환
     - pending + empty requirements 시 조기 반환
+  - `data.$host` 1차 반영:
+    - Core `Apply`에서 `$host` 예약 경로 허용
+    - HostRuntime에서 intent slot 기록(`$host.currentIntentId`, `$host.intentSlots.*`)
   - 관련 회귀 테스트 보강 (`HostRuntimeTest`)
   - `data.$host` 정합화 설계 초안 문서화
     - `local-only-docs/design/host-runtime-boundary-hardening.ko.md`

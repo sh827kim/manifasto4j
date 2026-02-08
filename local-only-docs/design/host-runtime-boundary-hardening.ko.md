@@ -84,6 +84,18 @@ TS v2.0.2 스펙은 host 소유 상태를 `data.$host`에 저장하도록 정의
 
 ## 5. 다음 액션
 
-1. `$host` patch 허용 여부를 core 테스트로 고정
-2. `HostRuntime`에 `data.$host` 기록 최소 경로 도입
-3. host golden 벡터(경계 케이스 포함) 확장
+1. [x] `$host` patch 허용 여부를 core 테스트로 고정
+2. [x] `HostRuntime`에 `data.$host` 기록 최소 경로 도입
+3. [ ] host golden 벡터(경계 케이스 포함) 확장
+
+## 6. 진행 결과 (2026-02-08 2차 업데이트)
+
+- Core `Apply`가 `$host` 예약 경로를 허용하도록 반영
+  - 파일: `manifesto-core/src/main/java/ai/manifesto/core/core/Apply.java`
+  - 테스트: `manifesto-core/src/test/java/ai/manifesto/core/core/ApplyTest.java`
+- HostRuntime가 pending 처리 시 `$host`에 intent 슬롯을 기록하도록 반영
+  - `$host.currentIntentId`
+  - `$host.intentSlots.{intentId}.type`
+  - `$host.intentSlots.{intentId}.input`
+  - 파일: `manifesto-host/src/main/java/ai/manifesto/host/HostRuntime.java`
+  - 테스트: `manifesto-host/src/test/java/ai/manifesto/host/HostRuntimeTest.java`
