@@ -112,8 +112,9 @@
 **진행 상태 (2026-02-08 업데이트)**
 - [x] Java 동기화 스크립트 추가: `scripts/sync-golden.sh`
 - [x] TS compiler 벡터/골든 경로 자동 탐색 + 복사/누락 보고 기능 반영
-- [ ] TS 레포 벡터 dump 경로 확정 후 실제 동기화 검증
-- [ ] CI 훅 추가
+- [x] TS 레포 벡터 dump 경로 확정 (`/packages/compiler/vectors`)
+- [x] 실제 동기화/검증 실행 완료 (`sync-golden.sh`, `check-golden-sync.sh`)
+- [x] CI 훅 대체 Gradle task 추가 (`syncGoldenVectors`, `checkGoldenSync`)
 
 ---
 

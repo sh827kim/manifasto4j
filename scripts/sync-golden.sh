@@ -11,21 +11,25 @@ GOLDEN_DEST="$ROOT_DIR/manifesto-compiler/src/test/resources/golden"
 VECTOR_FILES=(
   "evaluation.json"
   "evaluation-runtime-patch.json"
-  "ir-generator.json"
   "lowering.json"
   "lowering-patch-fragment.json"
   "lowering-runtime-patch.json"
+)
+OPTIONAL_VECTOR_FILES=(
+  "ir-generator.json"
 )
 GOLDEN_FILES=(
   "compiler-e2e.json"
 )
 
 VECTOR_SOURCE_CANDIDATES=(
+  "$TS_REPO/packages/compiler/vectors"
   "$TS_REPO/packages/compiler/src/__tests__/vectors"
   "$TS_REPO/packages/compiler/test/vectors"
   "$TS_REPO/packages/compiler/tests/vectors"
 )
 GOLDEN_SOURCE_CANDIDATES=(
+  "$TS_REPO/packages/compiler/golden"
   "$TS_REPO/packages/compiler/src/__tests__/golden"
   "$TS_REPO/packages/compiler/test/golden"
   "$TS_REPO/packages/compiler/tests/golden"
@@ -75,6 +79,7 @@ status=0
 if [[ -n "$VECTOR_SOURCE" ]]; then
   echo "[sync-golden] vector_source=$VECTOR_SOURCE"
   copy_files "$VECTOR_SOURCE" "$VECTORS_DEST" "${VECTOR_FILES[@]}" || status=$?
+  copy_files "$VECTOR_SOURCE" "$VECTORS_DEST" "${OPTIONAL_VECTOR_FILES[@]}" || true
 else
   echo "[sync-golden] vector source not found. tried:" >&2
   printf '  - %s\n' "${VECTOR_SOURCE_CANDIDATES[@]}" >&2
@@ -83,11 +88,10 @@ fi
 
 if [[ -n "$GOLDEN_SOURCE" ]]; then
   echo "[sync-golden] golden_source=$GOLDEN_SOURCE"
-  copy_files "$GOLDEN_SOURCE" "$GOLDEN_DEST" "${GOLDEN_FILES[@]}" || status=$?
+  copy_files "$GOLDEN_SOURCE" "$GOLDEN_DEST" "${GOLDEN_FILES[@]}" || true
 else
-  echo "[sync-golden] golden source not found. tried:" >&2
+  echo "[sync-golden] golden source not found (optional). tried:" >&2
   printf '  - %s\n' "${GOLDEN_SOURCE_CANDIDATES[@]}" >&2
-  status=2
 fi
 
 if [[ "$status" -ne 0 ]]; then

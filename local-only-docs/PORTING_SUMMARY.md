@@ -175,6 +175,7 @@
 최근 진행 (2026-02-08 추가):
 - Golden 동기화 스크립트 초안 추가: `scripts/sync-golden.sh`
 - TS compiler 벡터/골든 경로 자동 탐색 + 복사/누락 보고 지원
+- `scripts/check-golden-sync.sh` + Gradle task(`checkGoldenSync`, `syncGoldenVectors`) 추가
 
 ---
 

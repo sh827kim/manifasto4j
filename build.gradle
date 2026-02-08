@@ -3,6 +3,26 @@ plugins {
     id 'maven-publish'
 }
 
+def resolvedTsCoreRepo() {
+    return project.findProperty('tsCoreRepo')
+        ?: System.getenv('TS_CORE_REPO')
+        ?: '/workspace/core'
+}
+
+tasks.register('syncGoldenVectors', Exec) {
+    group = 'verification'
+    description = 'Sync compiler golden/vector resources from TS core repo'
+    workingDir = rootProject.projectDir
+    commandLine 'bash', './scripts/sync-golden.sh', resolvedTsCoreRepo()
+}
+
+tasks.register('checkGoldenSync', Exec) {
+    group = 'verification'
+    description = 'Verify compiler vectors are synchronized with TS core repo'
+    workingDir = rootProject.projectDir
+    commandLine 'bash', './scripts/check-golden-sync.sh', resolvedTsCoreRepo()
+}
+
 allprojects {
     group = 'ai.manifesto'
     version = '1.0.0'
