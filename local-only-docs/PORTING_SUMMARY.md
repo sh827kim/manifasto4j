@@ -79,15 +79,23 @@
   - 비수렴 effect 루프 가드 반영(반복 상한 기반 fail-fast)
   - host/app 테스트 경로를 data 무접두사 규칙으로 정렬(`status`)
   - `HostRuntimeOptions` 도입으로 timeout/maxIterations 정책 분리
+  - effect 실행 정책 옵션 확장:
+    - `maxEffectRetries`
+    - `maxEffectDurationMillis`
   - pending 경계 보강:
     - missing handler 시 pending 유지 반환
     - pending + empty requirements 시 조기 반환
   - `data.$host` 1차 반영:
     - Core `Apply`에서 `$host` 예약 경로 허용
     - HostRuntime에서 intent slot 기록(`$host.currentIntentId`, `$host.intentSlots.*`)
+  - `data.$host` 2차 반영:
+    - effect 실패 시 `$host.lastError`, `$host.errors` 누적 기록
+    - retry/timeout 정책과 연동
   - host golden test 1차 추가:
     - `HostGoldenTest`
     - `manifesto-host/src/test/resources/golden/host-e2e.json`
+  - host golden 확장:
+    - `effect-failure-recorded-in-host-state` 케이스 추가
   - 관련 회귀 테스트 보강 (`HostRuntimeTest`)
   - `data.$host` 정합화 설계 초안 문서화
     - `local-only-docs/design/host-runtime-boundary-hardening.ko.md`

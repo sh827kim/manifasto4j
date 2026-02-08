@@ -6,6 +6,7 @@ import ai.manifesto.core.core.Compute;
 import ai.manifesto.core.schema.DomainSchema;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -73,7 +74,17 @@ public final class HostRuntime {
                 if (handler == null) {
                     return result;
                 }
-                EffectResult effectResult = handler.handle(requirement.getParams());
+                EffectResult effectResult = executeEffectWithPolicy(handler, requirement, options);
+                if (effectResult == null) {
+                    Snapshot failed = applyHostFailure(
+                        schema,
+                        result.getSnapshot(),
+                        requirement,
+                        "HOST_EFFECT_FAILED",
+                        "Effect execution failed after retries"
+                    );
+                    return ComputeResult.error(failed, lastTrace);
+                }
                 patches.addAll(effectResult.getPatches());
             }
             // Host는 처리된 requirement를 명시적으로 비운다.
@@ -86,5 +97,61 @@ public final class HostRuntime {
             }
             current = applied.unwrap();
         }
+    }
+
+    private EffectResult executeEffectWithPolicy(
+        EffectHandler handler,
+        Requirement requirement,
+        HostRuntimeOptions options
+    ) {
+        int attempts = options.getMaxEffectRetries() + 1;
+        for (int attempt = 1; attempt <= attempts; attempt++) {
+            try {
+                long startedAt = System.nanoTime();
+                EffectResult effectResult = handler.handle(requirement.getParams());
+                long elapsedMillis = (System.nanoTime() - startedAt) / 1_000_000L;
+                long maxDuration = options.getMaxEffectDurationMillis();
+                if (maxDuration > 0L && elapsedMillis > maxDuration) {
+                    continue;
+                }
+                return effectResult;
+            } catch (RuntimeException error) {
+                // retry path
+            }
+        }
+        return null;
+    }
+
+    private Snapshot applyHostFailure(
+        DomainSchema schema,
+        Snapshot snapshot,
+        Requirement requirement,
+        String code,
+        String message
+    ) {
+        Map<String, Object> errorMap = new LinkedHashMap<>();
+        errorMap.put("code", code);
+        errorMap.put("message", message);
+        errorMap.put("requirementId", requirement.getId());
+        errorMap.put("requirementType", requirement.getType());
+
+        List<Patch> patches = new java.util.ArrayList<>();
+        patches.add(Patch.set("$host.lastError", errorMap));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> existingHostState = (Map<String, Object>) snapshot.getData().get("$host");
+        List<Object> nextErrors = new java.util.ArrayList<>();
+        if (existingHostState != null && existingHostState.get("errors") instanceof List<?> list) {
+            nextErrors.addAll(list);
+        }
+        nextErrors.add(errorMap);
+        patches.add(Patch.set("$host.errors", nextErrors));
+        patches.add(Patch.set("system.pendingRequirements", java.util.List.of()));
+
+        HostContext applyContext = HostContext.forSnapshot(snapshot);
+        Result<Snapshot, ErrorValue> applied = Apply.apply(schema, snapshot, patches, applyContext);
+        if (applied.isOk()) {
+            return applied.unwrap();
+        }
+        return snapshot;
     }
 }

@@ -14,5 +14,14 @@
       "dataStatus": "",
       "hasRequirements": true
     }
+  },
+  {
+    "name": "effect-failure-recorded-in-host-state",
+    "expected": {
+      "status": "ERROR",
+      "dataStatus": "",
+      "hostLastErrorCode": "HOST_EFFECT_FAILED",
+      "hostErrorsCount": 1
+    }
   }
 ]

@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -132,6 +133,92 @@ class HostRuntimeTest {
 
         assertEquals(ComputeStatus.PENDING, result.getStatus());
         assertFalse(result.getRequirements().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Effect 실패 시 $host.lastError/errors를 기록하고 ERROR로 종료")
+    void testRecordsHostErrorWhenEffectFails() throws Exception {
+        FlowNode effectFlow = FlowNode.Effect.of("host.notify", Map.of("message", new Lit("hi")));
+        ActionSpec effectAction = new ActionSpec.Builder("notify").flow(effectFlow).build();
+
+        DomainSchema schema = buildSchemaWithHash(
+            "urn:test:effect-error",
+            "1.0.0",
+            new ActionSpec[] { effectAction },
+            new FieldSpec[] { new FieldSpec("status", "string", false, "") }
+        );
+
+        Snapshot snapshot = Snapshot.builder()
+            .data(new HashMap<>(Map.of("status", "")))
+            .computed(new HashMap<>())
+            .system(SystemState.initial())
+            .input(new HashMap<>())
+            .meta(Snapshot.SnapshotMeta.create(0, System.currentTimeMillis(), "seed", schema.getHash()))
+            .build();
+
+        HostRuntime host = new HostRuntime()
+            .register("host.notify", params -> {
+                throw new RuntimeException("boom");
+            });
+
+        ComputeResult result = host.run(
+            schema,
+            snapshot,
+            new Intent("notify", new HashMap<>(), UUID.randomUUID().toString()),
+            HostRuntimeOptions.builder().maxEffectRetries(1).build()
+        );
+
+        assertEquals(ComputeStatus.ERROR, result.getStatus());
+        @SuppressWarnings("unchecked")
+        Map<String, Object> hostState = (Map<String, Object>) result.getSnapshot().getData().get("$host");
+        assertNotNull(hostState);
+        assertNotNull(hostState.get("lastError"));
+        assertTrue(hostState.get("errors") instanceof List<?>);
+    }
+
+    @Test
+    @DisplayName("Effect 재시도 정책으로 일시 실패 후 성공할 수 있다")
+    void testEffectRetryCanRecoverFromTransientFailure() throws Exception {
+        FlowNode effectFlow = FlowNode.If.of(
+            new Eq(new Get("status"), new Lit("ok")),
+            FlowNode.Halt.of("done"),
+            FlowNode.Effect.of("host.notify", Map.of("message", new Lit("hi")))
+        );
+        ActionSpec effectAction = new ActionSpec.Builder("notify").flow(effectFlow).build();
+
+        DomainSchema schema = buildSchemaWithHash(
+            "urn:test:effect-retry",
+            "1.0.0",
+            new ActionSpec[] { effectAction },
+            new FieldSpec[] { new FieldSpec("status", "string", false, "") }
+        );
+
+        Snapshot snapshot = Snapshot.builder()
+            .data(new HashMap<>(Map.of("status", "")))
+            .computed(new HashMap<>())
+            .system(SystemState.initial())
+            .input(new HashMap<>())
+            .meta(Snapshot.SnapshotMeta.create(0, System.currentTimeMillis(), "seed", schema.getHash()))
+            .build();
+
+        AtomicInteger attempts = new AtomicInteger(0);
+        HostRuntime host = new HostRuntime()
+            .register("host.notify", params -> {
+                if (attempts.getAndIncrement() == 0) {
+                    throw new RuntimeException("transient");
+                }
+                return EffectResult.of(List.of(Patch.set("status", "ok")));
+            });
+
+        ComputeResult result = host.run(
+            schema,
+            snapshot,
+            new Intent("notify", new HashMap<>(), UUID.randomUUID().toString()),
+            HostRuntimeOptions.builder().maxEffectRetries(1).build()
+        );
+
+        assertEquals(ComputeStatus.HALTED, result.getStatus());
+        assertEquals("ok", result.getSnapshot().getData().get("status"));
     }
 
     private DomainSchema buildSchemaWithHash(

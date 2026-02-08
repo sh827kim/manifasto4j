@@ -8,10 +8,19 @@ package ai.manifesto.host;
 public final class HostRuntimeOptions {
     private final int timeoutSeconds;
     private final int maxIterations;
+    private final int maxEffectRetries;
+    private final long maxEffectDurationMillis;
 
-    private HostRuntimeOptions(int timeoutSeconds, int maxIterations) {
+    private HostRuntimeOptions(
+        int timeoutSeconds,
+        int maxIterations,
+        int maxEffectRetries,
+        long maxEffectDurationMillis
+    ) {
         this.timeoutSeconds = timeoutSeconds;
         this.maxIterations = maxIterations;
+        this.maxEffectRetries = maxEffectRetries;
+        this.maxEffectDurationMillis = maxEffectDurationMillis;
     }
 
     public int getTimeoutSeconds() {
@@ -22,9 +31,17 @@ public final class HostRuntimeOptions {
         return maxIterations;
     }
 
+    public int getMaxEffectRetries() {
+        return maxEffectRetries;
+    }
+
+    public long getMaxEffectDurationMillis() {
+        return maxEffectDurationMillis;
+    }
+
     public static HostRuntimeOptions forTimeoutSeconds(int timeoutSeconds) {
         int normalizedTimeout = Math.max(1, timeoutSeconds);
-        return new HostRuntimeOptions(normalizedTimeout, normalizedTimeout * 100);
+        return new HostRuntimeOptions(normalizedTimeout, normalizedTimeout * 100, 0, 0L);
     }
 
     public static Builder builder() {
@@ -34,6 +51,8 @@ public final class HostRuntimeOptions {
     public static final class Builder {
         private Integer timeoutSeconds;
         private Integer maxIterations;
+        private Integer maxEffectRetries;
+        private Long maxEffectDurationMillis;
 
         private Builder() {}
 
@@ -47,6 +66,16 @@ public final class HostRuntimeOptions {
             return this;
         }
 
+        public Builder maxEffectRetries(int maxEffectRetries) {
+            this.maxEffectRetries = maxEffectRetries;
+            return this;
+        }
+
+        public Builder maxEffectDurationMillis(long maxEffectDurationMillis) {
+            this.maxEffectDurationMillis = maxEffectDurationMillis;
+            return this;
+        }
+
         public HostRuntimeOptions build() {
             int resolvedTimeout = timeoutSeconds != null ? timeoutSeconds : 5;
             int normalizedTimeout = Math.max(1, resolvedTimeout);
@@ -56,7 +85,20 @@ public final class HostRuntimeOptions {
             if (resolvedMaxIterations < 1) {
                 throw new IllegalArgumentException("maxIterations must be >= 1");
             }
-            return new HostRuntimeOptions(normalizedTimeout, resolvedMaxIterations);
+            int resolvedMaxEffectRetries = maxEffectRetries != null ? maxEffectRetries : 0;
+            if (resolvedMaxEffectRetries < 0) {
+                throw new IllegalArgumentException("maxEffectRetries must be >= 0");
+            }
+            long resolvedMaxEffectDurationMillis = maxEffectDurationMillis != null ? maxEffectDurationMillis : 0L;
+            if (resolvedMaxEffectDurationMillis < 0L) {
+                throw new IllegalArgumentException("maxEffectDurationMillis must be >= 0");
+            }
+            return new HostRuntimeOptions(
+                normalizedTimeout,
+                resolvedMaxIterations,
+                resolvedMaxEffectRetries,
+                resolvedMaxEffectDurationMillis
+            );
         }
     }
 }

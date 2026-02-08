@@ -43,6 +43,7 @@ class HostGoldenTest {
             ComputeResult result = switch (name) {
                 case "effect-applied-with-host-slot" -> runEffectAppliedCase();
                 case "missing-handler-pending" -> runMissingHandlerCase();
+                case "effect-failure-recorded-in-host-state" -> runEffectFailureRecordedCase();
                 default -> throw new IllegalArgumentException("Unknown host golden case: " + name);
             };
 
@@ -66,6 +67,22 @@ class HostGoldenTest {
         HostRuntime host = new HostRuntime();
         Intent intent = new Intent("notify", Map.of(), "intent-host-golden-2");
         return host.run(schema, snapshot, intent, 5);
+    }
+
+    private ComputeResult runEffectFailureRecordedCase() throws Exception {
+        DomainSchema schema = createNotifySchema("urn:test:host:golden:3");
+        Snapshot snapshot = createSnapshot(schema);
+        HostRuntime host = new HostRuntime()
+            .register("host.notify", params -> {
+                throw new RuntimeException("boom");
+            });
+        Intent intent = new Intent("notify", Map.of(), "intent-host-golden-3");
+        return host.run(
+            schema,
+            snapshot,
+            intent,
+            HostRuntimeOptions.builder().maxEffectRetries(1).build()
+        );
     }
 
     private DomainSchema createNotifySchema(String schemaId) {
@@ -115,6 +132,24 @@ class HostGoldenTest {
         }
         if (expected.containsKey("hasRequirements")) {
             out.put("hasRequirements", !result.getRequirements().isEmpty());
+        }
+        if (expected.containsKey("hostLastErrorCode")) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> hostState = (Map<String, Object>) result.getSnapshot().getData().get("$host");
+            @SuppressWarnings("unchecked")
+            Map<String, Object> lastError = hostState == null
+                ? null
+                : (Map<String, Object>) hostState.get("lastError");
+            out.put("hostLastErrorCode", lastError == null ? null : lastError.get("code"));
+        }
+        if (expected.containsKey("hostErrorsCount")) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> hostState = (Map<String, Object>) result.getSnapshot().getData().get("$host");
+            int count = 0;
+            if (hostState != null && hostState.get("errors") instanceof List<?> list) {
+                count = list.size();
+            }
+            out.put("hostErrorsCount", count);
         }
         return out;
     }

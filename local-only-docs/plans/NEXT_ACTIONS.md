@@ -1,105 +1,112 @@
-# NEXT_ACTIONS (즉시 실행 항목)
+# NEXT_ACTIONS (다음 사이클 실행 계획)
 
 작성일: 2026-02-08  
-기준: 완료된 항목은 제거하고, 다음 구현 사이클의 실행 액션만 남긴다.
+기준: 완료된 골든 확장 1차를 baseline으로 두고, 다음 구현 사이클의 실행 항목만 기록한다.
 
 ---
 
-## 1. Action 1 - Validate Golden 확장 (즉시 진행)
+## 1. Action 1 - World Phase 8+ 시나리오 추가 포팅 (즉시 진행)
 
 목표:
-- Core validation golden에 `V-002`, `V-005`, `V-008` 회귀 케이스를 고정한다.
+- authority/query/escalation edge 경로를 TS `world.test.ts` 기준으로 추가 고정한다.
 
 실행 아이템:
-1. `manifesto-core/src/test/resources/golden/validate.json` 추가
-2. `manifesto-core/src/test/java/ai/manifesto/core/core/GoldenValidateTest.java` 추가
-3. 기대값 비교 기준 고정
-- `isValid`
-- `errorCodes` (정렬 비교)
-4. 검증 실행
-- `./gradlew :manifesto-core:test`
+1. tribunal timeout approve/reject 경계 시나리오 테스트 추가
+2. stale pending(브랜치 스위치) 정리 경로를 tribunal까지 확장
+3. world 이벤트/상태 전이 핵심 필드 회귀 검증 추가
+4. `./gradlew :manifesto-world:test` 통과
 
 완료 기준:
-- validation golden 테스트가 실패 재현 없이 통과
-- 기존 `ValidateTest`와 중복되지 않는 회귀 축(코드 기반 기대값)이 확보
+- 신규 edge 케이스 테스트가 안정적으로 통과
+- 기존 world 테스트 회귀 없음
 
 상태:
 - [x] 완료 (2026-02-08)
 - 산출물:
-  - `manifesto-core/src/test/resources/golden/validate.json`
-  - `manifesto-core/src/test/java/ai/manifesto/core/core/GoldenValidateTest.java`
-- 검증:
-  - `./gradlew :manifesto-core:test` 통과
-
----
-
-## 2. Action 2 - World Golden 확장
-
-목표:
-- World 승인/거절 terminal 경로를 golden 벡터로 고정한다.
-
-실행 아이템:
-1. world golden 벡터 초안 정의
-- approve terminal: `COMPLETED`, result world 생성
-- reject terminal: `REJECTED`, result world 미생성
-2. `manifesto-world` golden 테스트 추가
-3. `:manifesto-world:test` 실행 및 회귀 고정
-
-완료 기준:
-- 승인/거절 경로가 벡터 기반으로 비교 가능
-- world 상태/이벤트 핵심 필드가 고정됨
-
-상태:
-- [x] 완료 (2026-02-08)
-- 산출물:
-  - `manifesto-world/src/test/resources/golden/world-e2e.json`
-  - `manifesto-world/src/test/java/ai/manifesto/world/WorldGoldenTest.java`
-  - `manifesto-world/build.gradle` (golden test JSON 파싱 의존성 추가)
+  - `manifesto-world/src/test/java/ai/manifesto/world/ManifestoWorldTest.java`
+    - `tribunalTimeoutApproveIsAppliedByTick`
+    - `staleTribunalProposalIsDroppedOnBranchSwitch`
 - 검증:
   - `./gradlew :manifesto-world:test` 통과
 
 ---
 
-## 3. Action 3 - Compiler Golden 확장
+## 2. Action 2 - Host 정책 기능 강화 (`$host` 2차)
 
 목표:
-- compiler golden에 `onceIntent` edge case와 namespace hash 영향 케이스를 추가한다.
+- Host 실패/복구 관찰성을 높인다.
 
 실행 아이템:
-1. 케이스 정의
-- `onceIntent` 중복/스코프 경계
-- `meta.namespace` 변화에 따른 hash 차이
-2. `compiler-e2e.json` 또는 별도 golden 벡터 확장
-3. `:manifesto-compiler:test` 실행
+1. `$host.lastError`, `$host.errors` 기록 경로 추가
+2. retry/timeout 옵션 설계 및 최소 구현
+3. host golden 벡터에 실패/재시도 케이스 추가
+4. `./gradlew :manifesto-host:test` 통과
 
 완료 기준:
-- 신규 케이스가 golden mismatch 없이 통과
-- 기존 parser/analyzer/IR/renderer 정합을 깨지 않음
+- 실패 실행의 host 기록이 snapshot에서 일관되게 확인됨
+- retry/timeout 정책이 테스트로 고정됨
 
 상태:
 - [x] 완료 (2026-02-08)
 - 산출물:
-  - `manifesto-compiler/src/test/resources/golden/compiler-e2e.json`
-    - `onceintent-contextual-edge` 케이스 추가
-    - `namespace-hash-impact` 케이스 추가
-  - `manifesto-compiler/src/test/java/ai/manifesto/compiler/CompilerGoldenTest.java`
-    - `expectHashDifferent` 벡터 처리 로직 추가
+  - `manifesto-host/src/main/java/ai/manifesto/host/HostRuntimeOptions.java`
+    - `maxEffectRetries`, `maxEffectDurationMillis` 옵션 추가
+  - `manifesto-host/src/main/java/ai/manifesto/host/HostRuntime.java`
+    - `$host.lastError`, `$host.errors` 기록 경로 추가
+    - effect retry/timeout 정책 반영
+  - `manifesto-host/src/test/java/ai/manifesto/host/HostRuntimeTest.java`
+    - 실패 기록/재시도 복구 테스트 추가
+  - `manifesto-host/src/test/java/ai/manifesto/host/HostGoldenTest.java`
+  - `manifesto-host/src/test/resources/golden/host-e2e.json`
+    - 실패 기록 골든 케이스 추가
 - 검증:
-  - `./gradlew :manifesto-compiler:test` 통과
+  - `./gradlew :manifesto-host:test` 통과
 
 ---
 
-## 다음 실행 순서
+## 3. Action 3 - Compiler lowering/evaluation 정식 계층 정합화
 
-1. [완료] Action 1 - Validate Golden 확장
-2. [완료] Action 2 - World Golden 확장
-3. [완료] Action 3 - Compiler Golden 확장
+목표:
+- Lite 의존도를 줄이고 TS 계층과 오류/shape 규칙을 맞춘다.
+
+실행 아이템:
+1. lowering API 확장 (context 제약 + shape 검증)
+2. evaluation 오류 코드/trace 정규화
+3. compiler golden/vector 케이스 추가
+4. `./gradlew :manifesto-compiler:test` 통과
+
+완료 기준:
+- 신규 API/오류 규칙이 테스트로 고정
+- 기존 golden/vector 회귀 없음
+
+상태:
+- [ ] 대기
 
 ---
 
-## 다음 사이클 후보
+## 4. Action 4 - Bridge/App runtime 확장
 
-1. World phase 8+ 시나리오 추가 포팅 (authority/query/escalation edge)
-2. Host `$host.lastError/errors` 및 retry/timeout 정책 고도화
-3. Compiler lowering/evaluation 정식 계층(API/오류코드/shape 검증) 반영
-4. Bridge/App runtime 확장 (session/store/pipeline)
+목표:
+- Intent 발행/라우팅/구독 경계를 실사용 수준으로 확장한다.
+
+실행 아이템:
+1. Bridge 이벤트 라우팅 구조화
+2. App runtime/session/store 최소 경로 추가
+3. app-bridge 통합 테스트 보강
+4. `./gradlew :manifesto-app:test :manifesto-bridge:test` 통과
+
+완료 기준:
+- runtime 경로가 테스트로 재현 가능
+- 문서와 구현의 용어/역할이 정합
+
+상태:
+- [ ] 대기
+
+---
+
+## 실행 순서
+
+1. [완료] Action 1
+2. [완료] Action 2
+3. Action 3
+4. Action 4

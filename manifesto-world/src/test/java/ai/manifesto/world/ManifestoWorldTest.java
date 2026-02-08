@@ -21,6 +21,8 @@ import ai.manifesto.world.schema.PolicyRuleDecision;
 import ai.manifesto.world.schema.PolicyRulesPolicy;
 import ai.manifesto.world.schema.Proposal;
 import ai.manifesto.world.schema.ProposalStatus;
+import ai.manifesto.world.schema.QuorumRule;
+import ai.manifesto.world.schema.TribunalPolicy;
 import ai.manifesto.world.schema.TimeoutAction;
 import ai.manifesto.world.schema.World;
 import ai.manifesto.world.schema.AuthorityKind;
@@ -282,6 +284,64 @@ class ManifestoWorldTest {
 
         assertNull(world.getProposal(pendingId));
         assertTrue(!world.getAuthorityEvaluator().getHitlHandler().isPending(pendingId));
+    }
+
+    @Test
+    void tribunalTimeoutApproveIsAppliedByTick() {
+        HostExecutor executor = (executionKey, baseSnapshot, intent, options) ->
+                HostExecutionResult.completed(baseSnapshot.withData(Map.of("status", "approved-by-tribunal-timeout")));
+
+        ManifestoWorld world = new ManifestoWorld("schema-hash", executor, null);
+        World genesis = world.createGenesis(genesisSnapshot);
+
+        ActorRef agent = new ActorRef("agent-tribunal-timeout", ActorKind.AGENT);
+        ActorRef t1 = new ActorRef("tribunal-1", ActorKind.HUMAN);
+        ActorRef t2 = new ActorRef("tribunal-2", ActorKind.HUMAN);
+        ActorRef t3 = new ActorRef("tribunal-3", ActorKind.HUMAN);
+        world.registerActor(
+                agent,
+                new TribunalPolicy(List.of(t1, t2, t3), QuorumRule.majority(), 0L, TimeoutAction.APPROVE)
+        );
+
+        IntentInstance intent = createIntentInstance(agent, "update", "intent-tribunal-timeout", "event-tribunal-timeout");
+        ProposalResult pending = world.submitProposal(agent.getActorId(), intent, genesis.getWorldId(), null);
+        assertEquals(ProposalStatus.EVALUATING, pending.getProposal().getStatus());
+
+        world.tick(System.currentTimeMillis());
+
+        Proposal updated = world.getProposal(pending.getProposal().getProposalId().value());
+        assertNotNull(updated);
+        assertEquals(ProposalStatus.COMPLETED, updated.getStatus());
+        assertNotNull(world.getDecisionByProposal(updated.getProposalId().value()));
+        assertNotNull(updated.getResultWorld());
+    }
+
+    @Test
+    void staleTribunalProposalIsDroppedOnBranchSwitch() {
+        HostExecutor executor = (executionKey, baseSnapshot, intent, options) ->
+                HostExecutionResult.completed(baseSnapshot);
+
+        ManifestoWorld world = new ManifestoWorld("schema-hash", executor, null);
+        World genesis = world.createGenesis(genesisSnapshot);
+
+        ActorRef agent = new ActorRef("agent-tribunal-stale", ActorKind.AGENT);
+        ActorRef t1 = new ActorRef("tribunal-a", ActorKind.HUMAN);
+        ActorRef t2 = new ActorRef("tribunal-b", ActorKind.HUMAN);
+        ActorRef t3 = new ActorRef("tribunal-c", ActorKind.HUMAN);
+        world.registerActor(
+                agent,
+                new TribunalPolicy(List.of(t1, t2, t3), QuorumRule.majority(), null, null)
+        );
+
+        IntentInstance intent = createIntentInstance(agent, "review", "intent-tribunal-stale", "event-tribunal-stale");
+        ProposalResult pending = world.submitProposal(agent.getActorId(), intent, genesis.getWorldId(), null);
+        String pendingId = pending.getProposal().getProposalId().value();
+        assertTrue(world.getAuthorityEvaluator().getTribunalHandler().isPending(pendingId));
+
+        world.switchBranch(genesis.getWorldId());
+
+        assertNull(world.getProposal(pendingId));
+        assertTrue(!world.getAuthorityEvaluator().getTribunalHandler().isPending(pendingId));
     }
 
     @Test
