@@ -190,7 +190,8 @@ public final class Parser {
     private GuardedStmtNode parseGuardedStmt() {
         if (check(TokenKind.WHEN)) return parseWhenStmt();
         if (check(TokenKind.ONCE)) return parseOnceStmt();
-        error("Unexpected token '" + peek().lexeme() + "'. Expected 'when' or 'once'.");
+        if (isOnceIntentContext()) return parseOnceIntentStmt();
+        error("Unexpected token '" + peek().lexeme() + "'. Expected 'when', 'once', or 'onceIntent'.");
         advance();
         return null;
     }
@@ -235,14 +236,35 @@ public final class Parser {
         return new OnceStmtNode(marker, condition, body, mergeLocations(start, end));
     }
 
+    private OnceIntentStmtNode parseOnceIntentStmt() {
+        Token startToken = consume(TokenKind.IDENTIFIER, "Expected 'onceIntent'");
+
+        ExprNode condition = null;
+        if (match(TokenKind.WHEN)) {
+            condition = parseExpression(Precedence.NONE);
+        }
+
+        consume(TokenKind.LBRACE, "Expected '{' to start onceIntent block");
+        List<InnerStmtNode> body = new ArrayList<>();
+        while (!check(TokenKind.RBRACE) && !isAtEnd()) {
+            InnerStmtNode stmt = parseInnerStmt();
+            if (stmt != null) {
+                body.add(stmt);
+            }
+        }
+        SourceLocation end = consume(TokenKind.RBRACE, "Expected '}' to close onceIntent block").location();
+        return new OnceIntentStmtNode(condition, body, mergeLocations(startToken.location(), end));
+    }
+
     private InnerStmtNode parseInnerStmt() {
         if (check(TokenKind.PATCH)) return parsePatchStmt();
         if (check(TokenKind.EFFECT)) return parseEffectStmt();
         if (check(TokenKind.WHEN)) return parseWhenStmt();
         if (check(TokenKind.ONCE)) return parseOnceStmt();
+        if (isOnceIntentContext()) return parseOnceIntentStmt();
         if (check(TokenKind.FAIL)) return parseFailStmt();
         if (check(TokenKind.STOP)) return parseStopStmt();
-        error("Unexpected token '" + peek().lexeme() + "'. Expected 'patch', 'effect', 'when', 'once', 'fail', or 'stop'.");
+        error("Unexpected token '" + peek().lexeme() + "'. Expected 'patch', 'effect', 'when', 'once', 'onceIntent', 'fail', or 'stop'.");
         advance();
         return null;
     }
@@ -629,6 +651,13 @@ public final class Parser {
         return tokens.get(current - 1);
     }
 
+    private Token peekNext() {
+        if (current + 1 >= tokens.size()) {
+            return tokens.get(tokens.size() - 1);
+        }
+        return tokens.get(current + 1);
+    }
+
     private boolean isAtEnd() {
         return peek().kind() == TokenKind.EOF;
     }
@@ -641,6 +670,14 @@ public final class Parser {
     private boolean check(TokenKind kind) {
         if (isAtEnd()) return false;
         return peek().kind() == kind;
+    }
+
+    private boolean isOnceIntentContext() {
+        if (!check(TokenKind.IDENTIFIER)) return false;
+        Token token = peek();
+        if (!"onceIntent".equals(token.lexeme())) return false;
+        Token next = peekNext();
+        return next.kind() == TokenKind.LBRACE || next.kind() == TokenKind.WHEN;
     }
 
     private boolean match(TokenKind... kinds) {
@@ -692,13 +729,28 @@ public final class Parser {
     }
 
     private Number numberValue(Token token) {
+        String lexeme = token.lexeme();
         if (token.value() instanceof Number) {
-            return (Number) token.value();
+            Number value = (Number) token.value();
+            if (value instanceof Double d) {
+                boolean integerLexeme = lexeme != null
+                    && !lexeme.contains(".")
+                    && !lexeme.contains("e")
+                    && !lexeme.contains("E");
+                if (integerLexeme && d % 1 == 0) {
+                    long longValue = d.longValue();
+                    if (longValue >= Integer.MIN_VALUE && longValue <= Integer.MAX_VALUE) {
+                        return (int) longValue;
+                    }
+                    return longValue;
+                }
+            }
+            return value;
         }
         try {
-            return token.lexeme().contains(".")
-                ? Double.parseDouble(token.lexeme())
-                : Integer.parseInt(token.lexeme());
+            return lexeme.contains(".")
+                ? Double.parseDouble(lexeme)
+                : Integer.parseInt(lexeme);
         } catch (NumberFormatException ex) {
             return 0;
         }

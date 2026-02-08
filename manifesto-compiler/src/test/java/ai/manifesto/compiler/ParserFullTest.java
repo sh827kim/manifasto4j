@@ -15,6 +15,7 @@ import ai.manifesto.compiler.parser.IdentifierExprNode;
 import ai.manifesto.compiler.parser.IndexAccessExprNode;
 import ai.manifesto.compiler.parser.LiteralExprNode;
 import ai.manifesto.compiler.parser.ObjectLiteralExprNode;
+import ai.manifesto.compiler.parser.OnceIntentStmtNode;
 import ai.manifesto.compiler.parser.OnceStmtNode;
 import ai.manifesto.compiler.parser.ParseResult;
 import ai.manifesto.compiler.parser.Parser;
@@ -161,6 +162,24 @@ class ParserFullTest {
         assertTrue(result.diagnostics().isEmpty());
         ActionNode action = (ActionNode) result.program().domain().members().get(0);
         assertInstanceOf(WhenStmtNode.class, action.body().get(0));
+        assertInstanceOf(OnceStmtNode.class, action.body().get(1));
+    }
+
+    @Test
+    @DisplayName("onceIntent 파싱 및 contextual keyword 동작")
+    void parsesOnceIntentAsContextualKeyword() {
+        ParseResult result = parseSource("""
+            domain T {
+              state { onceIntent: string = "" }
+              action test() {
+                onceIntent { patch onceIntent = $meta.intentId }
+                once(onceIntent) { patch onceIntent = $meta.intentId }
+              }
+            }
+            """);
+        assertTrue(result.diagnostics().isEmpty());
+        ActionNode action = (ActionNode) result.program().domain().members().get(1);
+        assertInstanceOf(OnceIntentStmtNode.class, action.body().get(0));
         assertInstanceOf(OnceStmtNode.class, action.body().get(1));
     }
 

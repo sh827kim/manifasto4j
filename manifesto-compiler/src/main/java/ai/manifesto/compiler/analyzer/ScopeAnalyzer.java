@@ -16,6 +16,7 @@ import ai.manifesto.compiler.parser.IdentifierExprNode;
 import ai.manifesto.compiler.parser.IndexAccessExprNode;
 import ai.manifesto.compiler.parser.InnerStmtNode;
 import ai.manifesto.compiler.parser.ObjectLiteralExprNode;
+import ai.manifesto.compiler.parser.OnceIntentStmtNode;
 import ai.manifesto.compiler.parser.OnceStmtNode;
 import ai.manifesto.compiler.parser.PatchStmtNode;
 import ai.manifesto.compiler.parser.ProgramNode;
@@ -98,6 +99,13 @@ public final class ScopeAnalyzer {
                 for (InnerStmtNode inner : onceStmt.body()) {
                     analyzeInnerStmt(inner, scope, usedParams);
                 }
+            } else if (stmt instanceof OnceIntentStmtNode onceIntentStmt) {
+                if (onceIntentStmt.condition() != null) {
+                    analyzeExpr(onceIntentStmt.condition(), scope, usedParams);
+                }
+                for (InnerStmtNode inner : onceIntentStmt.body()) {
+                    analyzeInnerStmt(inner, scope, usedParams);
+                }
             }
         }
     }
@@ -129,6 +137,15 @@ public final class ScopeAnalyzer {
                 analyzeExpr(onceStmt.condition(), scope, usedParams);
             }
             for (InnerStmtNode inner : onceStmt.body()) {
+                analyzeInnerStmt(inner, scope, usedParams);
+            }
+            return;
+        }
+        if (stmt instanceof OnceIntentStmtNode onceIntentStmt) {
+            if (onceIntentStmt.condition() != null) {
+                analyzeExpr(onceIntentStmt.condition(), scope, usedParams);
+            }
+            for (InnerStmtNode inner : onceIntentStmt.body()) {
                 analyzeInnerStmt(inner, scope, usedParams);
             }
         }

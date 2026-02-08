@@ -26,6 +26,7 @@ import ai.manifesto.compiler.parser.LiteralTypeNode;
 import ai.manifesto.compiler.parser.ObjectLiteralExprNode;
 import ai.manifesto.compiler.parser.ObjectPropertyNode;
 import ai.manifesto.compiler.parser.ObjectTypeNode;
+import ai.manifesto.compiler.parser.OnceIntentStmtNode;
 import ai.manifesto.compiler.parser.OnceStmtNode;
 import ai.manifesto.compiler.parser.ParamNode;
 import ai.manifesto.compiler.parser.PatchStmtNode;
@@ -90,6 +91,7 @@ import ai.manifesto.core.schema.DomainMeta;
 import ai.manifesto.core.schema.DomainSchema;
 import ai.manifesto.core.schema.FieldSpec;
 import ai.manifesto.core.schema.TypeSpec;
+import ai.manifesto.core.utils.HashUtils;
 
 import java.util.*;
 
@@ -232,13 +234,21 @@ public final class AstIrGenerator {
         Map<String, ComputedFieldDef> fields = new LinkedHashMap<>();
         for (DomainMember member : domain.members()) {
             if (member instanceof ComputedNode computed) {
+                String computedPath = toComputedPath(computed.name());
                 ExprNode expr = generateExpr(computed.expression(), ctx);
                 Set<String> deps = extractDeps(expr);
-                ComputedFieldDef def = new ComputedFieldDef(computed.name(), expr, deps);
-                fields.put(computed.name(), def);
+                ComputedFieldDef def = new ComputedFieldDef(computedPath, expr, deps);
+                fields.put(computedPath, def);
             }
         }
         return fields;
+    }
+
+    private String toComputedPath(String name) {
+        if (name == null || name.isEmpty()) {
+            return "computed";
+        }
+        return name.startsWith("computed.") ? name : "computed." + name;
     }
 
     private Map<String, ActionSpec> generateActions(DomainNode domain, GeneratorContext ctx) {
@@ -302,6 +312,9 @@ public final class AstIrGenerator {
         if (stmt instanceof OnceStmtNode onceStmt) {
             return generateOnce(onceStmt, ctx);
         }
+        if (stmt instanceof OnceIntentStmtNode onceIntentStmt) {
+            return generateOnceIntent(onceIntentStmt, ctx);
+        }
         if (stmt instanceof PatchStmtNode patchStmt) {
             return generatePatch(patchStmt, ctx);
         }
@@ -340,6 +353,34 @@ public final class AstIrGenerator {
             steps.add(generateStmt(inner, ctx));
         }
 
+        return new FlowNode.If(cond, FlowNode.Seq.of(steps), null);
+    }
+
+    private FlowNode generateOnceIntent(OnceIntentStmtNode stmt, GeneratorContext ctx) {
+        String actionName = ctx.currentAction != null ? ctx.currentAction : "unknown";
+        int nextIndex = ctx.onceIntentCounters.getOrDefault(actionName, 0);
+        ctx.onceIntentCounters.put(actionName, nextIndex + 1);
+
+        String guardId = HashUtils.sha256Sync(actionName + ":" + nextIndex + ":intent");
+        String guardPath = "$mel.guards.intent." + guardId;
+        ExprNode intentIdExpr = Get.of("meta.intentId");
+
+        ExprNode cond = new Neq(Get.of(guardPath), intentIdExpr);
+        if (stmt.condition() != null) {
+            ExprNode extra = generateExpr(stmt.condition(), ctx);
+            cond = new And(List.of(cond, extra));
+        }
+
+        FlowNode markerPatch = FlowNode.Patch.merge(
+            "$mel.guards.intent",
+            ObjectExpr.of(Map.of(guardId, intentIdExpr))
+        );
+
+        List<FlowNode> steps = new ArrayList<>();
+        steps.add(markerPatch);
+        for (InnerStmtNode inner : stmt.body()) {
+            steps.add(generateStmt(inner, ctx));
+        }
         return new FlowNode.If(cond, FlowNode.Seq.of(steps), null);
     }
 
@@ -606,6 +647,7 @@ public final class AstIrGenerator {
             case "merge" -> new Merge(args);
             case "if", "cond" -> new If(args.get(0), args.get(1), args.get(2));
             case "toString" -> new ToString(args.get(0));
+            case "isNotNull", "notNull" -> new Not(new IsNull(args.get(0)));
             default -> unsupportedExpr("Unknown function '" + name + "'", location, ctx);
         };
     }
@@ -676,7 +718,8 @@ public final class AstIrGenerator {
                 isLiteralUnion = false;
             }
             if (isLiteralUnion && !literals.isEmpty()) {
-                return new FieldSpecData("enum", !hasNull, null, null, literals);
+                String enumBaseType = inferEnumBaseType(literals);
+                return new FieldSpecData(enumBaseType, !hasNull, null, null, literals);
             }
             if (hasNull) {
                 for (TypeExprNode t : union.types()) {
@@ -748,6 +791,37 @@ public final class AstIrGenerator {
             map.put(String.valueOf(entries[i]), entries[i + 1]);
         }
         return map;
+    }
+
+    private String inferEnumBaseType(List<Object> literals) {
+        boolean hasString = false;
+        boolean hasNumber = false;
+        boolean hasBoolean = false;
+        for (Object value : literals) {
+            if (value == null) {
+                continue;
+            }
+            if (value instanceof String) {
+                hasString = true;
+                continue;
+            }
+            if (value instanceof Number) {
+                hasNumber = true;
+                continue;
+            }
+            if (value instanceof Boolean) {
+                hasBoolean = true;
+                continue;
+            }
+            return "enum";
+        }
+        int categories = (hasString ? 1 : 0) + (hasNumber ? 1 : 0) + (hasBoolean ? 1 : 0);
+        if (categories == 1) {
+            if (hasString) return "string";
+            if (hasNumber) return "number";
+            return "boolean";
+        }
+        return "enum";
     }
 
     private Set<String> extractDeps(ExprNode expr) {
@@ -833,6 +907,7 @@ public final class AstIrGenerator {
         private final Set<String> stateFields = new HashSet<>();
         private final Set<String> computedFields = new HashSet<>();
         private final Map<String, Set<String>> actionParams = new HashMap<>();
+        private final Map<String, Integer> onceIntentCounters = new HashMap<>();
         private final Map<String, TypeDeclNode> typeDefs = new HashMap<>();
         private final List<Diagnostic> diagnostics = new ArrayList<>();
         private String currentAction;

@@ -112,6 +112,18 @@ public final class MelRenderer {
             sb.append(indent).append("}").append(newline);
             return;
         }
+        if (stmt instanceof OnceIntentStmtNode onceIntentStmt) {
+            sb.append(indent).append("onceIntent");
+            if (onceIntentStmt.condition() != null) {
+                sb.append(" when ").append(renderExpr(onceIntentStmt.condition()));
+            }
+            sb.append(" {").append(newline);
+            for (InnerStmtNode inner : onceIntentStmt.body()) {
+                renderStmt(sb, inner, indent + indentUnit, indentUnit, newline);
+            }
+            sb.append(indent).append("}").append(newline);
+            return;
+        }
         if (stmt instanceof PatchStmtNode patchStmt) {
             sb.append(indent).append("patch ").append(renderPath(patchStmt.path())).append(" ");
             if ("unset".equals(patchStmt.op())) {

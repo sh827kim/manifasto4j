@@ -21,6 +21,7 @@ import ai.manifesto.compiler.parser.IterationVarExprNode;
 import ai.manifesto.compiler.parser.LiteralExprNode;
 import ai.manifesto.compiler.parser.ObjectLiteralExprNode;
 import ai.manifesto.compiler.parser.ObjectTypeNode;
+import ai.manifesto.compiler.parser.OnceIntentStmtNode;
 import ai.manifesto.compiler.parser.OnceStmtNode;
 import ai.manifesto.compiler.parser.PatchStmtNode;
 import ai.manifesto.compiler.parser.ProgramNode;
@@ -76,12 +77,12 @@ public final class SemanticValidator {
 
     private void validateActionBody(ActionNode action) {
         for (var stmt : action.body()) {
-            if (stmt instanceof WhenStmtNode || stmt instanceof OnceStmtNode) {
+            if (stmt instanceof WhenStmtNode || stmt instanceof OnceStmtNode || stmt instanceof OnceIntentStmtNode) {
                 validateGuardedStmt(stmt);
             } else {
                 diagnostics.add(Diagnostic.error(
                     DiagnosticCode.E_UNGUARDED_STMT,
-                    "Statement must be inside a guard (when or once)",
+                    "Statement must be inside a guard (when, once, or onceIntent)",
                     spanOf(stmt.location())
                 ));
             }
@@ -103,6 +104,16 @@ public final class SemanticValidator {
                 warnIfNonBoolCondition(onceStmt.condition());
             }
             for (InnerStmtNode inner : onceStmt.body()) {
+                validateInnerStmt(inner);
+            }
+            return;
+        }
+        if (stmt instanceof OnceIntentStmtNode onceIntentStmt) {
+            if (onceIntentStmt.condition() != null) {
+                validateExpr(onceIntentStmt.condition(), ExprContext.GENERAL);
+                warnIfNonBoolCondition(onceIntentStmt.condition());
+            }
+            for (InnerStmtNode inner : onceIntentStmt.body()) {
                 validateInnerStmt(inner);
             }
             return;
@@ -142,7 +153,7 @@ public final class SemanticValidator {
             }
             return;
         }
-        if (stmt instanceof WhenStmtNode || stmt instanceof OnceStmtNode) {
+        if (stmt instanceof WhenStmtNode || stmt instanceof OnceStmtNode || stmt instanceof OnceIntentStmtNode) {
             validateGuardedStmt(stmt);
         }
     }
