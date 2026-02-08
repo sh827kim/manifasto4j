@@ -240,6 +240,35 @@ class ManifestoWorldTest {
     }
 
     @Test
+    void queryApisReturnNullForMissingIds() {
+        ManifestoWorld world = new ManifestoWorld("schema-hash");
+        world.createGenesis(genesisSnapshot);
+
+        assertNull(world.getWorld(ai.manifesto.world.schema.WorldId.of("missing-world")));
+        assertNull(world.getSnapshot(ai.manifesto.world.schema.WorldId.of("missing-world")));
+        assertNull(world.getProposal("missing-proposal"));
+        assertNull(world.getDecisionByProposal("missing-proposal"));
+    }
+
+    @Test
+    void updateActorBindingReplacesPolicyAndRejectsUnknownActor() {
+        ManifestoWorld world = new ManifestoWorld("schema-hash");
+        world.createGenesis(genesisSnapshot);
+
+        ActorRef actor = new ActorRef("actor-update", ActorKind.AGENT);
+        world.registerActor(actor, new AutoApprovePolicy("auto"));
+        assertEquals(AuthorityKind.AUTO, world.getActorBinding(actor.getActorId()).getAuthority().getKind());
+
+        world.updateActorBinding(actor.getActorId(), new HitlPolicy(new ActorRef("owner", ActorKind.HUMAN), null, TimeoutAction.REJECT));
+        assertEquals(AuthorityKind.HUMAN, world.getActorBinding(actor.getActorId()).getAuthority().getKind());
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> world.updateActorBinding("missing-actor", new AutoApprovePolicy())
+        );
+    }
+
+    @Test
     void hitlTimeoutDecisionIsAppliedByTick() {
         HostExecutor executor = (executionKey, baseSnapshot, intent, options) ->
                 HostExecutionResult.completed(baseSnapshot.withData(Map.of("status", "ok")));

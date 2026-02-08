@@ -117,6 +117,10 @@
 - **상태**: projection/intent 변환 최소 구조 제공
   - event kind 라우팅 + fallback projection 경로 추가
   - bridge 단위 테스트에 routed projection 시나리오 추가
+  - Spring AI 입력 어댑터 1차 추가
+    - `ExternalEventAdapter`
+    - `SpringAiMessageAdapter` (`type/eventId/payload/metadata` 정규화)
+    - adapter 단위 테스트 추가
 
 ### builder
 - **상태**: DomainSchema DSL 최소 구현
@@ -157,6 +161,7 @@
     - unregistered actor / non-existent base world / duplicate genesis 거부 테스트 추가
     - escalation multi-hop/fallback 시나리오 추가
     - lineage depth/isDescendant/findPath 시나리오 추가
+    - query null 경계 + actor binding update 경계 테스트 추가
   - `:manifesto-world:test` 통과
   - world golden 테스트 1차 추가
     - `WorldGoldenTest`
@@ -183,7 +188,8 @@
 
 ### host/app/bridge
 - host 운영정책 1차 보강(retry/timeout, host error state) 반영 완료
-- app/bridge runtime 계층은 1차 구현 완료, 확장 설계 잔여
+- app/bridge runtime 계층은 1차 구현 완료
+- bridge의 Spring AI 입력 정규화 어댑터 1차 반영 완료
 
 ---
 
@@ -211,6 +217,8 @@
 2) **compiler lowering/evaluation 정식 계층 정합화** (Lite 축소)
 3) **host 정책 기능 강화** (`$host.lastError/errors`, retry/timeout 정책)
 4) **bridge/app 확장** (runtime/store/session/pipeline 정합화)
+5) **world query/authority 시나리오 2차 포팅**
+6) **compiler golden/vector 동기화 파이프라인 운영성 보강**
 
 최근 진행 (2026-02-08 추가):
 - Golden 동기화 스크립트 초안 추가: `scripts/sync-golden.sh`

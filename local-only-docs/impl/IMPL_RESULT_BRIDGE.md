@@ -73,3 +73,7 @@ TypeScript `packages/bridge` 대비 Java `manifesto-bridge` 구현 상태를 비
 
 ## 최근 업데이트 (2026-02-08)
 - routed projection 기능 추가 + 단위 테스트 보강
+- Spring AI adapter 1차 정의
+  - `ExternalEventAdapter` 인터페이스 추가
+  - `SpringAiMessageAdapter` 추가 (type/eventId/payload/metadata 정규화)
+  - `SpringAiMessageAdapterTest` 추가
