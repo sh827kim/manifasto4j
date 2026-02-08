@@ -48,10 +48,10 @@ flowchart TD
 - Effect는 Core가 실행하지 않습니다. Core는 선언만 합니다.
 - 실패도 값입니다. 에러는 Patch로 Snapshot에 기록됩니다.
 
-**현재 Java 구현 흐름에서의 차이 (2026-02-03 기준)**  
-- Bridge는 Projection이 곧바로 `Intent`를 반환하는 구조이며, World/Issuer 연동은 미구현입니다.  
-- Host는 동기 while 루프 수준의 최소 실행기이며, TS의 mailbox/runner/job 모델은 없습니다.  
-- Host 상태는 `data.$host` 대신 `system.pendingRequirements`로 처리하는 방식이라 스펙과 다릅니다.
+**현재 Java 구현 흐름에서의 차이 (2026-02-08 기준)**  
+- Bridge는 여전히 최소 Projection → Intent 변환기 수준이며, TS Bridge 대비 이벤트 라우팅/구독 계층이 단순합니다.  
+- Host는 동기 while 루프 기반 최소 실행기이며, TS의 mailbox/runner/job 모델은 아직 미도입입니다.  
+- Host 상태는 `$host` 네임스페이스 1차 반영이 완료됐고(`currentIntentId`, `intentSlots`), 추가 상태(`lastError/errors`)는 후속 과제입니다.
 
 **Java 개발 팁**
 - Core는 **테스트 가능한 순수 모듈**로 분리하세요.

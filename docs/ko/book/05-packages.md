@@ -15,6 +15,7 @@
 - `manifesto-host`: Effect 실행 런타임
 - `manifesto-bridge`: UI/외부 입력 ↔ Intent 변환
 - `manifesto-effect-utils`: Effect 관련 유틸리티
+- `manifesto-world`: 승인/거절/라인리지/거버넌스 실행 기록
 - `manifesto-examples`: 예제/샘플
 
 **모듈 역할 요약**
@@ -30,12 +31,13 @@
 - `Snapshot`, `Intent`, `Patch`는 **불변 모델**로 설계하는 것이 안전합니다.
 - `Trace`는 표준 로깅과 분리하고, “도메인 설명” 전용으로 유지하세요.
 
-**현재 구현 상태 요약 (2026-02-03 기준)**  
-- `manifesto-core`: 핵심 계산/검증/설명 대부분 정합  
-- `manifesto-compiler`: MEL 파이프라인 구축, lowering/eval은 Lite 수준  
-- `manifesto-host`: compute/effect/apply 최소 루프  
-- `manifesto-app`: 최소 API(ready/act/subscribe)만 제공  
-- `manifesto-bridge`: Projection 실행기 수준  
+**현재 구현 상태 요약 (2026-02-08 기준)**  
+- `manifesto-core`: 핵심 계산/검증/설명 정합 + 결정성 1차 정리 + validate golden 추가  
+- `manifesto-compiler`: MEL 파이프라인 구축 + `onceIntent` + golden 케이스 확장  
+- `manifesto-host`: compute/effect/apply 최소 루프 + 경계 하드닝 + `$host` 1차 반영 + host golden  
+- `manifesto-app`: 최소 API + world 통합 경로 + READY-8 반영  
+- `manifesto-world`: 정식 구현 진행 중(승인/거절/라인리지/authority/실행 흐름) + world golden  
+- `manifesto-bridge`: Projection 실행기 수준 (확장 필요)  
 - `manifesto-builder`: DomainSchema 빌더 최소 기능  
 - `manifesto-effect-utils`: basic handler 유틸만 제공  
 - `manifesto-examples`: 샘플/테스트 보조  

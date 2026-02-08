@@ -48,3 +48,9 @@
 - 2026-02-08: 3번 완료 (Compiler `onceIntent` parser/analyzer/IR/renderer + 테스트 반영)
 - 2026-02-08: 컴파일러 골든 테스트 실패 원인 보완 완료 (`computed.*` 경로, number literal 정규화, `isNotNull` lowering, literal union type 정합)
 - 2026-02-08: Core 결정성 1차 정리 완료 (`System.currentTimeMillis()` 제거, `:manifesto-core:test`/`:manifesto-compiler:test` 통과)
+- 2026-02-08: Golden sync/check 자동화 완료 (`sync-golden.sh`, `check-golden-sync.sh`, Gradle task 연동)
+- 2026-02-08: Host 경계 안정화 완료 (`HostRuntimeOptions`, pending/non-converging 회귀, `$host` 1차 반영)
+- 2026-02-08: NEXT_ACTIONS Action 1~3 완료
+  - Validate golden (`V-002`, `V-005`, `V-008`)
+  - World golden (approve/reject terminal)
+  - Compiler golden (`onceIntent` edge, namespace hash impact)

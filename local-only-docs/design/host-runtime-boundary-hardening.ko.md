@@ -86,7 +86,7 @@ TS v2.0.2 스펙은 host 소유 상태를 `data.$host`에 저장하도록 정의
 
 1. [x] `$host` patch 허용 여부를 core 테스트로 고정
 2. [x] `HostRuntime`에 `data.$host` 기록 최소 경로 도입
-3. [ ] host golden 벡터(경계 케이스 포함) 확장
+3. [x] host golden 벡터(경계 케이스 포함) 확장
 
 ## 6. 진행 결과 (2026-02-08 2차 업데이트)
 
@@ -99,3 +99,6 @@ TS v2.0.2 스펙은 host 소유 상태를 `data.$host`에 저장하도록 정의
   - `$host.intentSlots.{intentId}.input`
   - 파일: `manifesto-host/src/main/java/ai/manifesto/host/HostRuntime.java`
   - 테스트: `manifesto-host/src/test/java/ai/manifesto/host/HostRuntimeTest.java`
+- host golden 테스트 1차 반영
+  - 파일: `manifesto-host/src/test/java/ai/manifesto/host/HostGoldenTest.java`
+  - 벡터: `manifesto-host/src/test/resources/golden/host-e2e.json`

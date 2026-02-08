@@ -56,6 +56,9 @@
 ### core
 - **상태**: 기능 구현 완료, 결정성 리스크 1차 해소
 - **비고**: snapshot 검증은 별도 API로 분리되어 있음 (TS와 동일)
+- **최근 진행(추가)**:
+  - validation golden 테스트 추가 (`V-002`, `V-005`, `V-008`)
+  - `GoldenValidateTest` + `golden/validate.json`
 
 ### compiler
 - **상태**: MEL 파이프라인 기반 구축 완료, 벡터/골든 테스트 가능
@@ -66,6 +69,9 @@
   - `RuntimePatchEvaluatorLite` trace 확장 (`evaluateWithTrace`)
   - skip reason code 정규화 + applied/skipped/dropped trace 이벤트 기록
   - 관련 단위 테스트 추가
+  - compiler golden 확장:
+    - `onceIntent` contextual edge 케이스 추가
+    - namespace/domain name 변경 시 schema hash 차이 케이스 추가
 
 ### host
 - **상태**: compute-loop/patch 적용/requirement 처리 최소 구현
@@ -102,7 +108,7 @@
 - **상태**: effect handler 유틸 최소 구현
 
 ### world
-- **상태**: 정식 구현 진행 중 (Phase 0~6 1차 완료)
+- **상태**: 정식 구현 진행 중 (Phase 8 확장 사이클 진행)
 - **완료**:
   - `manifesto-world` 모듈 생성 및 멀티모듈 빌드 연결
   - schema/types 1차 골격 구현 (`World/Proposal/Decision/Actor/Authority/Binding`)
@@ -135,13 +141,13 @@
     - escalation multi-hop/fallback 시나리오 추가
     - lineage depth/isDescendant/findPath 시나리오 추가
   - `:manifesto-world:test` 통과
+  - world golden 테스트 1차 추가
+    - `WorldGoldenTest`
+    - `manifesto-world/src/test/resources/golden/world-e2e.json`
 - **다음 필요**:
   - TS `world.test.ts` 시나리오 포팅 지속 확대(coverage 확장)
   - authority escalation 정책 고도화(현재는 authorityId 기반 단일 홉 + loop guard)
   - world/app 경계 장애 시나리오(재시도/중복 실행키) 하드닝
-  - `submitProposal` 입력 검증 정합화(base world pendingRequirements/origin actor/intentKey)
-  - `executeProposal` executor 예외 경계 정합화(failed world + failed event + terminal failed)
-  - READY-8(app bootstrap genesis computed) 정합화
 
 점검 근거:
 - `local-only-docs/reports/next-cycle-review-2026-02-08.md`
@@ -183,10 +189,10 @@
 
 ## ▶️ 다음 작업 제안 (요약)
 
-1) **world 정식 구현 (Phase 8+)**
-2) **golden 벡터 동기화 자동화**
-3) **compiler lowering/evaluation 정식 계층 정합화**
-4) **app bootstrap genesis computed 정책 점검**
+1) **world 정식 구현 Phase 8+ 후속 케이스 확대** (authority/query/escalation edge)
+2) **compiler lowering/evaluation 정식 계층 정합화** (Lite 축소)
+3) **host 정책 기능 강화** (`$host.lastError/errors`, retry/timeout 정책)
+4) **bridge/app 확장** (runtime/store/session/pipeline 정합화)
 
 최근 진행 (2026-02-08 추가):
 - Golden 동기화 스크립트 초안 추가: `scripts/sync-golden.sh`

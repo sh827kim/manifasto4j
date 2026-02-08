@@ -14,19 +14,19 @@
 - [x] core 테스트 통과 (`:manifesto-core:test`)
 
 **잔여 작업**
-- [ ] Host/App 경로에서 durationMs 주입 정책 명세화
+- [x] Host/App 경로에서 durationMs 주입 정책 명세화 (기본 timeout/iteration 정책 분리 + 문서화)
 
 ---
 
 ## 2) genesis snapshot computed (`539b5b8`)
 
 **App**
-- [ ] Java app bootstrap에서 genesis computed 평가 여부 점검
-- [ ] 초기 snapshot 생성 시점/정책 문서화
+- [x] Java app bootstrap에서 genesis computed 평가 여부 점검
+- [x] 초기 snapshot 생성 시점/정책 문서화
 
 ---
 
 ## 3) 최종 점검
 
 - [ ] TS fixture 기반 결정성 회귀 테스트(장기)
-- [ ] App/World 도입 시 시간 주입 계약(Contract) 확정
+- [x] App/World 도입 시 시간 주입 계약(Contract) 1차 확정

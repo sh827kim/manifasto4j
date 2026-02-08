@@ -101,3 +101,17 @@
    - submitProposal 검증
    - executeProposal 실패 경계
 3. 관련 테스트 추가 및 `:manifesto-world:test`, `:manifesto-app:test` 실행
+
+---
+
+## 후속 업데이트 (2026-02-08)
+
+- A/B/C 핵심 갭 조치 완료
+  - submitProposal 검증 보강 반영
+  - executeProposal 실패 경계 보강 반영
+  - READY-8(`DefaultApp.ready()` genesis computed) 반영
+- Host 경계 안정화 및 `$host` 1차 반영 완료
+- Golden 확장 완료
+  - core validate (`V-002`, `V-005`, `V-008`)
+  - world approve/reject terminal
+  - compiler onceIntent edge + namespace hash impact

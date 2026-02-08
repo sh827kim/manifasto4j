@@ -74,9 +74,10 @@ flowchart TD
 }
 ```
 
-**Java 포팅 고려 사항 (2026-02-03 기준)**  
-- World/Authority 레이어가 아직 구현되지 않았으므로 승인/거절 정책은 별도 구성 필요합니다.  
-- Bridge는 Projection 실행기 수준이어서 Intent 발행/기록/승인 흐름을 추가 설계해야 합니다.
+**Java 포팅 고려 사항 (2026-02-08 기준)**  
+- World/Authority 레이어의 기본 경로는 구현되었고 승인/거절/실행 terminal 흐름의 테스트가 반영되었습니다.  
+- Bridge는 여전히 Projection 실행기 수준이므로, LLM 통합을 위한 Intent 발행/구독/라우팅 계층 확장이 필요합니다.  
+- Host 정책(재시도/실패 누적)과 Bridge/App runtime 확장이 결합 안정성의 다음 관건입니다.
 
 **체크포인트 질문**
 1. LLM의 결과를 Intent로 변환했을 때 얻는 이점은 무엇인가요.

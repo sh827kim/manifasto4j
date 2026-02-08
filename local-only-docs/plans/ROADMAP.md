@@ -53,6 +53,9 @@
 - 완료 기준:
   - TS `packages/world` 주요 시나리오 동치
   - Proposal/Decision/Lineage/Authority/Execution 경로 통합 테스트 통과
+- 최근 진행:
+  - P0 하드닝, escalation fallback, lineage query 확장 반영
+  - world golden(`approve/reject`) 테스트 추가 완료
 
 ---
 
@@ -88,6 +91,8 @@
   - 진단 메시지/위치 정보 비교
 - 완료 기준:
   - 동일 MEL 입력 → 동일 DomainSchema 출력
+- 최근 진행:
+  - compiler golden에 `onceIntent` edge + namespace hash impact 케이스 반영
 
 **P3-2. Builder 전략 재검토**
 - 목적: Java DSL의 필요성과 범위를 확정
@@ -99,10 +104,10 @@
 
 ## 2. 실행 순서 제안 (Milestones)
 
-1. **World 정식 구현 (Phase 2+)** (P1-2)
-2. **Bridge MVP 확장** (P2-1)
-3. **Host 정책/실패 처리 강화** (P2-2)
-4. **Compiler 정합성 테스트** (P3-1)
+1. **World 정식 구현 후속 확장 (Phase 8+)** (P1-2)
+2. **Host 정책/실패 처리 강화** (P2-2)
+3. **Bridge MVP 확장** (P2-1)
+4. **Compiler lowering/evaluation 정식 계층 전환** (P3-1)
 5. **Builder 전략 확정** (P3-2)
 
 ---

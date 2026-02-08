@@ -94,3 +94,12 @@
 1. [완료] Action 1 - Validate Golden 확장
 2. [완료] Action 2 - World Golden 확장
 3. [완료] Action 3 - Compiler Golden 확장
+
+---
+
+## 다음 사이클 후보
+
+1. World phase 8+ 시나리오 추가 포팅 (authority/query/escalation edge)
+2. Host `$host.lastError/errors` 및 retry/timeout 정책 고도화
+3. Compiler lowering/evaluation 정식 계층(API/오류코드/shape 검증) 반영
+4. Bridge/App runtime 확장 (session/store/pipeline)

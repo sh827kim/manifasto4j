@@ -21,12 +21,14 @@
 - `Snapshot → Patch → Snapshot` 반복 구조
 - 승인/거절/감사를 위한 World 레이어
 
-**현재 구현 범위 요약 (2026-02-03 기준)**
-- `core`: 계산/검증/설명/트레이스까지 대부분 정합, 결정성 관련 시스템 시간 사용은 정리 필요
-- `compiler`: MEL 파이프라인은 구축, lowering/eval은 Lite 수준
-- `host`, `app`, `bridge`: 최소 동작 스켈레톤 수준
-- `builder`, `effect-utils`: 최소 유틸 구현
-- `world`, `translator`, `memory`, `lab`, `intent-ir`: 재검토 또는 미구현
+**현재 구현 범위 요약 (2026-02-08 기준)**
+- `core`: 계산/검증/설명/트레이스 정합 + 결정성 1차 정리 완료
+- `compiler`: MEL 파이프라인 구축 + `onceIntent` 반영 + golden 케이스 확장
+- `host`: 최소 실행기 기반 경계 하드닝 + `$host` 1차 반영 + host golden 추가
+- `app`: `ready/act/subscribe` 최소 API + world 통합 경로 + READY-8 반영
+- `world`: 승인/거절/라인리지/authority/실행 경로 구현 + world golden 추가
+- `bridge`, `builder`, `effect-utils`: 최소 기능 구현, TS 대비 확장 필요
+- `translator`, `memory`, `lab`, `intent-ir`: 미진행
 
 **참고**
 - 이 문서는 개념 중심입니다. 실제 클래스/메서드 명은 모듈 구현에 따라 다를 수 있습니다.

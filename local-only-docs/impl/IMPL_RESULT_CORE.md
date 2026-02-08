@@ -40,3 +40,6 @@ TypeScript `packages/core` 대비 Java `manifesto-core` 구현 상태를 비교 
 
 ## 최근 업데이트 (2026-02-08)
 - Core 결정성 정합화 1차 완료 (직접 System time 사용 제거)
+- Validate golden 회귀 테스트 추가
+  - `GoldenValidateTest`
+  - `golden/validate.json` (`V-002`, `V-005`, `V-008`)

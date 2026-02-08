@@ -152,3 +152,9 @@
   - `IMPL_RESULT_CORE/COMPILER/HOST/APP/BRIDGE/BUILDER/EFFECT_UTILS` 동기화
 - [x] 3번 완료
   - `local-only-docs/plans/NEXT_ACTIONS.md`에 baseline 고정 항목 반영
+
+### 후속 업데이트 (2026-02-08)
+- Host timeout/loop guard 정책 코드 + 문서 반영 완료
+- Host/World/Core/Compiler golden 확장 반영 완료
+- 모듈 상태 해석 시 본 리포트의 일부 “미구현” 항목은 historical 맥락으로 읽고,
+  최신 상태는 `local-only-docs/PORTING_SUMMARY.md`와 `local-only-docs/plans/NEXT_ACTIONS.md`를 우선 참조

@@ -115,10 +115,11 @@ action createUser(email: string) {
 - Java 모듈에서는 이 구조를 “정적 모델”로 취급하고, **Core가 해석**합니다.
 - MEL 자체를 런타임 파싱할지, 빌드 시점에 컴파일할지는 운영 전략에 따라 달라집니다.
 
-**현재 컴파일러 구현 상태 (2026-02-03 기준)**  
+**현재 컴파일러 구현 상태 (2026-02-08 기준)**  
 - MEL 파이프라인은 구축되어 Lexer/Parser/Analyzer/IR 생성이 가능합니다.  
-- lowering/evaluation 계층은 Lite 수준이며, 스펙 기반 오류 코드/제약 정합은 진행 중입니다.  
-- `SimpleCompiler`는 MEL-lite 범위를 빠르게 다루는 용도로 제공됩니다.
+- `onceIntent` contextual keyword가 parser/analyzer/IR/renderer까지 반영되었습니다.  
+- lowering/evaluation 계층은 여전히 Lite 중심이며, 정식 계층 전환이 진행 중입니다.  
+- compiler golden에 `onceIntent` edge 및 namespace hash 영향 케이스가 추가되었습니다.
 
 **체크포인트 질문**
 1. 왜 모든 patch는 when/once 안에 있어야 하나요.

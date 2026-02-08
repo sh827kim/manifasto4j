@@ -55,3 +55,6 @@ TypeScript `packages/compiler` 대비 Java `manifesto-compiler` 구현 상태를
 
 ## 최근 업데이트 (2026-02-08)
 - `onceIntent` 지원 및 golden 정합화 완료
+- compiler golden 케이스 확장
+  - `onceIntent` contextual edge 케이스
+  - namespace/domain name 변경 시 schema hash 영향 케이스
