@@ -126,6 +126,13 @@
 2. host pending/non-converging 시나리오 테스트 추가
 3. host 네임스페이스(`data.$host`) 정합화 설계 초안 작성
 
+**진행 상태 (2026-02-08 업데이트)**
+- [x] `HostRuntimeOptions` 도입으로 timeout/maxIterations 정책 분리
+- [x] host pending/missing-handler/non-converging 경계 테스트 보강
+- [x] host namespace(`data.$host`) 정합화 설계 초안 작성
+  - `local-only-docs/design/host-runtime-boundary-hardening.ko.md`
+  - TS 기준 참조: `/workspace/core/packages/host/src/types/host-state.ts`
+
 ---
 
 ## 2. 다음 우선 작업 (2순위)
@@ -160,7 +167,8 @@
 
 ## 5. 빠른 체크리스트 (다음 대화 시작 시)
 
-- [ ] Golden 벡터 자동 생성/동기화 구현 착수 여부
-- [ ] App bootstrap genesis computed 정합화 착수 여부
-- [ ] World 정식 구현 Phase 8 확장 착수 여부
+- [x] Golden 벡터 자동 생성/동기화 구현 착수 여부
+- [x] App bootstrap genesis computed 정합화 착수 여부
+- [x] World 정식 구현 Phase 8 확장 착수 여부
+- [ ] Host `data.$host` 실제 반영 구현 착수 여부
 - [ ] Golden 테스트 확장 대상 결정 (compiler/host/world 포함)

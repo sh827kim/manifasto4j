@@ -25,24 +25,45 @@ public final class HostRuntime {
 
     public ComputeResult run(DomainSchema schema, Snapshot snapshot, Intent intent, int timeoutSeconds)
         throws Exception {
+        return run(schema, snapshot, intent, HostRuntimeOptions.forTimeoutSeconds(timeoutSeconds));
+    }
+
+    public ComputeResult run(
+        DomainSchema schema,
+        Snapshot snapshot,
+        Intent intent,
+        HostRuntimeOptions options
+    ) throws Exception {
         Objects.requireNonNull(schema, "schema is required");
         Objects.requireNonNull(snapshot, "snapshot is required");
         Objects.requireNonNull(intent, "intent is required");
+        Objects.requireNonNull(options, "options is required");
 
         Snapshot current = snapshot;
         int iteration = 0;
-        int maxIterations = Math.max(1, timeoutSeconds * 100);
+        TraceGraph lastTrace = null;
         while (true) {
-            if (iteration++ >= maxIterations) {
-                return ComputeResult.error(current, null);
+            if (iteration >= options.getMaxIterations()) {
+                return ComputeResult.error(current, lastTrace);
             }
+            iteration += 1;
             HostContext computeContext = HostContext.forSnapshot(current);
-            ComputeResult result = Compute.computeSync(schema, current, intent, computeContext, timeoutSeconds);
+            ComputeResult result = Compute.computeSync(
+                schema,
+                current,
+                intent,
+                computeContext,
+                options.getTimeoutSeconds()
+            );
+            lastTrace = result.getTrace();
             if (result.getStatus() != ComputeStatus.PENDING) {
                 return result;
             }
 
             List<Requirement> requirements = result.getRequirements();
+            if (requirements.isEmpty()) {
+                return result;
+            }
             List<Patch> patches = new java.util.ArrayList<>();
             for (Requirement requirement : requirements) {
                 EffectHandler handler = handlers.get(requirement.getType());
@@ -58,7 +79,7 @@ public final class HostRuntime {
             HostContext applyContext = HostContext.forSnapshot(result.getSnapshot());
             Result<Snapshot, ErrorValue> applied = Apply.apply(schema, result.getSnapshot(), patches, applyContext);
             if (applied.isErr()) {
-                return ComputeResult.error(result.getSnapshot(), result.getTrace());
+                return ComputeResult.error(result.getSnapshot(), lastTrace);
             }
             current = applied.unwrap();
         }

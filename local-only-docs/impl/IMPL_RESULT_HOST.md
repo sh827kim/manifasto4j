@@ -62,3 +62,12 @@ TypeScript `packages/host` 대비 Java `manifesto-host` 구현 상태를 비교 
 ## 최근 업데이트 (2026-02-08)
 - `HostRuntime` 비수렴 루프 가드 반영
 - Host 테스트 경로를 최신 data 무접두사 규칙(`status`)으로 정렬
+- `HostRuntimeOptions` 추가(timeout/maxIterations 정책 분리)
+- pending 경계 보강:
+  - missing handler 시 `PENDING` 반환 유지
+  - `PENDING + empty requirements` 조기 반환
+- 관련 테스트 보강:
+  - `testEffectLoopGuardStopsNonConvergingExecution`
+  - `testReturnsPendingWhenHandlerMissing`
+- `data.$host` 정합화 설계 초안 작성:
+  - `local-only-docs/design/host-runtime-boundary-hardening.ko.md`

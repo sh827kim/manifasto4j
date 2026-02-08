@@ -72,6 +72,13 @@
 - **최근 진행**:
   - 비수렴 effect 루프 가드 반영(반복 상한 기반 fail-fast)
   - host/app 테스트 경로를 data 무접두사 규칙으로 정렬(`status`)
+  - `HostRuntimeOptions` 도입으로 timeout/maxIterations 정책 분리
+  - pending 경계 보강:
+    - missing handler 시 pending 유지 반환
+    - pending + empty requirements 시 조기 반환
+  - 관련 회귀 테스트 보강 (`HostRuntimeTest`)
+  - `data.$host` 정합화 설계 초안 문서화
+    - `local-only-docs/design/host-runtime-boundary-hardening.ko.md`
 
 ### app
 - **상태**: ready/act/subscribe 등 최소 API 제공
@@ -162,6 +169,9 @@
 - SPEC 경로 변경: `docs/specifications` 제거 → `packages/*/docs` 또는 `archives`
 - compiler: `generator/ir.ts` 변경 반영 필요
 - bridge/effect-utils: TS에서 제거되어 archives로 이관됨
+- 문서 구조 변경 확인:
+  - 기존 `docs/ko/book` 경로는 현재 없음
+  - 기준 문서는 `docs/*` 및 `packages/*/docs`, 그리고 `local-only-docs/git-pull/changes-2026-02-08.md`
 
 ---
 

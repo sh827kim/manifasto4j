@@ -87,9 +87,47 @@ class HostRuntimeTest {
             .register("host.notify", params -> EffectResult.of(List.of()));
 
         Intent intent = new Intent("notify", new HashMap<>(), UUID.randomUUID().toString());
-        ComputeResult result = host.run(schema, snapshot, intent, 1);
+        ComputeResult result = host.run(
+            schema,
+            snapshot,
+            intent,
+            HostRuntimeOptions.builder()
+                .timeoutSeconds(1)
+                .maxIterations(3)
+                .build()
+        );
 
         assertEquals(ComputeStatus.ERROR, result.getStatus());
+    }
+
+    @Test
+    @DisplayName("등록되지 않은 Effect handler가 있으면 pending 상태를 유지한다")
+    void testReturnsPendingWhenHandlerMissing() throws Exception {
+        FlowNode effectFlow = FlowNode.Effect.of("host.notify", Map.of("message", new Lit("hi")));
+        ActionSpec effectAction = new ActionSpec.Builder("notify").flow(effectFlow).build();
+
+        DomainSchema schema = buildSchemaWithHash(
+            "urn:test:missing-handler",
+            "1.0.0",
+            new ActionSpec[] { effectAction },
+            new FieldSpec[] { new FieldSpec("status", "string", false, "") }
+        );
+
+        Snapshot snapshot = Snapshot.builder()
+            .data(new HashMap<>(Map.of("status", "")))
+            .computed(new HashMap<>())
+            .system(SystemState.initial())
+            .input(new HashMap<>())
+            .meta(Snapshot.SnapshotMeta.create(0, System.currentTimeMillis(), "seed", schema.getHash()))
+            .build();
+
+        HostRuntime host = new HostRuntime();
+        Intent intent = new Intent("notify", new HashMap<>(), UUID.randomUUID().toString());
+
+        ComputeResult result = host.run(schema, snapshot, intent, 5);
+
+        assertEquals(ComputeStatus.PENDING, result.getStatus());
+        assertFalse(result.getRequirements().isEmpty());
     }
 
     private DomainSchema buildSchemaWithHash(
