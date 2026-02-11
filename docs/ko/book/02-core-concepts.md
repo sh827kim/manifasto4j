@@ -51,9 +51,9 @@
 - 계산의 설명 로그입니다.
 - Java 포인트: 감사(Audit)와 디버깅에 매우 유용합니다.
 
-**Bridge**
-- UI 이벤트와 Intent, Snapshot과 UI를 연결하는 다리입니다.
-- Java 포인트: REST/GraphQL 컨트롤러가 Bridge 역할을 맡는 경우가 많습니다.
+**Adapter/Projection (선택 확장)**
+- UI/API/Agent 이벤트를 Intent로 변환하는 계층입니다.
+- Java 포인트: REST/GraphQL 컨트롤러 또는 별도 어댑터 모듈이 이 역할을 맡을 수 있습니다.
 
 **Java 포팅 보강 메모 (2026-02-08 기준)**  
 - `HostContext`는 시간/랜덤 등 결정론 입력을 제공해야 하며, Core 내부 직접 시간 사용 제거가 1차 완료되었습니다.  

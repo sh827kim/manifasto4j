@@ -5,11 +5,11 @@
 | Status | Draft (Java port) |
 | Scope | app facade for server/CLI |
 | Source of Truth | `https://github.com/manifesto-ai/core/blob/main/packages/app/docs/VERSION-INDEX.md` |
-| Latest | `2.1.0` |
+| Latest | `2.3.1` |
 
 ## 1. Scope
 
-App is a facade over Core/Host/World/Memory. Java App should provide:
+App is a facade over Core/Host/World/Store. Java App should provide:
 
 - createApp(domain, opts)
 - app.ready() explicit initialization
@@ -24,7 +24,7 @@ Minimal conformance for server/CLI:
 - Single runtime (domain runtime only)
 - Basic ActionHandle: status/result/trace
 - Services map for effect execution
-- Optional memory integration (disabled by default)
+- Optional external store integration (disabled by default)
 
 ## 3. Required Behaviors
 
@@ -39,4 +39,3 @@ Minimal conformance for server/CLI:
 - Session management
 - Hook/plugin system
 - System actions catalog
-

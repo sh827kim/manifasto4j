@@ -19,7 +19,7 @@ Manifesto는 **“결정적 계산(Brain)”과 “현실 실행(Hands)”을 �
 - 설명가능성: 값의 근거가 Trace로 남음
 
 **큰 그림 흐름**
-1. 사용자가 이벤트를 발생시키면 Bridge가 Intent로 변환합니다.
+1. 사용자가 이벤트를 발생시키면 App/Adapter 계층이 Intent를 생성합니다.
 2. World가 승인 여부를 판단합니다.
 3. Host가 Core에 계산을 요청합니다.
 4. Core가 Patch와 Effect 요구사항을 반환합니다.
@@ -57,10 +57,10 @@ domain Counter {
 - 실행 과정은 Snapshot으로만 이어집니다.
 - 거버넌스는 World가 담당합니다.
 
-**현재 Java 포팅 관점 참고 (2026-02-08 기준)**  
+**현재 Java 포팅 관점 참고 (2026-02-11 기준)**  
 - Core 결정성 1차 정리는 완료되었습니다.  
 - Host/App/World 연계 경로는 구현되었고, 승인/거절/실행 흐름의 골든 테스트가 추가되었습니다.  
-- Bridge/App runtime 확장, Host 운영정책(재시도/실패 기록) 고도화는 후속 작업입니다.
+- TS 최신 기준 패키지(`intent-ir`, `translator`, `codegen`) 포팅은 후속 작업입니다.
 
 **체크포인트 질문**
 1. Core가 절대 하면 안 되는 일은 무엇인가요.

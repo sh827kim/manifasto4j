@@ -6,7 +6,7 @@ plugins {
 def resolvedTsCoreRepo() {
     return project.findProperty('tsCoreRepo')
         ?: System.getenv('TS_CORE_REPO')
-        ?: '/workspace/core'
+        ?: '/workspace/manifasto-ts-core'
 }
 
 tasks.register('syncGoldenVectors', Exec) {

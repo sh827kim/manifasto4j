@@ -3,9 +3,9 @@
 
 | Field | Value |
 | --- | --- |
-| Source of Truth | `https://github.com/manifesto-ai/core/blob/main/archives/manifesto-ai-translator__v1.1.1__FDR-1.1.1v.md` |
-| Latest | `1.1.1` |
-| Status | Draft (Java port) |
+| Source of Truth | `https://github.com/manifesto-ai/core/blob/main/packages/translator/core/docs/translator-FDR-v0.11.md` |
+| Latest | `0.11 / 1.0.3 spec line` |
+| Status | Planned (Java module not yet created) |
 | Scope | translator design notes |
 
 ## 1. Goals
@@ -16,4 +16,3 @@
 ## 2. Follow-ups
 
 - Decide whether Java integrates with external LLM services or delegates to TS
-

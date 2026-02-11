@@ -1,5 +1,5 @@
 **03. Intent부터 Snapshot까지: 전체 실행 흐름**
-이 장은 “Intent가 제출된 뒤 Snapshot이 바뀌기까지”의 흐름을 한 눈에 보여줍니다.
+이 장은 "Intent가 제출된 뒤 Snapshot이 바뀌기까지"의 흐름을 한 눈에 보여줍니다.
 
 **핵심 원칙**
 - Core는 계산만 합니다.
@@ -12,7 +12,7 @@
 ```mermaid
 flowchart TD
   Actor[Actor]
-  Bridge[Bridge]
+  Adapter[Adapter]
   World[World]
   Authority[Authority]
   Host[Host]
@@ -20,8 +20,8 @@ flowchart TD
   Effect[EffectHandler]
   Snapshot[Snapshot]
 
-  Actor --> Bridge
-  Bridge --> World
+  Actor --> Adapter
+  Adapter --> World
   World --> Authority
   Authority --> World
   World --> Host
@@ -30,11 +30,11 @@ flowchart TD
   Host --> Effect
   Effect --> Host
   Host --> Snapshot
-  Snapshot --> Bridge
+  Snapshot --> Adapter
 ```
 
 **단계별 설명**
-1. 사용자가 UI 이벤트를 발생시키면 Bridge가 Intent로 변환합니다.
+1. 사용자가 UI/API 이벤트를 발생시키면 Adapter가 Intent로 변환합니다.
 2. World가 Actor의 권한과 정책을 평가합니다.
 3. 승인된 Intent만 Host로 전달됩니다.
 4. Host는 Core에 계산을 요청합니다.
@@ -48,10 +48,9 @@ flowchart TD
 - Effect는 Core가 실행하지 않습니다. Core는 선언만 합니다.
 - 실패도 값입니다. 에러는 Patch로 Snapshot에 기록됩니다.
 
-**현재 Java 구현 흐름에서의 차이 (2026-02-08 기준)**  
-- Bridge는 여전히 최소 Projection → Intent 변환기 수준이며, TS Bridge 대비 이벤트 라우팅/구독 계층이 단순합니다.  
+**현재 Java 구현 흐름에서의 차이 (2026-02-11 기준)**  
 - Host는 동기 while 루프 기반 최소 실행기이며, TS의 mailbox/runner/job 모델은 아직 미도입입니다.  
-- Host 상태는 `$host` 네임스페이스 1차 반영이 완료됐고(`currentIntentId`, `intentSlots`), 추가 상태(`lastError/errors`)는 후속 과제입니다.
+- Host 상태는 `$host` 네임스페이스 경로가 반영되어 있고, `$mel` 관련 런타임 정합이 후속 과제입니다.
 
 **Java 개발 팁**
 - Core는 **테스트 가능한 순수 모듈**로 분리하세요.
@@ -60,5 +59,5 @@ flowchart TD
 
 **체크포인트 질문**
 1. 승인되지 않은 Intent는 어디에서 차단되나요.
-2. Effect가 필요한 순간에 Core는 왜 “멈추는”가요.
+2. Effect가 필요한 순간에 Core는 왜 "멈추는"가요.
 3. Host가 다시 Core를 호출하는 이유는 무엇인가요.

@@ -7,34 +7,36 @@ Manifesto의 TypeScript 구현을 순수 Java로 포팅하는 저장소입니다
 Manifesto는 상태 기반 애플리케이션을 위한 결정론적 도메인 런타임 스택입니다.
 - **Schema**: 상태/계산값/액션 정의
 - **Intent**: 액션 실행 요청
-- **Core**: 액션 평가 → effect/patch → 새 Snapshot 생성
+- **Core**: 액션 평가 후 effect/patch 산출 및 Snapshot 생성
 - **Host**: compute/effect 루프 실행기
-- **App/Bridge**: 고수준 API 및 이벤트/프로젝션 바인딩
-- **Compiler/Builder**: MEL/DSL 도구
+- **App**: 고수준 런타임 API
+- **World**: 승인/거절/라인리지 거버넌스 레이어
+- **Compiler**: MEL 도구
 
 공식 문서:
 https://docs.manifesto-ai.dev/
 
-## 현재 상태 (2026-02-08)
-- `core/host/app/bridge/compiler/builder/effect-utils/world` 모듈 포팅이 진행 중입니다.
-- `world` 모듈은 authority/lineage 포함 경로와 edge 테스트가 반영되어 있습니다.
-- `bridge`는 라우팅 projection과 `ProjectionResult`(`intent` 또는 `none(reason)`)를 지원합니다.
-- `host`는 retry/timeout 옵션과 `$host` 오류 기록 경로를 포함합니다.
-- `compiler`는 strict runtime-patch API 및 golden/vector 동기화 점검 경로를 포함합니다.
+## 현재 상태 (2026-02-11)
+- TS 최신 기준 패키지는 `app/codegen/compiler/core/host/intent-ir/translator/world`입니다.
+- Java 구현 모듈은 `core/host/app/compiler/world`입니다.
+- Java 후속 포팅 대상은 `intent-ir/translator/codegen`입니다.
+- 문서와 빌드 그래프에서 스펙 외 패키지를 제거했습니다.
 
 ## 모듈
-- `manifesto-core` — core runtime (schema/expr/flow/compute)
-- `manifesto-host` — compute/effect 루프
-- `manifesto-app` — 고수준 API
-- `manifesto-bridge` — projection/event 바인딩
-- `manifesto-compiler` — MEL 컴파일러 + lowering
-- `manifesto-builder` — schema/expr/flow DSL
-- `manifesto-effect-utils` — effect handler 유틸
-- `manifesto-world` — world/authority/lineage 거버넌스 런타임
-- `manifesto-examples` — 예제
+- `manifesto-core` - core runtime (schema/expr/flow/compute)
+- `manifesto-host` - compute/effect 루프
+- `manifesto-app` - 고수준 API
+- `manifesto-compiler` - MEL 컴파일러 + lowering
+- `manifesto-world` - world/authority/lineage 런타임
+
+## 예정 모듈
+- `manifesto-intent-ir` (예정)
+- `manifesto-translator` (예정)
+- `manifesto-codegen` (예정)
 
 ## 저장소 문서 위치
 - `docs/INDEX.md` (spec/fdr 인덱스)
+- `docs/PORTING_ACTION_PLAN_2026-02-11.md` (최신 갭 분석 + 액션 아이템)
 - `docs/ko/book/index.md` (자바 개발자용 학습 문서)
 - `docs/spec/spec-*.md`, `docs/fdr/fdr-*.md` (패키지별 레퍼런스)
 
@@ -48,8 +50,6 @@ https://docs.manifesto-ai.dev/
 
 ## 자주 쓰는 검증 명령
 ```bash
-./gradlew :manifesto-bridge:test :manifesto-app:test
-./gradlew :manifesto-world:test
-./gradlew :manifesto-compiler:test
+./gradlew :manifesto-core:test :manifesto-host:test :manifesto-app:test :manifesto-compiler:test :manifesto-world:test
 ./gradlew checkGoldenSync
 ```
