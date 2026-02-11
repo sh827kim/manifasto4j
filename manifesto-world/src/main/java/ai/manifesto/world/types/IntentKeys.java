@@ -9,6 +9,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * KR: IntentKeys는 World 실행 경계 계층에서 intent keys 역할을 수행하는 구현 타입입니다.
+ * EN: IntentKeys is an implementation type performing intent keys roles in the World execution-boundary layer.
+ */
 public final class IntentKeys {
     private IntentKeys() {
     }

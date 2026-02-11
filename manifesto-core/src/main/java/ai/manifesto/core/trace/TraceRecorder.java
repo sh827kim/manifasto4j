@@ -9,9 +9,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * TraceRecorder - TraceNode 생성 헬퍼
- *
- * TraceContext를 받아 결정론적 ID와 타임스탬프를 일관되게 부여한다.
+ * KR: TraceRecorder는 Core trace 계층에서 trace recorder 역할을 수행하는 구현 타입입니다.
+ * EN: TraceRecorder is an implementation type performing trace recorder roles in the Core trace layer.
  */
 public final class TraceRecorder {
 

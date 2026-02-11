@@ -5,10 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * If - 조건부 표현식
- * cond가 참이면 thenExpr, 거짓이면 elseExpr 평가
- *
- * 예: if(eq(get("data.status"), lit("pending")), lit("대기중"), lit("완료"))
+ * KR: If는 Core 표현식 엔진에서 전달되는 if 데이터를 담는 불변 레코드입니다.
+ * EN: If is an immutable record carrying if data in the Core expression engine.
  */
 public record If(ExprNode cond, ExprNode thenExpr, ExprNode elseExpr) implements ExprNode {
 

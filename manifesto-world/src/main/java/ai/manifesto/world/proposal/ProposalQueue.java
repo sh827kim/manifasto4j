@@ -16,6 +16,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * KR: ProposalQueue는 처리 대기 항목을 순서대로 보관/소비하는 큐 컴포넌트입니다.
+ * EN: ProposalQueue is a queue component that stores and consumes pending items in order.
+ */
 public final class ProposalQueue {
     private final Map<String, Proposal> proposals = new LinkedHashMap<>();
 

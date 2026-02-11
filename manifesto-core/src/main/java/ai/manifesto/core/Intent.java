@@ -5,13 +5,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Intent - 액션 수행 요청
- * 사용자가 애플리케이션에 무엇을 하고 싶은지 나타낸다.
- *
- * 핵심:
- * - type: 어떤 액션을 수행할 것인가 (예: "addTodo", "toggleTodo")
- * - input: 액션에 필요한 입력값 (예: { "title": "Buy milk" })
- * - intentId: 이 요청의 고유 식별자 (멱등성 보장)
+ * KR: Intent는 Core 모듈에서 intent 역할을 수행하는 구현 타입입니다.
+ * EN: Intent is an implementation type performing intent roles in the Core module.
  */
 public class Intent {
 

@@ -8,7 +8,8 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * InMemoryAppSnapshotStore - 프로세스 내 session snapshot 저장소
+ * KR: InMemoryAppSnapshotStore는 App snapshot을 메모리에 보관하는 저장소 구현입니다.
+ * EN: InMemoryAppSnapshotStore is an in-memory snapshot store implementation for App.
  */
 public final class InMemoryAppSnapshotStore implements AppSnapshotStore {
     private final Map<String, Snapshot> snapshots = new ConcurrentHashMap<>();

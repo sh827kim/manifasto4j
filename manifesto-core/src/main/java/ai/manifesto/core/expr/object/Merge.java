@@ -6,10 +6,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Merge - 여러 객체를 얕은 병합
- * 뒤쪽 객체의 속성이 앞쪽을 덮어씀
- *
- * 예: merge(get("data.defaults"), get("input.overrides"))
+ * KR: Merge는 Core 표현식 엔진에서 전달되는 merge 데이터를 담는 불변 레코드입니다.
+ * EN: Merge is an immutable record carrying merge data in the Core expression engine.
  */
 public record Merge(List<ExprNode> objects) implements ExprNode {
 

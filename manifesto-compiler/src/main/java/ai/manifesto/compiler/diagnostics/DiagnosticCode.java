@@ -1,7 +1,8 @@
 package ai.manifesto.compiler.diagnostics;
 
 /**
- * DiagnosticCode - MEL 진단 코드 (TS와 동일한 코드 문자열 유지)
+ * KR: DiagnosticCode는 컴파일러 진단 계층에서 사용하는 diagnostic code 분류 값을 열거합니다.
+ * EN: DiagnosticCode enumerates diagnostic code classification values used in the compiler diagnostics layer.
  */
 public enum DiagnosticCode {
     // Syntax / semantic (E0xx)

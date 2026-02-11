@@ -2,6 +2,10 @@ package ai.manifesto.world.schema;
 
 import java.util.Objects;
 
+/**
+ * KR: ActorAuthorityBinding는 World 스키마 계층에서 actor authority binding 역할을 수행하는 구현 타입입니다.
+ * EN: ActorAuthorityBinding is an implementation type performing actor authority binding roles in the World schema layer.
+ */
 public final class ActorAuthorityBinding {
     private final ActorRef actor;
     private final AuthorityRef authority;

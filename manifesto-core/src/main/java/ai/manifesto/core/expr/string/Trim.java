@@ -5,8 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * Trim - 문자열의 앞뒤 공백 제거
- * 예: trim(get("data.text"))
+ * KR: Trim는 Core 표현식 엔진에서 전달되는 trim 데이터를 담는 불변 레코드입니다.
+ * EN: Trim is an immutable record carrying trim data in the Core expression engine.
  */
 public record Trim(ExprNode str) implements ExprNode {
 

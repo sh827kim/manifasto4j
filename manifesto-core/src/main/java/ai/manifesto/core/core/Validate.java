@@ -12,21 +12,8 @@ import java.util.*;
 import java.util.Objects;
 
 /**
- * Validate - DomainSchema와 Snapshot의 일관성을 검증
- *
- * 검증 역할:
- * 1. Snapshot 구조 검증 (필수 필드 확인)
- * 2. Data 필드 검증 (필수 필드, 타입)
- * 3. Input 필드 검증 (필드명 유효성)
- * 4. Computed 필드 검증 (DAG, 순환 참조 감지)
- * 5. System 필드 검증
- *
- * 반환값:
- * - ValidationResult: isValid 여부 + 에러 메시지 목록
- *
- * 상태: Phase 5 완성 ✅
- * - DomainSchema 통합 완료
- * - 모든 검증 로직 구현
+ * KR: Validate는 DomainSchema와 snapshot 형태의 정합성을 검사하는 Core 검증 엔진입니다.
+ * EN: Validate is the Core validation engine that checks DomainSchema and snapshot consistency.
  */
 public class Validate {
 

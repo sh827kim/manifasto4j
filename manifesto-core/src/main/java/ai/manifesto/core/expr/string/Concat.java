@@ -6,10 +6,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Concat - 문자열 연결
- * 모든 인자를 문자열로 변환 후 연결
- *
- * 예: concat(lit("Hello"), lit(" "), get("input.name"))
+ * KR: Concat는 Core 표현식 엔진에서 전달되는 concat 데이터를 담는 불변 레코드입니다.
+ * EN: Concat is an immutable record carrying concat data in the Core expression engine.
  */
 public record Concat(List<ExprNode> args) implements ExprNode {
 

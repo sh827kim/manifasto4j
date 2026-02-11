@@ -2,6 +2,10 @@ package ai.manifesto.world.schema;
 
 import java.util.Objects;
 
+/**
+ * KR: AuthorityRef는 World 도메인 객체를 참조하기 위한 참조 타입입니다.
+ * EN: AuthorityRef is a reference type used to point to a World-domain object.
+ */
 public final class AuthorityRef {
     private final String authorityId;
     private final AuthorityKind kind;

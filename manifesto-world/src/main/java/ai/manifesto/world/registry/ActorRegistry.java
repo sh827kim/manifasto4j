@@ -12,6 +12,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * KR: ActorRegistry는 키-값 등록 정보를 관리하는 레지스트리 컴포넌트입니다.
+ * EN: ActorRegistry is a registry component that manages keyed registration metadata.
+ */
 public final class ActorRegistry {
     private final Map<String, ActorRef> actors = new LinkedHashMap<>();
     private final Map<String, ActorAuthorityBinding> bindings = new LinkedHashMap<>();

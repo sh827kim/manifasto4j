@@ -6,7 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * PatchFragmentRenderer - patch fragments -> MEL snippets.
+ * KR: PatchFragmentRenderer는 내부 표현을 문자열 또는 출력 포맷으로 렌더링하는 타입입니다.
+ * EN: PatchFragmentRenderer is a renderer type that converts internal representation into textual output format.
  */
 public final class PatchFragmentRenderer {
 

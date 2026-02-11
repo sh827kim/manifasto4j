@@ -2,6 +2,10 @@ package ai.manifesto.world.schema;
 
 import java.util.Objects;
 
+/**
+ * KR: World는 World 스키마 계층에서 world 역할을 수행하는 구현 타입입니다.
+ * EN: World is an implementation type performing world roles in the World schema layer.
+ */
 public final class World {
     private final WorldId worldId;
     private final String schemaHash;

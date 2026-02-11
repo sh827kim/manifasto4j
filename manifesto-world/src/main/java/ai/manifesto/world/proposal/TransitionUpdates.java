@@ -4,6 +4,10 @@ import ai.manifesto.world.schema.DecisionId;
 import ai.manifesto.world.schema.IntentScope;
 import ai.manifesto.world.schema.WorldId;
 
+/**
+ * KR: TransitionUpdates는 World 제안 처리 계층에서 transition updates 역할을 수행하는 구현 타입입니다.
+ * EN: TransitionUpdates is an implementation type performing transition updates roles in the World proposal-processing layer.
+ */
 public final class TransitionUpdates {
     private final DecisionId decisionId;
     private final WorldId resultWorld;

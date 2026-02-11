@@ -2,6 +2,10 @@ package ai.manifesto.world.schema;
 
 import java.util.Objects;
 
+/**
+ * KR: DecisionRecord는 World 스키마 계층에서 decision record 역할을 수행하는 구현 타입입니다.
+ * EN: DecisionRecord is an implementation type performing decision record roles in the World schema layer.
+ */
 public final class DecisionRecord {
     private final DecisionId decisionId;
     private final ProposalId proposalId;

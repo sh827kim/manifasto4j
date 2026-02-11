@@ -8,14 +8,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * TypeExprParser - MEL-lite 타입 표현식 파서
- *
- * 지원 문법(간이):
- * - string|number|boolean|integer|object|array
- * - nullable: T? 또는 T|null
- * - enum("a","b",null)
- * - array<T>
- * - object{a:string,b?:number}
+ * KR: TypeExprParser는 토큰 또는 텍스트를 구조화된 구문 트리로 변환하는 파서 타입입니다.
+ * EN: TypeExprParser is a parser type that transforms text or tokens into structured syntax trees.
  */
 final class TypeExprParser {
     FieldSpec parseFieldSpec(String name, String typeToken, boolean required, Object defaultValue) {

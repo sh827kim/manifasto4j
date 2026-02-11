@@ -33,7 +33,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * ScopeAnalyzer - 기본 스코프 분석 (중복/미정의 체크)
+ * KR: ScopeAnalyzer는 컴파일러 분석 계층에서 scope analyzer 역할을 수행하는 구현 타입입니다.
+ * EN: ScopeAnalyzer is an implementation type performing scope analyzer roles in the compiler analyzer layer.
  */
 public final class ScopeAnalyzer {
     private final List<Diagnostic> diagnostics = new ArrayList<>();

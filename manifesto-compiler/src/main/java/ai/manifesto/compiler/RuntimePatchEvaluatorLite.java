@@ -6,7 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * RuntimePatchEvaluatorLite - 벡터 기반 최소 evaluator
+ * KR: RuntimePatchEvaluatorLite는 컴파일러 모듈에서 runtime patch evaluator lite 역할을 수행하는 구현 타입입니다.
+ * EN: RuntimePatchEvaluatorLite is an implementation type performing runtime patch evaluator lite roles in the compiler module.
  */
 public final class RuntimePatchEvaluatorLite {
     public EvaluationResult evaluate(List<Map<String, Object>> patches, SnapshotContext snapshot) {

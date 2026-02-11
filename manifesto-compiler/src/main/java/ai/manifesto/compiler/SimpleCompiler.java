@@ -13,13 +13,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * SimpleCompiler - 제한된 MEL-lite 컴파일러
- *
- * 지원 문법(라인 기반):
- * - schema <id> <version>
- * - field <name> <type> [required] [default=<value>]
- * - action <name> halt [input=...]
- * - computed <name> <literal>
+ * KR: SimpleCompiler는 MEL 소스에서 Core 실행에 필요한 중간 표현을 생성하는 컴파일러 구현입니다.
+ * EN: SimpleCompiler compiles MEL source into intermediate representation required for Core execution.
  */
 public final class SimpleCompiler implements CompilerFacade {
     private final TypeExprParser typeExprParser = new TypeExprParser();

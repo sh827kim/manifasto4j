@@ -5,8 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * Neq - 두 값의 부동등성 비교
- * 예: neq(get("data.status"), lit("done"))
+ * KR: Neq는 Core 표현식 엔진에서 전달되는 neq 데이터를 담는 불변 레코드입니다.
+ * EN: Neq is an immutable record carrying neq data in the Core expression engine.
  */
 public record Neq(ExprNode left, ExprNode right) implements ExprNode {
 

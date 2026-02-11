@@ -2,6 +2,10 @@ package ai.manifesto.world.schema;
 
 import java.util.Objects;
 
+/**
+ * KR: ProposalId는 World 도메인 식별자를 타입 안전하게 표현하는 값 객체입니다.
+ * EN: ProposalId is a value object that strongly types a World-domain identifier.
+ */
 public final class ProposalId {
     private final String value;
 

@@ -3,7 +3,6 @@ package ai.manifesto.core.core;
 import ai.manifesto.core.*;
 import ai.manifesto.core.evaluator.*;
 import ai.manifesto.core.evaluator.ComputedEvaluator;
-import ai.manifesto.core.flow.FlowNode;
 import ai.manifesto.core.schema.ActionSpec;
 import ai.manifesto.core.schema.DomainSchema;
 import ai.manifesto.core.schema.FieldSpec;
@@ -14,31 +13,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Compute - Manifesto의 핵심 계산 엔진
- *
- * compute(schema, snapshot, intent) → CompletableFuture<ComputeResult>
- *
- * 10단계 흐름 (1-7단계: 동기 검증, 8-10단계: 비동기 처리):
- * 1. Computed 필드들 평가 (DAG 순서)
- * 2. Schema에서 actionId에 해당하는 Action 스펙 조회 ✅ 구현
- * 3. Snapshot에서 intentId 확인 ✅ 구현
- * 4. Input 검증 (필드명 유효성) ✅ 구현
- * 5. Action의 available 조건 평가 ✅ 구현 (ExprEvaluator)
- * 6. 새로운 Snapshot 준비 (input 설정) ✅ 구현
- * 7. 평가 컨텍스트 생성 ✅ 구현
- * 8. Flow 평가 (비동기) - FlowEvaluator에서 처리
- * 9. Computed 값 재계산 - ExprEvaluator에서 처리
- * 10. System 상태 업데이트 및 Trace 생성 - Host에서 처리
- *
- * 핵심 원칙:
- * - 결정론적: 같은 입력 → 같은 출력
- * - 비동기: CompletableFuture로 Effect 처리
- * - 불변성: 원본 Snapshot은 변경 안 함
- * - 추적: 모든 단계가 TraceNode로 기록
- *
- * 상태: Phase 5 완성 ✅
- * - DomainSchema 통합 완료
- * - 1-7단계 전체 구현
+ * KR: Compute는 Core의 validate/compute/apply 공개 동작을 구성하는 타입입니다.
+ * EN: Compute composes Core public operations such as validate, compute, and apply.
  */
 public class Compute {
 

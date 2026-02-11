@@ -5,10 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * Every - 모든 요소가 술어를 만족하는지 확인
- * 술어는 $item, $index, $array 컨텍스트에서 평가됨
- *
- * 예: every(get("data.todos"), get("$item.completed"))
+ * KR: Every는 Core 표현식 엔진에서 전달되는 every 데이터를 담는 불변 레코드입니다.
+ * EN: Every is an immutable record carrying every data in the Core expression engine.
  */
 public record Every(ExprNode array, ExprNode predicate) implements ExprNode {
 

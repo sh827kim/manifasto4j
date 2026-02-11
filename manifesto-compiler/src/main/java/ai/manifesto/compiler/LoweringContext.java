@@ -5,7 +5,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * LoweringContext - MEL lowering context constraints
+ * KR: LoweringContext는 실행 시점의 컨텍스트 값(시간, 환경, 상태 참조 등)을 전달하는 타입입니다.
+ * EN: LoweringContext is a context type carrying runtime values such as time, environment, and state references.
  */
 public final class LoweringContext {
     private final Set<String> allowSysPrefixes;

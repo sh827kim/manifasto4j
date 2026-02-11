@@ -8,22 +8,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * DagUtils - Computed 필드의 의존성 그래프(DAG) 유틸리티
- *
- * DAG (Directed Acyclic Graph)는 방향성이 있는 비순환 그래프입니다.
- * Computed 필드들 간의 의존 관계를 표현하고, 순환 참조를 감지하며,
- * 위상 정렬을 통해 계산 순서를 결정합니다.
- *
- * 핵심 원칙:
- * - 결정론적: 같은 입력 → 같은 출력
- * - 불변성: 모든 그래프 구조는 불변
- * - 에러 처리: 예외 대신 Result<T, E> 사용
- *
- * 시간복잡도:
- * - buildDependencyGraph(): O(n)
- * - topologicalSort(): O(V + E) (Kahn's Algorithm)
- * - detectCycles(): O(V + E) (DFS)
- * - getTransitiveDeps(): O(V + E) (BFS)
+ * KR: DagUtils는 재사용 가능한 정적 보조 함수를 제공하는 유틸리티 타입입니다.
+ * EN: DagUtils is a utility type providing reusable static helper functions.
  */
 public class DagUtils {
 

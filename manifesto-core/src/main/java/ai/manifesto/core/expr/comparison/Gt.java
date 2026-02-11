@@ -5,8 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * Gt - 초과 비교 (>)
- * 예: gt(get("data.count"), lit(10))
+ * KR: Gt는 Core 표현식 엔진에서 전달되는 gt 데이터를 담는 불변 레코드입니다.
+ * EN: Gt is an immutable record carrying gt data in the Core expression engine.
  */
 public record Gt(ExprNode left, ExprNode right) implements ExprNode {
 

@@ -13,6 +13,10 @@ import ai.manifesto.world.schema.WorldId;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * KR: WorldFactories는 도메인 객체 생성을 일관되게 구성하는 팩토리 타입입니다.
+ * EN: WorldFactories is a factory type that constructs domain objects consistently.
+ */
 public final class WorldFactories {
     private WorldFactories() {
     }

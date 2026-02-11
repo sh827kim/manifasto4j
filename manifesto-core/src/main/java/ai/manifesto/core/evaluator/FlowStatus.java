@@ -1,19 +1,8 @@
 package ai.manifesto.core.evaluator;
 
 /**
- * FlowStatus - Flow의 실행 상태
- *
- * Flow가 평가되는 과정에서 다음 상태들을 거친다:
- * - RUNNING: 실행 중
- * - COMPLETE: 정상 완료
- * - PENDING: Effect 대기중 (Host의 처리 대기)
- * - HALTED: Halt로 명시적 중단
- * - ERROR: 에러 발생
- *
- * 상태는 항상 전이 방향이 있다:
- * RUNNING -> (COMPLETE | PENDING | HALTED | ERROR)
- *
- * 재진입 안전성: RUNNING이 아닌 상태에서는 더 이상 평가하지 않는다.
+ * KR: FlowStatus는 Core 평가 파이프라인에서 사용하는 flow status 분류 값을 열거합니다.
+ * EN: FlowStatus enumerates flow status classification values used in the Core evaluation pipeline.
  */
 public enum FlowStatus {
     RUNNING("running"),

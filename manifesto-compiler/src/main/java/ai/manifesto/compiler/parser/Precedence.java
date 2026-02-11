@@ -3,7 +3,8 @@ package ai.manifesto.compiler.parser;
 import ai.manifesto.compiler.lexer.TokenKind;
 
 /**
- * Precedence - MEL operator precedence
+ * KR: Precedence는 컴파일러 파서 계층에서 사용하는 precedence 분류 값을 열거합니다.
+ * EN: Precedence enumerates precedence classification values used in the compiler parser layer.
  */
 public enum Precedence {
     NONE(0),

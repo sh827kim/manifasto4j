@@ -2,6 +2,10 @@ package ai.manifesto.world.schema;
 
 import java.util.Objects;
 
+/**
+ * KR: QuorumRule는 World 스키마 계층에서 quorum rule 역할을 수행하는 구현 타입입니다.
+ * EN: QuorumRule is an implementation type performing quorum rule roles in the World schema layer.
+ */
 public final class QuorumRule {
     private final QuorumKind kind;
     private final Integer count;

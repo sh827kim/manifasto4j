@@ -10,17 +10,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * FlowState - Flow 평가 중의 실행 상태
- *
- * Flow 평가는 다음 정보를 누적한다:
- * - snapshot: 현재 상태 (Patch가 적용된 결과)
- * - status: 현재 Flow 상태 (RUNNING, COMPLETE, PENDING, HALTED, ERROR)
- * - patches: 누적된 모든 Patch
- * - requirements: 요청된 모든 Effect (Host가 처리할 작업)
- * - error: 발생한 에러 (있으면 status는 ERROR)
- *
- * Copy-on-Write 패턴으로 불변성 유지:
- * 상태 변경 시마다 새로운 FlowState 인스턴스 생성
+ * KR: FlowState는 Core 평가 파이프라인에서 flow state 역할을 수행하는 구현 타입입니다.
+ * EN: FlowState is an implementation type performing flow state roles in the Core evaluation pipeline.
  */
 public class FlowState {
     private final Snapshot snapshot;

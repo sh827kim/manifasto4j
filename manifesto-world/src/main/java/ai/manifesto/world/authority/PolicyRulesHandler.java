@@ -11,6 +11,10 @@ import ai.manifesto.world.schema.Proposal;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * KR: PolicyRulesHandler는 특정 도메인 이벤트/요청을 처리하는 핸들러 타입입니다.
+ * EN: PolicyRulesHandler is a handler type that processes specific domain events or requests.
+ */
 public final class PolicyRulesHandler implements AuthorityHandler {
     @FunctionalInterface
     public interface CustomConditionEvaluator {

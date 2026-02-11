@@ -8,11 +8,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * SnapshotStoreUtils - storage 경계에서 사용하는 snapshot 정규화 유틸.
- *
- * 규칙:
- * - storage canonicalization 시 data의 플랫폼 네임스페이스($-prefix)를 제외한다.
- * - 저장/복원 경계에서는 방어적 deep-copy를 적용한다.
+ * KR: SnapshotStoreUtils는 재사용 가능한 정적 보조 함수를 제공하는 유틸리티 타입입니다.
+ * EN: SnapshotStoreUtils is a utility type providing reusable static helper functions.
  */
 public final class SnapshotStoreUtils {
     private static final String PLATFORM_NAMESPACE_PREFIX = "$";

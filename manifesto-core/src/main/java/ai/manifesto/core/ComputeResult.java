@@ -5,14 +5,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * ComputeResult - compute() 함수의 결과
- *
- * compute() 함수가 반환하는 완전한 결과 객체다.
- * 다음을 포함한다:
- * - snapshot: 계산 후의 새로운 상태
- * - requirements: Host가 처리해야 할 효과 목록
- * - trace: 계산 추적 (디버깅, 설명 가능성)
- * - status: 계산 결과 상태
+ * KR: ComputeResult는 연산/실행 결과를 전달하는 결과 타입입니다.
+ * EN: ComputeResult is a result type carrying operation or execution outcomes.
  */
 public class ComputeResult {
 

@@ -13,22 +13,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * FlowEvaluator - Flow 노드 평가 엔진
- *
- * Flow는 액션의 실행 흐름을 정의한다.
- * 각 노드(Seq, If, Patch, Effect, Call, Halt, Fail)를 평가한다.
- *
- * 핵심 원칙:
- * - 비동기 처리 (CompletableFuture)
- * - 상태 불변성 (Copy-on-Write)
- * - 재진입 안전성 (상태 가드)
- * - Patch는 즉시 적용, Effect는 선언만
- *
- * 상태 머신:
- * RUNNING → [계속] → COMPLETE (모든 노드 완료)
- *        → [Effect 발견] → PENDING
- *        → [Halt 발견] → HALTED
- *        → [Fail 발견] → ERROR
+ * KR: FlowEvaluator는 규칙 또는 식을 평가해 결과를 산출하는 평가기 타입입니다.
+ * EN: FlowEvaluator is an evaluator type that computes results by evaluating rules or expressions.
  */
 public class FlowEvaluator {
 

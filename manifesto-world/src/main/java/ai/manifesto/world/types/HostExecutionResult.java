@@ -6,6 +6,10 @@ import ai.manifesto.world.schema.ArtifactRef;
 
 import java.util.Objects;
 
+/**
+ * KR: HostExecutionResult는 연산/실행 결과를 전달하는 결과 타입입니다.
+ * EN: HostExecutionResult is a result type carrying operation or execution outcomes.
+ */
 public final class HostExecutionResult {
     public enum Outcome {
         COMPLETED,

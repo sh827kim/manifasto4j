@@ -50,6 +50,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * KR: ManifestoWorld는 proposal 제출, authority 평가, world 분기/라인리지 갱신을 오케스트레이션하는 월드 런타임입니다.
+ * EN: ManifestoWorld orchestrates proposal submission, authority evaluation, and world branching/lineage updates.
+ */
 public final class ManifestoWorld {
     private static final String ESCALATE_PREFIX = "ESCALATE:";
     private static final int MAX_ESCALATION_HOPS = 8;

@@ -5,8 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * Last - 배열의 마지막 요소 반환
- * 예: last(get("data.todos"))
+ * KR: Last는 Core 표현식 엔진에서 전달되는 last 데이터를 담는 불변 레코드입니다.
+ * EN: Last is an immutable record carrying last data in the Core expression engine.
  */
 public record Last(ExprNode array) implements ExprNode {
 

@@ -19,6 +19,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * KR: WorldLineage는 World 라인리지 계층에서 world lineage 역할을 수행하는 구현 타입입니다.
+ * EN: WorldLineage is an implementation type performing world lineage roles in the World lineage layer.
+ */
 public final class WorldLineage {
     public record PathResult(List<WorldEdge> edges, List<World> worlds) {}
 

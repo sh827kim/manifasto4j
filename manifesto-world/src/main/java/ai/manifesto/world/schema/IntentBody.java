@@ -5,6 +5,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * KR: IntentBody는 World 스키마 계층에서 intent body 역할을 수행하는 구현 타입입니다.
+ * EN: IntentBody is an implementation type performing intent body roles in the World schema layer.
+ */
 public final class IntentBody {
     private final String type;
     private final Map<String, Object> input;

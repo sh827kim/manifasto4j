@@ -5,8 +5,8 @@ import ai.manifesto.core.Intent;
 import java.util.Objects;
 
 /**
- * KR: effect 반영 이후 동일 intent로 compute를 재진입하기 위한 job입니다.
- * EN: Job that re-enters compute with the same intent after effect application.
+ * KR: ContinueComputeJob는 Host 런타임 계층에서 continue compute job 역할을 수행하는 구현 타입입니다.
+ * EN: ContinueComputeJob is an implementation type performing continue compute job roles in the Host runtime layer.
  */
 public final class ContinueComputeJob implements HostJob {
     private final Intent intent;

@@ -5,7 +5,8 @@ import ai.manifesto.compiler.lexer.SourceLocation;
 import java.util.List;
 
 /**
- * OnceStmtNode - once guard
+ * KR: OnceStmtNode는 트리 구조에서 단일 노드를 표현하는 데이터 타입입니다.
+ * EN: OnceStmtNode is a data type representing a single node in a tree structure.
  */
 public record OnceStmtNode(
     PathNode marker,

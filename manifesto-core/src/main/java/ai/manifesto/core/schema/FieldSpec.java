@@ -5,17 +5,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * FieldSpec - 필드(Field) 정의
- *
- * 데이터 필드의 메타데이터:
- * - 이름: fieldName
- * - 타입: type (string, number, boolean, object, array 등)
- * - 필수 여부: required
- * - 기본값: defaultValue
- *
- * 특징:
- * - 불변 객체 (모든 필드 final)
- * - 기본값은 선택사항
+ * KR: FieldSpec는 Core 스키마 계층에서 field spec 역할을 수행하는 구현 타입입니다.
+ * EN: FieldSpec is an implementation type performing field spec roles in the Core schema layer.
  */
 public final class FieldSpec {
     private final String fieldName;

@@ -4,7 +4,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * DomainMeta - 도메인 메타 정보
+ * KR: DomainMeta는 Core 스키마 계층에서 domain meta 역할을 수행하는 구현 타입입니다.
+ * EN: DomainMeta is an implementation type performing domain meta roles in the Core schema layer.
  */
 public final class DomainMeta {
     private final String namespace;

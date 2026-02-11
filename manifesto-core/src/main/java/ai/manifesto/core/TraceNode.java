@@ -7,20 +7,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * TraceNode - 계산 추적 노드
- * 계산의 각 단계를 기록하여 설명 가능성(explainability)을 제공한다.
- *
- * 모든 연산은 TraceNode로 기록된다:
- * - expr: 표현식 평가
- * - flow: Flow 노드 실행
- * - patch: 상태 변경
- * - effect: 효과 선언
- * - error: 에러 발생
- * - branch: 분기 선택
- * - call: Flow 호출
- * - halt: 정상 중단
- *
- * Java 17+ 기능: Enum은 sealed이고 불변이다
+ * KR: TraceNode는 트리 구조에서 단일 노드를 표현하는 데이터 타입입니다.
+ * EN: TraceNode is a data type representing a single node in a tree structure.
  */
 public class TraceNode {
 

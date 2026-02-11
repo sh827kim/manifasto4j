@@ -14,6 +14,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * KR: WorldHashing는 World 팩토리 계층에서 world hashing 역할을 수행하는 구현 타입입니다.
+ * EN: WorldHashing is an implementation type performing world hashing roles in the World factory layer.
+ */
 public final class WorldHashing {
     private static final String PLATFORM_NAMESPACE_PREFIX = "$";
 

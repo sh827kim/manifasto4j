@@ -7,34 +7,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * ManifestoCore - Manifesto의 공개 API
- *
- * Manifesto의 핵심 기능을 제공하는 공개 인터페이스:
- * - compute(): 핵심 계산 엔진 (상태 전환)
- * - apply(): Patch 적용 (불변성 보증)
- * - validate(): Snapshot 검증
- *
- * 특징:
- * - 함수형 인터페이스 (정적 메서드만 제공)
- * - 비동기 처리 (CompletableFuture)
- * - 에러 처리 (Result 모나드)
- * - 추적 지원 (TraceGraph)
- *
- * 사용 예제:
- * ```
- * // 1. compute() - 상태 전환
- * CompletableFuture<ComputeResult> future = ManifestoCore.compute(
- *     schema, snapshot, intent
- * );
- *
- * // 2. apply() - Patch 적용
- * Result<Snapshot, ErrorValue> result = ManifestoCore.apply(
- *     snapshot, patch
- * );
- *
- * // 3. validate() - 검증
- * boolean valid = ManifestoCore.isValid(schema, snapshot);
- * ```
+ * KR: ManifestoCore는 validate/compute/apply/explain 동작을 제공하는 Core 공개 API 인터페이스입니다.
+ * EN: ManifestoCore is the public Core API interface providing validate/compute/apply/explain operations.
  */
 public interface ManifestoCore {
 

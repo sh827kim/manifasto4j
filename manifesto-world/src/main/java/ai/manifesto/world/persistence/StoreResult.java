@@ -1,5 +1,9 @@
 package ai.manifesto.world.persistence;
 
+/**
+ * KR: StoreResult는 연산/실행 결과를 전달하는 결과 타입입니다.
+ * EN: StoreResult is a result type carrying operation or execution outcomes.
+ */
 public final class StoreResult<T> {
     private final boolean success;
     private final T data;

@@ -5,8 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * First - 배열의 첫 요소 반환
- * 예: first(get("data.todos"))
+ * KR: First는 Core 표현식 엔진에서 전달되는 first 데이터를 담는 불변 레코드입니다.
+ * EN: First is an immutable record carrying first data in the Core expression engine.
  */
 public record First(ExprNode array) implements ExprNode {
 

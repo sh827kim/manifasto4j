@@ -1,8 +1,8 @@
 package ai.manifesto.host.runtime;
 
 /**
- * KR: runner가 dequeue한 job을 처리하는 실행 함수 계약입니다.
- * EN: Execution function contract that handles jobs dequeued by the runner.
+ * KR: HostJobHandler는 특정 도메인 이벤트/요청을 처리하는 핸들러 타입입니다.
+ * EN: HostJobHandler is a handler type that processes specific domain events or requests.
  */
 @FunctionalInterface
 public interface HostJobHandler {

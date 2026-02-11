@@ -21,6 +21,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * KR: MemoryWorldStore는 world/snapshot/proposal/decision 데이터를 메모리에 저장하는 WorldStore 구현입니다.
+ * EN: MemoryWorldStore is a WorldStore implementation that persists world, snapshot, proposal, and decision data in memory.
+ */
 public final class MemoryWorldStore implements WorldStore {
     private final Map<String, World> worlds = new LinkedHashMap<>();
     private final Map<String, Snapshot> snapshots = new HashMap<>();

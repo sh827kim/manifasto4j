@@ -5,12 +5,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
 
 /**
- * UuidUtils - 결정론적 UUID 생성
- *
- * Manifesto는 모든 동작이 결정론적이어야 한다.
- * 따라서 UUID도 난수가 아닌 입력 값의 해시로 생성한다.
- *
- * 같은 intentId + counter -> 같은 UUID
+ * KR: UuidUtils는 재사용 가능한 정적 보조 함수를 제공하는 유틸리티 타입입니다.
+ * EN: UuidUtils is a utility type providing reusable static helper functions.
  */
 public class UuidUtils {
 

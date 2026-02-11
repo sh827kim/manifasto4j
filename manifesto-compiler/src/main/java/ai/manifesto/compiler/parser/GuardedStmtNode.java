@@ -1,7 +1,8 @@
 package ai.manifesto.compiler.parser;
 
 /**
- * GuardedStmtNode - action body 상단 (when/once)
+ * KR: GuardedStmtNode는 트리 구조에서 단일 노드를 표현하는 데이터 타입입니다.
+ * EN: GuardedStmtNode is a data type representing a single node in a tree structure.
  */
 public interface GuardedStmtNode extends AstNode {
 }

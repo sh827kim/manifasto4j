@@ -5,9 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * Div - 나눗셈 (/)
- * 0으로 나누면 null 반환 (예외 던지지 않음)
- * 예: div(get("data.total"), get("data.count"))
+ * KR: Div는 Core 표현식 엔진에서 전달되는 div 데이터를 담는 불변 레코드입니다.
+ * EN: Div is an immutable record carrying div data in the Core expression engine.
  */
 public record Div(ExprNode left, ExprNode right) implements ExprNode {
 

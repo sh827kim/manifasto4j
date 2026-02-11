@@ -3,9 +3,8 @@ package ai.manifesto.core.expr.literal;
 import ai.manifesto.core.expr.ExprNode;
 
 /**
- * Lit - 리터럴 값을 나타내는 표현식
- *
- * 예: lit(42), lit("hello"), lit(true), lit(null)
+ * KR: Lit는 Core 표현식 엔진에서 전달되는 lit 데이터를 담는 불변 레코드입니다.
+ * EN: Lit is an immutable record carrying lit data in the Core expression engine.
  */
 public record Lit(Object value) implements ExprNode {
 

@@ -5,6 +5,10 @@ import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * KR: ActorRef는 World 도메인 객체를 참조하기 위한 참조 타입입니다.
+ * EN: ActorRef is a reference type used to point to a World-domain object.
+ */
 public final class ActorRef {
     private final String actorId;
     private final ActorKind kind;

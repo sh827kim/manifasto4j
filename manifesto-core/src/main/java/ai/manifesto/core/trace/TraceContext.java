@@ -1,10 +1,8 @@
 package ai.manifesto.core.trace;
 
 /**
- * TraceContext - 추적 정보 컨텍스트
- *
- * Flow와 Expression 평가 중에 발생하는 모든 이벤트를 기록한다.
- * 결정론적 ID 생성을 위해 카운터를 유지한다.
+ * KR: TraceContext는 실행 시점의 컨텍스트 값(시간, 환경, 상태 참조 등)을 전달하는 타입입니다.
+ * EN: TraceContext is a context type carrying runtime values such as time, environment, and state references.
  */
 public class TraceContext {
     private final long timestamp;

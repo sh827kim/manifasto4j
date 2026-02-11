@@ -2,6 +2,10 @@ package ai.manifesto.world.schema;
 
 import java.util.Objects;
 
+/**
+ * KR: IntentInstance는 World 스키마 계층에서 intent instance 역할을 수행하는 구현 타입입니다.
+ * EN: IntentInstance is an implementation type performing intent instance roles in the World schema layer.
+ */
 public final class IntentInstance {
     private final IntentBody body;
     private final String intentId;

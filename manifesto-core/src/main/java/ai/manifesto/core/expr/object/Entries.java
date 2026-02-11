@@ -5,8 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * Entries - 객체의 [key, value] 쌍을 배열로 반환
- * 예: entries(get("data.options"))
+ * KR: Entries는 Core 표현식 엔진에서 전달되는 entries 데이터를 담는 불변 레코드입니다.
+ * EN: Entries is an immutable record carrying entries data in the Core expression engine.
  */
 public record Entries(ExprNode obj) implements ExprNode {
 

@@ -22,17 +22,8 @@ import java.util.*;
 import java.util.Map;
 
 /**
- * ExprEvaluator - 표현식 평가 엔진
- *
- * core expr 타입을 평가한다.
- * Pure & Total 함수: 예외를 던지지 않고 항상 Result를 반환한다.
- *
- * 특징:
- * - 타입 강제 변환 (toNumber, toBoolean, toString)
- * - 컬렉션 컨텍스트 지원 ($item, $index, $array)
- * - 결정론적 UUID 생성 ($system.uuid)
- * - 0으로 나누기 시 null 반환
- * - 색인 초과 시 null 반환
+ * KR: ExprEvaluator는 규칙 또는 식을 평가해 결과를 산출하는 평가기 타입입니다.
+ * EN: ExprEvaluator is an evaluator type that computes results by evaluating rules or expressions.
  */
 public class ExprEvaluator {
 

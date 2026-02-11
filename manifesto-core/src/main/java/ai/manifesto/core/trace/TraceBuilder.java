@@ -8,9 +8,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * TraceBuilder - TraceGraph 구성 유틸리티
- *
- * TraceNode 트리를 평탄화하고, TraceGraph를 생성한다.
+ * KR: TraceBuilder는 Core trace 계층에서 trace builder 역할을 수행하는 구현 타입입니다.
+ * EN: TraceBuilder is an implementation type performing trace builder roles in the Core trace layer.
  */
 public final class TraceBuilder {
 

@@ -5,10 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * Eq - 두 값의 동등성 비교
- *
- * 예: eq(get("data.count"), lit(0))
- *     eq(get("input.title"), lit(""))
+ * KR: Eq는 Core 표현식 엔진에서 전달되는 eq 데이터를 담는 불변 레코드입니다.
+ * EN: Eq is an immutable record carrying eq data in the Core expression engine.
  */
 public record Eq(ExprNode left, ExprNode right) implements ExprNode {
 

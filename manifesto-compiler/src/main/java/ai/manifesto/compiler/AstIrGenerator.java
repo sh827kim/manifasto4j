@@ -96,7 +96,8 @@ import ai.manifesto.core.utils.HashUtils;
 import java.util.*;
 
 /**
- * AstIrGenerator - MEL AST -> Core DomainSchema
+ * KR: AstIrGenerator는 컴파일러 모듈에서 ast ir generator 역할을 수행하는 구현 타입입니다.
+ * EN: AstIrGenerator is an implementation type performing ast ir generator roles in the compiler module.
  */
 public final class AstIrGenerator {
 

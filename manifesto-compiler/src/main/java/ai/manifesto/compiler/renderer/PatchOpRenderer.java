@@ -6,7 +6,8 @@ import java.util.Map;
 import java.util.StringJoiner;
 
 /**
- * PatchOpRenderer - schema patch operation -> MEL snippet.
+ * KR: PatchOpRenderer는 내부 표현을 문자열 또는 출력 포맷으로 렌더링하는 타입입니다.
+ * EN: PatchOpRenderer is a renderer type that converts internal representation into textual output format.
  */
 public final class PatchOpRenderer {
 

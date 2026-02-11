@@ -100,11 +100,10 @@ public sealed class Result<T, E> {
         return Result.ok(ok.value);
     }
 
-    /**
-     * 함수형 인터페이스
-     * Java 17+ java.util.function.Function을 사용해도 되지만
-     * 이 프로젝트에서는 간단함을 위해 정의함
-     */
+/**
+ * KR: Function는 Core 모듈에서 function 계약을 정의하는 인터페이스입니다.
+ * EN: Function is an interface defining the function contract in the Core module.
+ */
     @FunctionalInterface
     public interface Function<T, U> {
         U apply(T t);

@@ -1,8 +1,8 @@
 package ai.manifesto.host.runtime;
 
 /**
- * KR: 단일 runner 보장과 lost-wakeup 방지를 위한 coordination 상태입니다.
- * EN: Coordination state for single-runner guarantees and lost-wakeup prevention.
+ * KR: HostRunnerState는 Host 런타임 계층에서 host runner state 역할을 수행하는 구현 타입입니다.
+ * EN: HostRunnerState is an implementation type performing host runner state roles in the Host runtime layer.
  */
 public final class HostRunnerState {
     private boolean active;

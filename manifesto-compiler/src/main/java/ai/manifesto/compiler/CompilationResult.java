@@ -6,7 +6,8 @@ import ai.manifesto.core.schema.DomainSchema;
 import java.util.List;
 
 /**
- * CompilationResult - 컴파일 결과
+ * KR: CompilationResult는 연산/실행 결과를 전달하는 결과 타입입니다.
+ * EN: CompilationResult is a result type carrying operation or execution outcomes.
  */
 public final class CompilationResult {
     private final DomainSchema schema;

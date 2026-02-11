@@ -1,8 +1,8 @@
 package ai.manifesto.host;
 
 /**
- * KR: Host 실행 루프의 시간/반복/재시도 경계를 정의하는 설정 객체입니다.
- * EN: Configuration object that defines time, iteration, and retry boundaries for the host loop.
+ * KR: HostRuntimeOptions는 host 루프의 반복 한도, 타임아웃, effect 재시도 정책을 정의하는 설정 객체입니다.
+ * EN: HostRuntimeOptions defines host-loop limits, timeout, and effect retry policies.
  */
 public final class HostRuntimeOptions {
     private final int timeoutSeconds;

@@ -5,6 +5,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * KR: TribunalPolicy는 권한/거버넌스 정책 구성을 표현하는 값 객체입니다.
+ * EN: TribunalPolicy is a value object describing authority/governance policy configuration.
+ */
 public final class TribunalPolicy implements AuthorityPolicy {
     private final List<ActorRef> members;
     private final QuorumRule quorum;

@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Min - 최소값
- * 예: min(get("data.a"), get("data.b"), lit(3))
+ * KR: Min는 Core 표현식 엔진에서 전달되는 min 데이터를 담는 불변 레코드입니다.
+ * EN: Min is an immutable record carrying min data in the Core expression engine.
  */
 public record Min(List<ExprNode> args) implements ExprNode {
 

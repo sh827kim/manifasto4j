@@ -10,7 +10,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Lexer - MEL source to tokens.
+ * KR: Lexer는 MEL 소스 코드를 토큰 단위로 분해하는 렉서입니다.
+ * EN: Lexer tokenizes MEL source code into lexical tokens.
  */
 public final class Lexer {
     private static final Map<String, TokenKind> KEYWORDS = createKeywords();

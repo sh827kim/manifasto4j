@@ -3,7 +3,8 @@ package ai.manifesto.compiler;
 import ai.manifesto.core.schema.DomainSchema;
 
 /**
- * CompilerFacade - MEL 컴파일 진입점
+ * KR: CompilerFacade는 컴파일러 모듈에서 compiler facade 계약을 정의하는 인터페이스입니다.
+ * EN: CompilerFacade is an interface defining the compiler facade contract in the compiler module.
  */
 public interface CompilerFacade {
     CompilationResult compileDomain(String melText);

@@ -1,7 +1,8 @@
 package ai.manifesto.compiler;
 
 /**
- * LoweringError - lowering exception
+ * KR: LoweringError는 실패 원인과 관련 메타데이터를 표현하는 오류 타입입니다.
+ * EN: LoweringError is an error type representing failure cause and related metadata.
  */
 public class LoweringError extends RuntimeException {
     private final LoweringErrorCode code;

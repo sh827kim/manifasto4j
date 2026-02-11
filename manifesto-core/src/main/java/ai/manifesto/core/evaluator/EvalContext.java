@@ -9,24 +9,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * EvalContext - 표현식과 Flow 평가 시 필요한 모든 컨텍스트 정보
- *
- * 평가 중에 참조되는 불변 데이터:
- * - snapshot: 현재 상태
- * - schema: 도메인 스키마
- * - currentAction: 현재 액션명
- * - nodePath: 현재 노드의 경로 (추적용)
- * - intentId: Intent 식별자 (재진입 안전성, 결정론적 UUID용)
- * - trace: 추적 컨텍스트
- *
- * 컬렉션 컨텍스트 (filter/map/find 등에서):
- * - $item: 현재 항목
- * - $index: 현재 인덱스
- * - $array: 전체 배열
- *
- * 결정론적 UUID 생성:
- * - uuidCounter: mutable 카운터 (결정론성을 위해 의도적으로 mutable)
- * - nextUuid()로 다음 UUID 생성
+ * KR: EvalContext는 실행 시점의 컨텍스트 값(시간, 환경, 상태 참조 등)을 전달하는 타입입니다.
+ * EN: EvalContext is a context type carrying runtime values such as time, environment, and state references.
  */
 public class EvalContext {
     private final Snapshot snapshot;

@@ -5,8 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * Values - 객체의 값들을 배열로 반환
- * 예: values(get("data.metadata"))
+ * KR: Values는 Core 표현식 엔진에서 전달되는 values 데이터를 담는 불변 레코드입니다.
+ * EN: Values is an immutable record carrying values data in the Core expression engine.
  */
 public record Values(ExprNode obj) implements ExprNode {
 

@@ -5,8 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * Neg - 부호 반전
- * 예: neg(get("data.balance"))
+ * KR: Neg는 Core 표현식 엔진에서 전달되는 neg 데이터를 담는 불변 레코드입니다.
+ * EN: Neg is an immutable record carrying neg data in the Core expression engine.
  */
 public record Neg(ExprNode arg) implements ExprNode {
 

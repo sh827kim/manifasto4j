@@ -26,7 +26,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * MelPatchCompiler - MEL text -> runtime patch ops (action scoped)
+ * KR: MelPatchCompiler는 입력 언어를 실행 가능한 중간 표현으로 변환하는 컴파일러 타입입니다.
+ * EN: MelPatchCompiler is a compiler type that transforms input language into executable intermediate representation.
  */
 public final class MelPatchCompiler {
 

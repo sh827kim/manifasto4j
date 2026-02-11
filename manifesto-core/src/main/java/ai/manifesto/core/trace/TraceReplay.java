@@ -9,9 +9,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * TraceReplay - TraceGraph 최소 검증 유틸리티
- *
- * TS 원본에 별도 Replay 구현이 없으므로, Java는 일관성 검증 수준만 제공한다.
+ * KR: TraceReplay는 Core trace 계층에서 trace replay 역할을 수행하는 구현 타입입니다.
+ * EN: TraceReplay is an implementation type performing trace replay roles in the Core trace layer.
  */
 public final class TraceReplay {
 

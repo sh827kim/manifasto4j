@@ -6,9 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * LoweringLite - 벡터 기반 최소 lowering 구현
- *
- * 목적: TS 벡터(lowering/evaluation)와 동일 JSON 출력 검증.
+ * KR: LoweringLite는 컴파일러 모듈에서 lowering lite 역할을 수행하는 구현 타입입니다.
+ * EN: LoweringLite is an implementation type performing lowering lite roles in the compiler module.
  */
 public final class LoweringLite {
 

@@ -8,6 +8,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * KR: AuthorityResponse는 World 권한 계층에서 authority response 역할을 수행하는 구현 타입입니다.
+ * EN: AuthorityResponse is an implementation type performing authority response roles in the World authority layer.
+ */
 public final class AuthorityResponse {
     public enum Kind {
         APPROVED,

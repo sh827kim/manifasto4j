@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Max - 최대값
- * 예: max(get("data.a"), get("data.b"), lit(3))
+ * KR: Max는 Core 표현식 엔진에서 전달되는 max 데이터를 담는 불변 레코드입니다.
+ * EN: Max is an immutable record carrying max data in the Core expression engine.
  */
 public record Max(List<ExprNode> args) implements ExprNode {
 

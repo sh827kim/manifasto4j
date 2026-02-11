@@ -28,7 +28,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * DefaultApp - server/CLI용 최소 App 구현체
+ * KR: DefaultApp는 App 인터페이스의 기본 구현으로 snapshot 갱신, host 실행, world 연계를 조정합니다.
+ * EN: DefaultApp is the default App implementation that coordinates snapshot updates, host execution, and world integration.
  */
 public final class DefaultApp implements App {
     private final DomainSchema schema;

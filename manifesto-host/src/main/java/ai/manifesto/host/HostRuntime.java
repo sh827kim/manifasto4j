@@ -21,8 +21,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * KR: Core의 compute 결과(PENDING/요구사항)를 Host effect 실행과 patch 적용으로 수렴시키는 런타임입니다.
- * EN: Runtime that converges Core compute results (pending requirements) via host effect execution and patch application.
+ * KR: HostRuntime는 Core compute-effect 루프를 실행해 requirement를 처리하고 snapshot을 수렴시키는 런타임입니다.
+ * EN: HostRuntime runs the Core compute-effect loop, fulfills requirements, and converges snapshots.
  */
 public final class HostRuntime {
     private final Map<String, EffectHandler> handlers = new HashMap<>();

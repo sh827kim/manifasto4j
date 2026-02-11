@@ -7,6 +7,10 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * KR: ProposalStateMachine는 상태 전이 규칙을 적용해 유효한 다음 상태를 계산하는 상태 머신입니다.
+ * EN: ProposalStateMachine is a state machine that applies transition rules to compute valid next states.
+ */
 public final class ProposalStateMachine {
     private static final Map<ProposalStatus, Set<ProposalStatus>> VALID_TRANSITIONS = new EnumMap<>(ProposalStatus.class);
     private static final Set<ProposalStatus> DECISION_REQUIRED = EnumSet.of(ProposalStatus.APPROVED, ProposalStatus.REJECTED);

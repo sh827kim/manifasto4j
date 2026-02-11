@@ -19,14 +19,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Apply - Snapshot에 Patch 배열을 순차적으로 적용
- *
- * TS core/apply.ts와 동일한 흐름:
- * 1) patch 적용 (data/system/input)
- * 2) computed 재계산
- * 3) meta(version/timestamp/randomSeed) 갱신
- *
- * computed/meta patch는 무시된다.
+ * KR: Apply는 patch를 검증하고 snapshot에 순차 적용하는 Core 패치 적용 엔진입니다.
+ * EN: Apply is the Core patch-application engine that validates and applies patches sequentially to snapshots.
  */
 public class Apply {
     private static final String PLATFORM_NAMESPACE_PREFIX = "$";

@@ -2,6 +2,10 @@ package ai.manifesto.world.schema;
 
 import java.util.Objects;
 
+/**
+ * KR: WorldEdge는 World 스키마 계층에서 world edge 역할을 수행하는 구현 타입입니다.
+ * EN: WorldEdge is an implementation type performing world edge roles in the World schema layer.
+ */
 public final class WorldEdge {
     private final EdgeId edgeId;
     private final WorldId fromWorld;

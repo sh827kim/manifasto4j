@@ -6,8 +6,8 @@ import ai.manifesto.core.Intent;
 import java.util.Objects;
 
 /**
- * KR: PENDING 결과의 requirement를 실행하고 patch를 반영하기 위한 job입니다.
- * EN: Job that fulfills requirements from a pending result and applies resulting patches.
+ * KR: FulfillRequirementsJob는 Host 런타임 계층에서 fulfill requirements job 역할을 수행하는 구현 타입입니다.
+ * EN: FulfillRequirementsJob is an implementation type performing fulfill requirements job roles in the Host runtime layer.
  */
 public final class FulfillRequirementsJob implements HostJob {
     private final ComputeResult pendingResult;

@@ -9,7 +9,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * App - server/CLI용 최소 고수준 API
+ * KR: App는 준비(ready), 액션 실행(act), 구독(subscribe) API를 노출하는 최상위 애플리케이션 인터페이스입니다.
+ * EN: App is the top-level application interface exposing ready, act, and subscribe APIs.
  */
 public interface App {
     void ready() throws Exception;

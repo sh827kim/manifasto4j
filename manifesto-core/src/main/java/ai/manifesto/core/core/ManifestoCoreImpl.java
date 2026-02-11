@@ -7,21 +7,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * ManifestoCoreImpl - ManifestoCore 인터페이스의 구현체
- *
- * 싱글톤 패턴으로 구현:
- * - INSTANCE 정적 필드로 유일한 인스턴스 보증
- * - getInstance()로 접근
- *
- * 각 메서드는 해당 클래스에 위임:
- * - compute() → Compute.compute()
- * - apply() → Apply.apply()
- * - validate() → Validate.validateSchema()
- *
- * 특징:
- * - 순수 위임 (delegation pattern)
- * - 상태 없음 (stateless)
- * - 예외 처리 없음 (Result 모나드 사용)
+ * KR: ManifestoCoreImpl는 ManifestoCore 인터페이스의 기본 구현체입니다.
+ * EN: ManifestoCoreImpl is the default implementation of the ManifestoCore interface.
  */
 public final class ManifestoCoreImpl implements ManifestoCore {
 

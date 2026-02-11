@@ -16,7 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * MelCompiler - full MEL compiler pipeline
+ * KR: MelCompiler는 입력 언어를 실행 가능한 중간 표현으로 변환하는 컴파일러 타입입니다.
+ * EN: MelCompiler is a compiler type that transforms input language into executable intermediate representation.
  */
 public final class MelCompiler implements CompilerFacade {
 

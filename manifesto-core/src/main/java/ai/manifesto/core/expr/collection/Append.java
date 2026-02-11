@@ -6,10 +6,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Append - 배열에 항목들을 추가
- * 새로운 배열을 반환 (원본은 수정되지 않음)
- *
- * 예: append(get("data.todos"), lit({id: "123", title: "New"}))
+ * KR: Append는 Core 표현식 엔진에서 전달되는 append 데이터를 담는 불변 레코드입니다.
+ * EN: Append is an immutable record carrying append data in the Core expression engine.
  */
 public record Append(ExprNode array, List<ExprNode> items) implements ExprNode {
 

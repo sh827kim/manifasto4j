@@ -5,8 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * ToUpperCase - 문자열 대문자 변환
- * 예: toUpperCase(get("data.title"))
+ * KR: ToUpperCase는 Core 표현식 엔진에서 전달되는 to upper case 데이터를 담는 불변 레코드입니다.
+ * EN: ToUpperCase is an immutable record carrying to upper case data in the Core expression engine.
  */
 public record ToUpperCase(ExprNode str) implements ExprNode {
 

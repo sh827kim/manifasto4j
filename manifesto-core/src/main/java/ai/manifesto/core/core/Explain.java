@@ -11,13 +11,8 @@ import ai.manifesto.core.utils.PathUtils;
 import java.util.*;
 
 /**
- * Explain - 값이 왜 그렇게 되었는지 설명하는 함수
- *
- * 경로의 값에 도달하기 위한 계산 과정(트레이스)과 의존성을 제공한다.
- * 세 가지 경우를 처리한다:
- * 1. computed.*: Computed 필드 (DAG 기반 계산)
- * 2. system.*: 시스템 상태
- * 3. input.* 또는 data: 입력 또는 데이터 필드
+ * KR: Explain는 Core 실행 결과를 디버깅 가능한 설명 정보로 변환하는 도우미 타입입니다.
+ * EN: Explain is a helper type that converts Core execution results into debuggable explanation data.
  */
 public class Explain {
 

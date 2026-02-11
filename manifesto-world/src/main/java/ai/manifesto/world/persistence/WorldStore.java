@@ -15,6 +15,10 @@ import ai.manifesto.world.schema.WorldId;
 
 import java.util.List;
 
+/**
+ * KR: WorldStore는 저장/조회 경계를 정의하는 저장소 인터페이스입니다.
+ * EN: WorldStore is a repository interface defining persistence and query boundaries.
+ */
 public interface WorldStore {
     StoreResult<World> saveWorld(World world);
     World getWorld(WorldId worldId);

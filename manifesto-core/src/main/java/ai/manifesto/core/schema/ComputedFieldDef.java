@@ -5,17 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.*;
 
 /**
- * ComputedFieldDef - 계산 필드(Computed Field) 정의
- *
- * 파생 필드의 메타데이터:
- * - 이름: fieldName
- * - 식: expression (계산 방식)
- * - 의존성: dependencies (다른 computed 필드들)
- *
- * 특징:
- * - 불변 객체 (모든 필드 final)
- * - 식은 결정론적이어야 함
- * - 의존성은 DAG 형태여야 함 (순환 참조 금지)
+ * KR: ComputedFieldDef는 Core 스키마 계층에서 computed field def 역할을 수행하는 구현 타입입니다.
+ * EN: ComputedFieldDef is an implementation type performing computed field def roles in the Core schema layer.
  */
 public final class ComputedFieldDef {
     private final String fieldName;

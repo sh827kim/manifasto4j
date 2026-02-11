@@ -2,6 +2,10 @@ package ai.manifesto.world.schema;
 
 import java.util.Objects;
 
+/**
+ * KR: Proposal는 제안 처리 흐름의 상태와 메타데이터를 표현하는 도메인 타입입니다.
+ * EN: Proposal is a domain type that represents state and metadata in proposal processing flow.
+ */
 public final class Proposal {
     private final ProposalId proposalId;
     private final ActorRef actor;

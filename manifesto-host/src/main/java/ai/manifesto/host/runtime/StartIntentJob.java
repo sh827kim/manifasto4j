@@ -5,8 +5,8 @@ import ai.manifesto.core.Intent;
 import java.util.Objects;
 
 /**
- * KR: 새 intent 처리를 시작하기 위한 진입 job입니다.
- * EN: Entry job that starts processing a new intent.
+ * KR: StartIntentJob는 Host 런타임 계층에서 start intent job 역할을 수행하는 구현 타입입니다.
+ * EN: StartIntentJob is an implementation type performing start intent job roles in the Host runtime layer.
  */
 public final class StartIntentJob implements HostJob {
     private final Intent intent;

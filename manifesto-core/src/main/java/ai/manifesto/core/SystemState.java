@@ -5,15 +5,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * SystemState - 시스템 상태
- * 애플리케이션의 내부 상태를 나타낸다.
- *
- * 필드:
- * - status: 현재 상태 (idle, computing, pending, error)
- * - lastError: 마지막 에러
- * - errors: 모든 에러 기록 (감시 추적용)
- * - pendingRequirements: Host가 처리해야 할 효과 목록
- * - currentAction: 현재 처리 중인 액션 (pending 상태일 때만)
+ * KR: SystemState는 Core 모듈에서 system state 역할을 수행하는 구현 타입입니다.
+ * EN: SystemState is an implementation type performing system state roles in the Core module.
  */
 public class SystemState {
 

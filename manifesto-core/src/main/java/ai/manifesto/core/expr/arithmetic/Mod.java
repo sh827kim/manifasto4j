@@ -5,8 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * Mod - 나머지 (%)
- * 예: mod(get("data.count"), lit(2))
+ * KR: Mod는 Core 표현식 엔진에서 전달되는 mod 데이터를 담는 불변 레코드입니다.
+ * EN: Mod is an immutable record carrying mod data in the Core expression engine.
  */
 public record Mod(ExprNode left, ExprNode right) implements ExprNode {
 

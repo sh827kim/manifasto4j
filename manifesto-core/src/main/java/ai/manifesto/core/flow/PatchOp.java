@@ -1,14 +1,8 @@
 package ai.manifesto.core.flow;
 
 /**
- * PatchOp - 상태 변경의 세 가지 연산
- *
- * Manifesto는 상태 변경을 정확히 세 가지 연산으로만 지원한다:
- * 1. SET - 경로의 값을 설정 (없으면 생성)
- * 2. UNSET - 경로의 속성을 제거
- * 3. MERGE - 경로의 객체에 얕은 병합 수행
- *
- * 이 세 연산으로 모든 상태 변경을 표현할 수 있다.
+ * KR: PatchOp는 Core 플로우 계층에서 사용하는 patch op 분류 값을 열거합니다.
+ * EN: PatchOp enumerates patch op classification values used in the Core flow layer.
  */
 public enum PatchOp {
     SET("set"),

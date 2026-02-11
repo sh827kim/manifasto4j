@@ -8,7 +8,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * HashUtils - schema/hash helpers
+ * KR: HashUtils는 재사용 가능한 정적 보조 함수를 제공하는 유틸리티 타입입니다.
+ * EN: HashUtils is a utility type providing reusable static helper functions.
  */
 public final class HashUtils {
     private HashUtils() {}

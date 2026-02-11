@@ -5,8 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * Gte - 이상 비교 (>=)
- * 예: gte(get("data.age"), lit(18))
+ * KR: Gte는 Core 표현식 엔진에서 전달되는 gte 데이터를 담는 불변 레코드입니다.
+ * EN: Gte is an immutable record carrying gte data in the Core expression engine.
  */
 public record Gte(ExprNode left, ExprNode right) implements ExprNode {
 

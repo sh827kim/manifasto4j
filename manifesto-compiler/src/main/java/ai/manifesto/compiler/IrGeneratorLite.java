@@ -5,9 +5,8 @@ import ai.manifesto.core.schema.FieldSpec;
 import java.util.Map;
 
 /**
- * IrGeneratorLite - 최소 IR 타입 변환기
- *
- * 현재는 TypeExpr -> FieldSpec 변환에 집중한다.
+ * KR: IrGeneratorLite는 컴파일러 모듈에서 ir generator lite 역할을 수행하는 구현 타입입니다.
+ * EN: IrGeneratorLite is an implementation type performing ir generator lite roles in the compiler module.
  */
 public final class IrGeneratorLite {
     private final TypeExprParser typeExprParser = new TypeExprParser();

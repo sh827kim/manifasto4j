@@ -12,7 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Parser - MEL parser (TS parser parity)
+ * KR: Parser는 MEL 토큰 스트림을 AST로 변환하는 구문 분석기입니다.
+ * EN: Parser parses MEL token streams into AST structures.
  */
 public final class Parser {
     private final List<Token> tokens;

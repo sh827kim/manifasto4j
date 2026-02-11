@@ -5,10 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * Map - 배열을 변환 함수로 매핑
- * 매퍼는 $item, $index, $array 컨텍스트에서 평가됨
- *
- * 예: map(get("data.todos"), get("$item.title"))
+ * KR: Map는 Core 표현식 엔진에서 전달되는 map 데이터를 담는 불변 레코드입니다.
+ * EN: Map is an immutable record carrying map data in the Core expression engine.
  */
 public record Map(ExprNode array, ExprNode mapper) implements ExprNode {
 

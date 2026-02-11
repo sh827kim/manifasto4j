@@ -6,10 +6,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * ObjectExpr - 객체 리터럴 생성
- * 각 필드의 값은 표현식으로 평가됨
- *
- * 예: object({"id": get("$system.uuid"), "title": get("input.title")})
+ * KR: ObjectExpr는 Core 표현식 엔진에서 전달되는 object expr 데이터를 담는 불변 레코드입니다.
+ * EN: ObjectExpr is an immutable record carrying object expr data in the Core expression engine.
  */
 public record ObjectExpr(Map<String, ExprNode> fields) implements ExprNode {
 

@@ -1,7 +1,8 @@
 package ai.manifesto.compiler.lexer;
 
 /**
- * TokenKind - MEL lexer token kinds (TS compiler parity)
+ * KR: TokenKind는 컴파일러 렉서 계층에서 사용하는 token kind 분류 값을 열거합니다.
+ * EN: TokenKind enumerates token kind classification values used in the compiler lexer layer.
  */
 public enum TokenKind {
     // Keywords

@@ -3,8 +3,8 @@ package ai.manifesto.host.runtime;
 import java.util.Objects;
 
 /**
- * KR: mailbox/runner 라우팅에 사용하는 실행 식별자 래퍼입니다.
- * EN: Opaque execution identifier used for mailbox/runner routing.
+ * KR: ExecutionKey는 Host 런타임 계층에서 전달되는 execution key 데이터를 담는 불변 레코드입니다.
+ * EN: ExecutionKey is an immutable record carrying execution key data in the Host runtime layer.
  */
 public record ExecutionKey(String value) {
     public ExecutionKey {

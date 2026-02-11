@@ -8,15 +8,8 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * TraceGraph - 완전한 계산 추적
- * compute() 함수의 실행을 추적한 전체 그래프다.
- *
- * 용도:
- * - 설명 가능성: "왜 이 값이 나왔는가?"
- * - 디버깅: 각 단계별 입출력
- * - 성능 분석: 각 노드의 실행 시간
- * - 감시 로깅: 전체 계산 과정 기록
- * - 결정론성 증명: 재실행 시 동일한 trace
+ * KR: TraceGraph는 Core 모듈에서 trace graph 역할을 수행하는 구현 타입입니다.
+ * EN: TraceGraph is an implementation type performing trace graph roles in the Core module.
  */
 public class TraceGraph {
 

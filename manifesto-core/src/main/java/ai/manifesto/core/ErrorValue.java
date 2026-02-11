@@ -5,10 +5,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * ErrorValue - Snapshot에 저장되는 에러 값
- * 예외가 아닌 값으로 에러를 표현한다.
- *
- * 핵심 원칙: 모든 에러는 Snapshot의 system.errors 배열에 저장된다.
+ * KR: ErrorValue는 Core 모듈에서 error value 역할을 수행하는 구현 타입입니다.
+ * EN: ErrorValue is an implementation type performing error value roles in the Core module.
  */
 public class ErrorValue {
 

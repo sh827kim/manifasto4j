@@ -12,6 +12,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * KR: HitlHandler는 특정 도메인 이벤트/요청을 처리하는 핸들러 타입입니다.
+ * EN: HitlHandler is a handler type that processes specific domain events or requests.
+ */
 public final class HitlHandler implements AuthorityHandler {
     public static final class PendingDecision {
         private final Proposal proposal;

@@ -4,7 +4,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Scope - lexical scope
+ * KR: Scope는 컴파일러 분석 계층에서 scope 역할을 수행하는 구현 타입입니다.
+ * EN: Scope is an implementation type performing scope roles in the compiler analyzer layer.
  */
 public final class Scope {
     private final Scope parent;

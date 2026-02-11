@@ -11,32 +11,8 @@ import ai.manifesto.core.utils.DagUtils;
 import java.util.*;
 
 /**
- * ComputedEvaluator - Computed 필드 평가 엔진
- *
- * 역할:
- * - Computed 필드들을 DAG 순서대로 평가
- * - 순환 참조 감지 (V-002 에러)
- * - 의존성 있는 필드는 의존 대상이 먼저 계산된 후 평가
- * - 이전 계산 결과를 다음 필드 평가에서 참조 가능하도록 tempSnapshot 업데이트
- *
- * 특징:
- * - Pure & Total: 예외 던지지 않음, 항상 Result 반환
- * - 결정론적: 같은 입력 → 같은 출력
- * - 불변: Snapshot 원본 변경하지 않고 새로운 computed Map 반환
- *
- * 사용 예시:
- * {@code
- * Result<Map<String, Object>, ErrorValue> result =
- *     ComputedEvaluator.evaluateComputed(schema, snapshot);
- *
- * if (result.isErr()) {
- *     // V-002: 순환 참조, 또는 다른 평가 에러
- *     ErrorValue error = result.getError();
- * } else {
- *     Map<String, Object> computed = result.unwrap();
- *     Snapshot newSnapshot = snapshot.withComputed(computed);
- * }
- * }
+ * KR: ComputedEvaluator는 규칙 또는 식을 평가해 결과를 산출하는 평가기 타입입니다.
+ * EN: ComputedEvaluator is an evaluator type that computes results by evaluating rules or expressions.
  */
 public class ComputedEvaluator {
 

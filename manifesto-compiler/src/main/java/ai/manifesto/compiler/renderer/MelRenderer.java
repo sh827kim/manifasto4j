@@ -5,7 +5,8 @@ import ai.manifesto.compiler.parser.*;
 import java.util.StringJoiner;
 
 /**
- * MelRenderer - AST -> MEL string (minimal)
+ * KR: MelRenderer는 내부 표현을 문자열 또는 출력 포맷으로 렌더링하는 타입입니다.
+ * EN: MelRenderer is a renderer type that converts internal representation into textual output format.
  */
 public final class MelRenderer {
 

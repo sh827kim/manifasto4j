@@ -5,13 +5,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * HostContext - Host가 제공하는 결정론적 입력
- *
- * TS HostContext와 호환:
- * - now: 논리 시각
- * - randomSeed: 결정론적 시드
- * - env: 선택적 환경 메타데이터
- * - durationMs: 선택적 측정된 계산 시간
+ * KR: HostContext는 실행 시점의 컨텍스트 값(시간, 환경, 상태 참조 등)을 전달하는 타입입니다.
+ * EN: HostContext is a context type carrying runtime values such as time, environment, and state references.
  */
 public final class HostContext {
     private final long now;

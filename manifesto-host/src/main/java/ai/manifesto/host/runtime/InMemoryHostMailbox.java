@@ -5,8 +5,8 @@ import java.util.Deque;
 import java.util.Objects;
 
 /**
- * KR: ArrayDeque 기반의 in-memory HostMailbox 구현입니다.
- * EN: In-memory HostMailbox implementation backed by ArrayDeque.
+ * KR: InMemoryHostMailbox는 메모리 기반 저장 전략을 사용하는 구현 클래스입니다.
+ * EN: InMemoryHostMailbox is an implementation class that uses an in-memory storage strategy.
  */
 public final class InMemoryHostMailbox implements HostMailbox {
     private final ExecutionKey key;

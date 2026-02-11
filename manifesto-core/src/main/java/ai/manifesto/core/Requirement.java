@@ -9,16 +9,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Requirement - Host가 처리해야 할 효과 요구사항
- * Flow 평가 중 effect 노드를 만나면 Requirement가 생성된다.
- *
- * 필드:
- * - id: 요구사항 고유 식별자 (멱등성)
- * - type: 효과 타입 (예: "api.saveTodo", "file.write")
- * - params: 효과에 필요한 파라미터
- * - actionId: 이 요구사항을 생성한 액션
- * - flowPosition: Flow에서의 위치 (추적용)
- * - createdAt: 생성 시각
+ * KR: Requirement는 Core 모듈에서 requirement 역할을 수행하는 구현 타입입니다.
+ * EN: Requirement is an implementation type performing requirement roles in the Core module.
  */
 public class Requirement {
 

@@ -9,6 +9,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * KR: AuthorityEvaluator는 정책 모드에 맞는 AuthorityHandler를 선택해 승인 결정을 평가하는 조정자입니다.
+ * EN: AuthorityEvaluator coordinates approval evaluation by selecting AuthorityHandler implementations by policy mode.
+ */
 public final class AuthorityEvaluator {
     private final Map<String, AuthorityHandler> handlers = new HashMap<>();
 

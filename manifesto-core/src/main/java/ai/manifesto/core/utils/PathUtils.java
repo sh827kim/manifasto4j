@@ -5,14 +5,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * PathUtils - 경로 문자열을 사용해 객체의 값을 조회/설정
- *
- * 경로 형식:
- * - "count" → data 맵의 count 키
- * - "todos.0.title" → data의 todos 배열의 첫 요소의 title
- * - "nested.array.0.field" → 중첩 구조
- *
- * 숫자는 배열 인덱스로 해석됨
+ * KR: PathUtils는 재사용 가능한 정적 보조 함수를 제공하는 유틸리티 타입입니다.
+ * EN: PathUtils is a utility type providing reusable static helper functions.
  */
 public class PathUtils {
 

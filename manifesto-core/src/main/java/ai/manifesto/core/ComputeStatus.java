@@ -1,15 +1,8 @@
 package ai.manifesto.core;
 
 /**
- * ComputeStatus - compute() 함수의 실행 결과 상태
- *
- * 계산이 어떻게 종료되었는지를 나타낸다:
- * - COMPLETE: Flow가 완료되었고 펼딩된 효과가 없음
- * - PENDING: Flow가 효과를 만났으므로 Host 대기 중
- * - HALTED: Flow가 명시적으로 중단됨 (정상)
- * - ERROR: 에러 발생 (비정상)
- *
- * Java 17+ 기능: enum은 sealed 클래스처럼 동작
+ * KR: ComputeStatus는 Core 모듈에서 사용하는 compute status 분류 값을 열거합니다.
+ * EN: ComputeStatus enumerates compute status classification values used in the Core module.
  */
 public enum ComputeStatus {
     COMPLETE("complete"),     // 흐름 완료, 펼딩 없음

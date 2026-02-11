@@ -4,9 +4,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * TypeSpec - named type definition (v0.3.3)
- *
- * Minimal representation: definition is a canonical map.
+ * KR: TypeSpec는 Core 스키마 계층에서 type spec 역할을 수행하는 구현 타입입니다.
+ * EN: TypeSpec is an implementation type performing type spec roles in the Core schema layer.
  */
 public final class TypeSpec {
     private final String name;

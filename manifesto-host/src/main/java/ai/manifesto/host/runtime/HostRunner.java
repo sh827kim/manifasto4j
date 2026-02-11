@@ -3,8 +3,8 @@ package ai.manifesto.host.runtime;
 import java.util.Objects;
 
 /**
- * KR: 하나의 mailbox를 단일 runner 규칙으로 drain하는 동기 실행기입니다.
- * EN: Synchronous executor that drains one mailbox with single-runner semantics.
+ * KR: HostRunner는 큐/메일박스 작업을 단일 실행 규칙으로 처리하는 실행기입니다.
+ * EN: HostRunner is a runner that processes queued jobs under single-runner semantics.
  */
 public final class HostRunner {
     private final HostMailbox mailbox;

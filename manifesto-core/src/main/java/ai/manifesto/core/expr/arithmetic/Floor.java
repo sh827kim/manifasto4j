@@ -5,8 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * Floor - 바닥 함수
- * 예: floor(get("data.value"))
+ * KR: Floor는 Core 표현식 엔진에서 전달되는 floor 데이터를 담는 불변 레코드입니다.
+ * EN: Floor is an immutable record carrying floor data in the Core expression engine.
  */
 public record Floor(ExprNode arg) implements ExprNode {
 

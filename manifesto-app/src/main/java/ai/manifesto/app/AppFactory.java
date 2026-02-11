@@ -15,7 +15,8 @@ import ai.manifesto.world.types.HostExecutor;
 import java.util.Objects;
 
 /**
- * AppFactory - server/CLI용 App 생성
+ * KR: AppFactory는 App 인스턴스 생성 과정을 캡슐화하는 팩토리 타입입니다.
+ * EN: AppFactory is a factory type that encapsulates App instance creation.
  */
 public final class AppFactory {
     private AppFactory() {}

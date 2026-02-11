@@ -5,10 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * Some - 하나 이상의 요소가 술어를 만족하는지 확인
- * 술어는 $item, $index, $array 컨텍스트에서 평가됨
- *
- * 예: some(get("data.todos"), get("$item.completed"))
+ * KR: Some는 Core 표현식 엔진에서 전달되는 some 데이터를 담는 불변 레코드입니다.
+ * EN: Some is an immutable record carrying some data in the Core expression engine.
  */
 public record Some(ExprNode array, ExprNode predicate) implements ExprNode {
 

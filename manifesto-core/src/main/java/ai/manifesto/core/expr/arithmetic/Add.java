@@ -5,8 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * Add - 덧셈 (+)
- * 예: add(get("data.count"), lit(1))
+ * KR: Add는 Core 표현식 엔진에서 전달되는 add 데이터를 담는 불변 레코드입니다.
+ * EN: Add is an immutable record carrying add data in the Core expression engine.
  */
 public record Add(ExprNode left, ExprNode right) implements ExprNode {
 

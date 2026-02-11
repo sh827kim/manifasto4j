@@ -4,6 +4,10 @@ import ai.manifesto.world.schema.ProposalId;
 
 import java.util.Objects;
 
+/**
+ * KR: ExecutionKeys는 World 실행 경계 계층에서 execution keys 역할을 수행하는 구현 타입입니다.
+ * EN: ExecutionKeys is an implementation type performing execution keys roles in the World execution-boundary layer.
+ */
 public final class ExecutionKeys {
     private ExecutionKeys() {
     }

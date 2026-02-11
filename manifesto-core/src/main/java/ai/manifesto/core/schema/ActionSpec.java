@@ -6,17 +6,8 @@ import ai.manifesto.core.flow.FlowNode;
 import java.util.*;
 
 /**
- * ActionSpec - 액션(Action) 정의
- *
- * 각 액션의 메타데이터:
- * - 이름: actionId
- * - Input: 입력 파라미터 정의
- * - Available: 액션 실행 가능 조건
- * - Flow: 액션 실행할 Flow
- *
- * 특징:
- * - 불변 객체 (모든 필드 final)
- * - 빌더 패턴으로 생성
+ * KR: ActionSpec는 Core 스키마 계층에서 action spec 역할을 수행하는 구현 타입입니다.
+ * EN: ActionSpec is an implementation type performing action spec roles in the Core schema layer.
  */
 public final class ActionSpec {
     private final String actionId;

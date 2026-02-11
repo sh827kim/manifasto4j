@@ -5,8 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * Pow - 거듭제곱
- * 예: pow(get("data.base"), lit(2))
+ * KR: Pow는 Core 표현식 엔진에서 전달되는 pow 데이터를 담는 불변 레코드입니다.
+ * EN: Pow is an immutable record carrying pow data in the Core expression engine.
  */
 public record Pow(ExprNode base, ExprNode exponent) implements ExprNode {
 

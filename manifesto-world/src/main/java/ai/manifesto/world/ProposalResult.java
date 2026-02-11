@@ -4,6 +4,10 @@ import ai.manifesto.world.schema.DecisionRecord;
 import ai.manifesto.world.schema.Proposal;
 import ai.manifesto.world.schema.World;
 
+/**
+ * KR: ProposalResult는 연산/실행 결과를 전달하는 결과 타입입니다.
+ * EN: ProposalResult is a result type carrying operation or execution outcomes.
+ */
 public final class ProposalResult {
     private final Proposal proposal;
     private final DecisionRecord decision;

@@ -65,7 +65,8 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * ValidationUtils - 스키마 검증 보조 유틸리티
+ * KR: ValidationUtils는 재사용 가능한 정적 보조 함수를 제공하는 유틸리티 타입입니다.
+ * EN: ValidationUtils is a utility type providing reusable static helper functions.
  */
 public final class ValidationUtils {
     public enum SchemaHashMode {

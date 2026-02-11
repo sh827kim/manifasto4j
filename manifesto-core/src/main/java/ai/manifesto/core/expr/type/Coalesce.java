@@ -6,10 +6,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Coalesce - null이 아닌 첫 값 반환
- * 모든 값이 null이면 null 반환
- *
- * 예: coalesce(get("data.nickname"), get("data.name"), lit("Anonymous"))
+ * KR: Coalesce는 Core 표현식 엔진에서 전달되는 coalesce 데이터를 담는 불변 레코드입니다.
+ * EN: Coalesce is an immutable record carrying coalesce data in the Core expression engine.
  */
 public record Coalesce(List<ExprNode> args) implements ExprNode {
 

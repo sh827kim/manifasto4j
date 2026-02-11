@@ -5,8 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * IsNull - 값이 null인지 확인
- * 예: isNull(get("data.description"))
+ * KR: IsNull는 Core 표현식 엔진에서 전달되는 is null 데이터를 담는 불변 레코드입니다.
+ * EN: IsNull is an immutable record carrying is null data in the Core expression engine.
  */
 public record IsNull(ExprNode arg) implements ExprNode {
 

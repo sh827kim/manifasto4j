@@ -4,10 +4,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * ExplainResult - Explain 함수의 결과
- *
- * 값이 왜 그렇게 계산되었는지를 설명한다.
- * 경로의 값, 계산 추적, 의존성을 포함한다.
+ * KR: ExplainResult는 연산/실행 결과를 전달하는 결과 타입입니다.
+ * EN: ExplainResult is a result type carrying operation or execution outcomes.
  */
 public class ExplainResult {
 

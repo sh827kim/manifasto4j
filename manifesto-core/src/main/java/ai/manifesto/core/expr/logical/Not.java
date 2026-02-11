@@ -5,10 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * Not - 논리 부정 (!)
- * 참을 거짓으로, 거짓을 참으로 변환
- *
- * 예: not(eq(get("data.status"), lit("done")))
+ * KR: Not는 Core 표현식 엔진에서 전달되는 not 데이터를 담는 불변 레코드입니다.
+ * EN: Not is an immutable record carrying not data in the Core expression engine.
  */
 public record Not(ExprNode arg) implements ExprNode {
 

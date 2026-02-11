@@ -5,8 +5,8 @@ import ai.manifesto.core.expr.ExprNode;
 import java.util.Objects;
 
 /**
- * Len - 컬렉션의 길이 반환
- * 예: len(get("data.todos"))
+ * KR: Len는 Core 표현식 엔진에서 전달되는 len 데이터를 담는 불변 레코드입니다.
+ * EN: Len is an immutable record carrying len data in the Core expression engine.
  */
 public record Len(ExprNode arg) implements ExprNode {
 

@@ -5,18 +5,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Snapshot - 애플리케이션 상태의 불변 스냅샷
- *
- * Snapshot은 Manifesto의 중심이다.
- * 모든 상태 변경은 이전 Snapshot에서 새로운 Snapshot으로의 전환이다.
- * "If it's not in Snapshot, it doesn't exist." - Manifesto 핵심 원칙
- *
- * 필드:
- * - data: 도메인 상태 (사용자가 정의한 스키마에 따름)
- * - computed: 계산된 값 (항상 재계산, 저장되지 않음)
- * - system: 시스템 상태
- * - input: 현재 액션 입력 (임시)
- * - meta: 메타데이터 (버전, 타임스탬프 등)
+ * KR: Snapshot는 Core 모듈에서 snapshot 역할을 수행하는 구현 타입입니다.
+ * EN: Snapshot is an implementation type performing snapshot roles in the Core module.
  */
 public class Snapshot {
 

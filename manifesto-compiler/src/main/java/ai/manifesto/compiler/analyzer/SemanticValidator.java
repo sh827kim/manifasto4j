@@ -39,7 +39,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * SemanticValidator - MEL semantic validation (subset)
+ * KR: SemanticValidator는 컴파일러 분석 계층에서 semantic validator 역할을 수행하는 구현 타입입니다.
+ * EN: SemanticValidator is an implementation type performing semantic validator roles in the compiler analyzer layer.
  */
 public final class SemanticValidator {
     private final List<Diagnostic> diagnostics = new ArrayList<>();

@@ -5,6 +5,10 @@ import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * KR: PolicyCondition는 World 스키마 계층에서 policy condition 역할을 수행하는 구현 타입입니다.
+ * EN: PolicyCondition is an implementation type performing policy condition roles in the World schema layer.
+ */
 public final class PolicyCondition {
     private final PolicyConditionKind kind;
     private final Set<String> types;

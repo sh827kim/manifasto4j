@@ -3,22 +3,8 @@ package ai.manifesto.core.schema;
 import java.util.*;
 
 /**
- * DomainSchema - 도메인 스키마 정의
- *
- * Manifesto의 도메인을 정의하는 핵심 클래스:
- * - 상태 필드 구조 (data, computed, system, input)
- * - 액션 목록 및 정의
- * - 계산 필드 정의
- *
- * 역할:
- * - 액션 조회 (getAction)
- * - 계산 필드 조회 (getComputedField)
- * - 데이터 필드 조회 (getDataFields)
- * - 데이터 검증 (validateData)
- *
- * 특징:
- * - 불변 객체 (모든 필드 final)
- * - 빌더 패턴으로 생성
+ * KR: DomainSchema는 Core 스키마 계층에서 domain schema 역할을 수행하는 구현 타입입니다.
+ * EN: DomainSchema is an implementation type performing domain schema roles in the Core schema layer.
  */
 public final class DomainSchema {
     private final String id;
