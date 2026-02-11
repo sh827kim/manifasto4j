@@ -51,7 +51,7 @@ flowchart TD
 **현재 Java 구현 흐름에서의 차이 (2026-02-11 기준)**  
 - Host는 동기 실행이지만, `mailbox/runner/job` 경계를 분리한 1차 구조를 도입했습니다.  
 - 다만 TS Host의 비동기 event-loop/HCTS 전면 동치 수준(재주입/trace contract 전체)은 후속 단계입니다.  
-- Host 상태는 `$host` 네임스페이스 경로가 반영되어 있고, `$mel` 관련 런타임 정합이 후속 과제입니다.
+- Host 상태는 `$host` 네임스페이스 경로로 관리되며, Core `Apply`는 플랫폼 namespace(`$mel` 포함) patch 경계를 지원합니다.
 
 **Java 개발 팁**
 - Core는 **테스트 가능한 순수 모듈**로 분리하세요.

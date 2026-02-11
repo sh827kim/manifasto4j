@@ -38,9 +38,9 @@
 - `manifesto-app`: world 연계 + session snapshot store 1차 구현
 - `manifesto-compiler`: strict runtime patch API 1차 구현
 - `manifesto-world`: 승인/거절/lineage 경로 + edge 테스트 확장
-- 후속 핵심: `$mel` 런타임 경계, semantic hash 모드, app/world store 정합
+- 후속 핵심: compiler strict parity 강화, host HCTS 계약 보강, planned module(`intent-ir/translator/codegen`) 진입
 
 **체크포인트 질문**
 1. TS 최신 패키지 중 Java에 아직 없는 것은 무엇인가요.
 2. 현재 구현 모듈과 예정 모듈은 어떻게 구분되나요.
-3. 다음 사이클 P0 과제는 무엇인가요.
+3. 다음 사이클의 우선 과제(P1/P2)는 무엇인가요.
