@@ -1,6 +1,7 @@
 package ai.manifesto.world.persistence;
 
 import ai.manifesto.core.Snapshot;
+import ai.manifesto.core.utils.SnapshotStoreUtils;
 import ai.manifesto.world.proposal.TransitionUpdates;
 import ai.manifesto.world.schema.ActorAuthorityBinding;
 import ai.manifesto.world.schema.DecisionId;
@@ -77,13 +78,13 @@ public final class MemoryWorldStore implements WorldStore {
         if (!worlds.containsKey(worldId.value())) {
             return StoreResult.failure("World does not exist: " + worldId.value());
         }
-        snapshots.put(worldId.value(), snapshot);
+        snapshots.put(worldId.value(), SnapshotStoreUtils.canonicalizeForStorage(snapshot));
         return StoreResult.success();
     }
 
     @Override
     public Snapshot getSnapshot(WorldId worldId) {
-        return snapshots.get(worldId.value());
+        return SnapshotStoreUtils.deepCopySnapshot(snapshots.get(worldId.value()));
     }
 
     @Override

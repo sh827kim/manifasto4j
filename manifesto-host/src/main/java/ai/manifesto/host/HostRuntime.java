@@ -4,7 +4,16 @@ import ai.manifesto.core.*;
 import ai.manifesto.core.core.Apply;
 import ai.manifesto.core.core.Compute;
 import ai.manifesto.core.schema.DomainSchema;
+import ai.manifesto.host.runtime.ContinueComputeJob;
+import ai.manifesto.host.runtime.ExecutionKey;
+import ai.manifesto.host.runtime.FulfillRequirementsJob;
+import ai.manifesto.host.runtime.HostJob;
+import ai.manifesto.host.runtime.HostMailbox;
+import ai.manifesto.host.runtime.HostRunner;
+import ai.manifesto.host.runtime.InMemoryHostMailbox;
+import ai.manifesto.host.runtime.StartIntentJob;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -12,7 +21,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * HostRuntime - compute-effect loop 최소 구현
+ * KR: Core의 compute 결과(PENDING/요구사항)를 Host effect 실행과 patch 적용으로 수렴시키는 런타임입니다.
+ * EN: Runtime that converges Core compute results (pending requirements) via host effect execution and patch application.
  */
 public final class HostRuntime {
     private final Map<String, EffectHandler> handlers = new HashMap<>();
@@ -39,64 +49,123 @@ public final class HostRuntime {
         Objects.requireNonNull(snapshot, "snapshot is required");
         Objects.requireNonNull(intent, "intent is required");
         Objects.requireNonNull(options, "options is required");
-
-        Snapshot current = snapshot;
-        int iteration = 0;
-        TraceGraph lastTrace = null;
-        while (true) {
-            if (iteration >= options.getMaxIterations()) {
-                return ComputeResult.error(current, lastTrace);
-            }
-            iteration += 1;
-            HostContext computeContext = HostContext.forSnapshot(current);
-            ComputeResult result = Compute.computeSync(
-                schema,
-                current,
-                intent,
-                computeContext,
-                options.getTimeoutSeconds()
-            );
-            lastTrace = result.getTrace();
-            if (result.getStatus() != ComputeStatus.PENDING) {
-                return result;
-            }
-
-            List<Requirement> requirements = result.getRequirements();
-            if (requirements.isEmpty()) {
-                return result;
-            }
-            List<Patch> patches = new java.util.ArrayList<>();
-            patches.add(Patch.set("$host.currentIntentId", intent.getIntentId()));
-            patches.add(Patch.set("$host.intentSlots." + intent.getIntentId() + ".type", intent.getType()));
-            patches.add(Patch.set("$host.intentSlots." + intent.getIntentId() + ".input", intent.getInput()));
-            for (Requirement requirement : requirements) {
-                EffectHandler handler = handlers.get(requirement.getType());
-                if (handler == null) {
-                    return result;
-                }
-                EffectResult effectResult = executeEffectWithPolicy(handler, requirement, options);
-                if (effectResult == null) {
-                    Snapshot failed = applyHostFailure(
-                        schema,
-                        result.getSnapshot(),
-                        requirement,
-                        "HOST_EFFECT_FAILED",
-                        "Effect execution failed after retries"
-                    );
-                    return ComputeResult.error(failed, lastTrace);
-                }
-                patches.addAll(effectResult.getPatches());
-            }
-            // Host는 처리된 requirement를 명시적으로 비운다.
-            patches.add(Patch.set("system.pendingRequirements", java.util.List.of()));
-
-            HostContext applyContext = HostContext.forSnapshot(result.getSnapshot());
-            Result<Snapshot, ErrorValue> applied = Apply.apply(schema, result.getSnapshot(), patches, applyContext);
-            if (applied.isErr()) {
-                return ComputeResult.error(result.getSnapshot(), lastTrace);
-            }
-            current = applied.unwrap();
+        if (intent.getIntentId() == null || intent.getIntentId().isBlank()) {
+            throw new IllegalArgumentException("intent.intentId is required");
         }
+
+        HostRunContext runContext = new HostRunContext(schema, snapshot, intent, options);
+        ExecutionKey executionKey = ExecutionKey.fromIntentId(intent.getIntentId());
+        HostMailbox mailbox = new InMemoryHostMailbox(executionKey);
+        HostRunner runner = new HostRunner(mailbox, (job, currentMailbox) -> processJob(job, currentMailbox, runContext));
+        runner.enqueue(new StartIntentJob(intent));
+        runner.runUntilIdle();
+
+        if (runContext.getFinalResult() != null) {
+            return runContext.getFinalResult();
+        }
+        return ComputeResult.error(runContext.getCurrentSnapshot(), runContext.getLastTrace());
+    }
+
+    private void processJob(HostJob job, HostMailbox mailbox, HostRunContext runContext) throws Exception {
+        if (runContext.getFinalResult() != null) {
+            return;
+        }
+        switch (job.getType()) {
+            case START_INTENT -> handleStartIntent((StartIntentJob) job, mailbox);
+            case CONTINUE_COMPUTE -> handleContinueCompute((ContinueComputeJob) job, mailbox, runContext);
+            case FULFILL_REQUIREMENTS -> handleFulfillRequirements((FulfillRequirementsJob) job, mailbox, runContext);
+            default -> throw new IllegalStateException("Unsupported job type: " + job.getType());
+        }
+    }
+
+    private void handleStartIntent(StartIntentJob job, HostMailbox mailbox) {
+        mailbox.enqueue(new ContinueComputeJob(job.getIntent()));
+    }
+
+    private void handleContinueCompute(
+        ContinueComputeJob job,
+        HostMailbox mailbox,
+        HostRunContext runContext
+    ) throws Exception {
+        HostRuntimeOptions options = runContext.getOptions();
+        if (runContext.getComputeIterations() >= options.getMaxIterations()) {
+            runContext.setFinalResult(ComputeResult.error(runContext.getCurrentSnapshot(), runContext.getLastTrace()));
+            return;
+        }
+        runContext.incrementComputeIterations();
+        Snapshot currentSnapshot = runContext.getCurrentSnapshot();
+        HostContext computeContext = HostContext.forSnapshot(currentSnapshot);
+        ComputeResult result = Compute.computeSync(
+            runContext.getSchema(),
+            currentSnapshot,
+            job.getIntent(),
+            computeContext,
+            options.getTimeoutSeconds()
+        );
+        runContext.setLastTrace(result.getTrace());
+        if (result.getStatus() != ComputeStatus.PENDING) {
+            runContext.setFinalResult(result);
+            return;
+        }
+        if (result.getRequirements().isEmpty()) {
+            runContext.setFinalResult(result);
+            return;
+        }
+        mailbox.enqueue(new FulfillRequirementsJob(result, job.getIntent()));
+    }
+
+    private void handleFulfillRequirements(
+        FulfillRequirementsJob job,
+        HostMailbox mailbox,
+        HostRunContext runContext
+    ) {
+        ComputeResult pendingResult = job.getPendingResult();
+        List<Requirement> requirements = pendingResult.getRequirements();
+        if (requirements.isEmpty()) {
+            mailbox.enqueue(new ContinueComputeJob(job.getIntent()));
+            return;
+        }
+
+        List<Patch> patches = new ArrayList<>();
+        Intent intent = job.getIntent();
+        patches.add(Patch.set("$host.currentIntentId", intent.getIntentId()));
+        patches.add(Patch.set("$host.intentSlots." + intent.getIntentId() + ".type", intent.getType()));
+        patches.add(Patch.set("$host.intentSlots." + intent.getIntentId() + ".input", intent.getInput()));
+        for (Requirement requirement : requirements) {
+            EffectHandler handler = handlers.get(requirement.getType());
+            if (handler == null) {
+                runContext.setFinalResult(pendingResult);
+                return;
+            }
+            EffectResult effectResult = executeEffectWithPolicy(handler, requirement, runContext.getOptions());
+            if (effectResult == null) {
+                Snapshot failed = applyHostFailure(
+                    runContext.getSchema(),
+                    pendingResult.getSnapshot(),
+                    requirement,
+                    "HOST_EFFECT_FAILED",
+                    "Effect execution failed after retries"
+                );
+                runContext.setFinalResult(ComputeResult.error(failed, runContext.getLastTrace()));
+                return;
+            }
+            patches.addAll(effectResult.getPatches());
+        }
+        patches.add(Patch.set("system.pendingRequirements", java.util.List.of()));
+
+        HostContext applyContext = HostContext.forSnapshot(pendingResult.getSnapshot());
+        Result<Snapshot, ErrorValue> applied = Apply.apply(
+            runContext.getSchema(),
+            pendingResult.getSnapshot(),
+            patches,
+            applyContext
+        );
+        if (applied.isErr()) {
+            runContext.setFinalResult(ComputeResult.error(pendingResult.getSnapshot(), runContext.getLastTrace()));
+            return;
+        }
+        runContext.setCurrentSnapshot(applied.unwrap());
+        mailbox.enqueue(new ContinueComputeJob(intent));
     }
 
     private EffectResult executeEffectWithPolicy(
@@ -153,5 +222,71 @@ public final class HostRuntime {
             return applied.unwrap();
         }
         return snapshot;
+    }
+
+    /**
+     * KR: 단일 intent 실행 동안의 가변 상태(현재 snapshot, trace, 반복 횟수, 최종 결과)를 보관합니다.
+     * EN: Mutable execution state for a single intent run (snapshot, trace, iterations, final result).
+     */
+    private static final class HostRunContext {
+        private final DomainSchema schema;
+        private final HostRuntimeOptions options;
+        private Snapshot currentSnapshot;
+        private TraceGraph lastTrace;
+        private ComputeResult finalResult;
+        private int computeIterations;
+
+        private HostRunContext(
+            DomainSchema schema,
+            Snapshot currentSnapshot,
+            Intent intent,
+            HostRuntimeOptions options
+        ) {
+            this.schema = Objects.requireNonNull(schema, "schema is required");
+            this.currentSnapshot = Objects.requireNonNull(currentSnapshot, "currentSnapshot is required");
+            Objects.requireNonNull(intent, "intent is required");
+            this.options = Objects.requireNonNull(options, "options is required");
+            this.computeIterations = 0;
+        }
+
+        public DomainSchema getSchema() {
+            return schema;
+        }
+
+        public HostRuntimeOptions getOptions() {
+            return options;
+        }
+
+        public Snapshot getCurrentSnapshot() {
+            return currentSnapshot;
+        }
+
+        public void setCurrentSnapshot(Snapshot currentSnapshot) {
+            this.currentSnapshot = Objects.requireNonNull(currentSnapshot, "currentSnapshot is required");
+        }
+
+        public TraceGraph getLastTrace() {
+            return lastTrace;
+        }
+
+        public void setLastTrace(TraceGraph lastTrace) {
+            this.lastTrace = lastTrace;
+        }
+
+        public ComputeResult getFinalResult() {
+            return finalResult;
+        }
+
+        public void setFinalResult(ComputeResult finalResult) {
+            this.finalResult = Objects.requireNonNull(finalResult, "finalResult is required");
+        }
+
+        public int getComputeIterations() {
+            return computeIterations;
+        }
+
+        public void incrementComputeIterations() {
+            this.computeIterations += 1;
+        }
     }
 }

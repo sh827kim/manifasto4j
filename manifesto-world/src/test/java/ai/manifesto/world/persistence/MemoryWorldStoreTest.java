@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MemoryWorldStoreTest {
@@ -117,5 +119,36 @@ class MemoryWorldStoreTest {
                 new AutoApprovePolicy()
         )).isSuccess());
         assertEquals(1, store.listBindings().size());
+    }
+
+    @Test
+    void saveSnapshotStripsPlatformNamespacesAndReturnsDefensiveCopy() {
+        World world = new World(WorldId.of("w-platform"), "schema", "s-platform", 1L, null, null);
+        assertTrue(store.saveWorld(world).isSuccess());
+
+        Snapshot snapshot = Snapshot.builder()
+            .data(Map.of(
+                "count", 1,
+                "$host", Map.of("currentIntentId", "intent-1"),
+                "$mel", Map.of("guards", Map.of("intent", Map.of("g1", "intent-1")))
+            ))
+            .computed(Map.of())
+            .system(SystemState.initial())
+            .input(Map.of())
+            .meta(Snapshot.SnapshotMeta.create(1, 1L, "seed", "schema"))
+            .build();
+
+        assertTrue(store.saveSnapshot(world.getWorldId(), snapshot).isSuccess());
+        Snapshot loaded1 = store.getSnapshot(world.getWorldId());
+        assertNotNull(loaded1);
+        assertEquals(1, loaded1.getData().get("count"));
+        assertFalse(loaded1.getData().containsKey("$host"));
+        assertFalse(loaded1.getData().containsKey("$mel"));
+
+        var mutatedData = loaded1.getData();
+        mutatedData.put("count", 999);
+
+        Snapshot loaded2 = store.getSnapshot(world.getWorldId());
+        assertEquals(1, loaded2.getData().get("count"));
     }
 }

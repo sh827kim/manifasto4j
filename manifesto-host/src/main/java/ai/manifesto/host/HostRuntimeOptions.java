@@ -1,9 +1,8 @@
 package ai.manifesto.host;
 
 /**
- * HostRuntime 루프 경계 옵션.
- *
- * timeoutSeconds와 maxIterations를 분리해 운영 정책을 명시적으로 조정할 수 있다.
+ * KR: Host 실행 루프의 시간/반복/재시도 경계를 정의하는 설정 객체입니다.
+ * EN: Configuration object that defines time, iteration, and retry boundaries for the host loop.
  */
 public final class HostRuntimeOptions {
     private final int timeoutSeconds;
@@ -48,6 +47,10 @@ public final class HostRuntimeOptions {
         return new Builder();
     }
 
+    /**
+     * KR: HostRuntimeOptions 생성용 빌더입니다.
+     * EN: Builder for creating HostRuntimeOptions.
+     */
     public static final class Builder {
         private Integer timeoutSeconds;
         private Integer maxIterations;

@@ -236,7 +236,41 @@ class ManifestoWorldTest {
         assertNotNull(world.getWorld(result.getResultWorld().getWorldId()));
         assertNotNull(world.getSnapshot(result.getResultWorld().getWorldId()));
         assertNotNull(world.getGenesis());
+        assertEquals(genesis.getWorldId(), world.getGenesisWorldId());
+        assertEquals(result.getResultWorld().getWorldId(), world.getCurrentHeadWorldId());
+        assertTrue(world.isInitialized());
         assertEquals(0, world.getEvaluatingProposals().size());
+    }
+
+    @Test
+    void resumeSetsCurrentHeadToExistingWorld() {
+        HostExecutor executor = (executionKey, baseSnapshot, intent, options) ->
+                HostExecutionResult.completed(baseSnapshot.withData(Map.of("count", 1)));
+
+        ManifestoWorld world = new ManifestoWorld("schema-hash", executor, null);
+        World genesis = world.createGenesis(genesisSnapshot);
+        ActorRef actor = new ActorRef("human-resume", ActorKind.HUMAN);
+        world.registerActor(actor, new AutoApprovePolicy());
+
+        IntentInstance intent = createIntentInstance(actor, "increment", "intent-resume", "event-resume");
+        ProposalResult result = world.submitProposal(actor.getActorId(), intent, genesis.getWorldId(), null);
+
+        assertNotNull(result.getResultWorld());
+        assertEquals(result.getResultWorld().getWorldId(), world.getCurrentHeadWorldId());
+
+        world.resume(genesis.getWorldId());
+        assertEquals(genesis.getWorldId(), world.getCurrentHeadWorldId());
+    }
+
+    @Test
+    void resumeRejectsMissingWorld() {
+        ManifestoWorld world = new ManifestoWorld("schema-hash");
+        world.createGenesis(genesisSnapshot);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> world.resume(ai.manifesto.world.schema.WorldId.of("missing-world"))
+        );
     }
 
     @Test

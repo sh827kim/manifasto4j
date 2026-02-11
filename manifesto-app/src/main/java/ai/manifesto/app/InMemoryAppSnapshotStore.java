@@ -1,6 +1,7 @@
 package ai.manifesto.app;
 
 import ai.manifesto.core.Snapshot;
+import ai.manifesto.core.utils.SnapshotStoreUtils;
 
 import java.util.Map;
 import java.util.Objects;
@@ -15,13 +16,13 @@ public final class InMemoryAppSnapshotStore implements AppSnapshotStore {
     @Override
     public Snapshot load(String sessionId) {
         Objects.requireNonNull(sessionId, "sessionId is required");
-        return snapshots.get(sessionId);
+        return SnapshotStoreUtils.deepCopySnapshot(snapshots.get(sessionId));
     }
 
     @Override
     public void save(String sessionId, Snapshot snapshot) {
         Objects.requireNonNull(sessionId, "sessionId is required");
         Objects.requireNonNull(snapshot, "snapshot is required");
-        snapshots.put(sessionId, snapshot);
+        snapshots.put(sessionId, SnapshotStoreUtils.canonicalizeForStorage(snapshot));
     }
 }

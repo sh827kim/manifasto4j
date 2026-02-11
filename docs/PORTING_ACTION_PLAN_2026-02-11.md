@@ -40,6 +40,42 @@
 3. World parity:
    - Head query / resume / branch persistence contracts.
 
+## Progress Update (2026-02-11)
+1. P1-1 (App runtime/store parity) 1차 반영 완료:
+   - `InMemoryAppSnapshotStore` 저장 시 snapshot canonicalization 적용
+   - `InMemoryAppSnapshotStore` load 경계 방어적 복사 적용
+   - `MemoryWorldStore` snapshot save/load 경계에도 동일 정책 적용
+   - 플랫폼 네임스페이스(`$*`)는 저장 경계에서 필터링
+   - 회귀 테스트 추가:
+     - `InMemoryAppSnapshotStoreTest`
+     - `MemoryWorldStoreTest` platform namespace case
+2. P1-3 (World parity: head/resume/branch contract) 1차 반영 완료:
+   - `ManifestoWorld`에 head tracker 성격의 API 추가:
+     - `getCurrentHeadWorldId()`
+     - `getGenesisWorldId()`
+     - `isInitialized()`
+     - `resume(WorldId)`
+   - world 생성/실행/branch 전환 시 head 갱신 규칙 반영
+   - 회귀 테스트 추가:
+     - `ManifestoWorldTest.resumeSetsCurrentHeadToExistingWorld`
+     - `ManifestoWorldTest.resumeRejectsMissingWorld`
+3. P1-2 (Host runtime parity: mailbox/runner/job boundary) 1차 반영 완료:
+   - `manifesto-host.runtime` 경계 타입 추가:
+     - `ExecutionKey`
+     - `HostMailbox` / `InMemoryHostMailbox`
+     - `HostJob` (`StartIntent`, `ContinueCompute`, `FulfillRequirements`)
+     - `HostRunner` / `HostRunnerState`
+   - `HostRuntime` 실행 경로를 job 기반으로 리팩터링:
+     - StartIntent enqueue
+     - ContinueCompute(반복 상한/compute 경계)
+     - FulfillRequirements(effect 실행 + patch apply + continue enqueue)
+   - 기존 host 동작 계약 유지:
+     - missing handler 시 `PENDING` 반환
+     - effect 실패 시 `$host.lastError/errors` 기록 후 `ERROR` 반환
+   - 회귀 테스트 추가:
+     - `InMemoryHostMailboxTest`
+     - `HostRunnerTest`
+
 ## New Work (P1~P2)
 1. Add `manifesto-intent-ir` module skeleton.
 2. Add `manifesto-translator` module skeleton.

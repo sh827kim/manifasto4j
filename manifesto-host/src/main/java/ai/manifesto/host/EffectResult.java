@@ -7,7 +7,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * EffectResult - Effect 실행 결과로 생성된 Patch 목록
+ * KR: Effect 실행 결과를 Patch 목록으로 캡슐화하는 값 객체입니다.
+ * EN: Value object that carries patches produced by effect execution.
  */
 public final class EffectResult {
     private final List<Patch> patches;

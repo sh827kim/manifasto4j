@@ -60,6 +60,8 @@ public final class ManifestoWorld {
     private final WorldEventSink eventSink;
     private final ExecutionKeyPolicy executionKeyPolicy;
     private long epoch = 0L;
+    private WorldId genesisWorldId;
+    private WorldId currentHeadWorldId;
 
     private final ActorRegistry registry = new ActorRegistry();
     private final ProposalQueue proposalQueue = new ProposalQueue();
@@ -120,6 +122,8 @@ public final class ManifestoWorld {
         ensureSuccess(store.saveSnapshot(world.getWorldId(), initialSnapshot));
         ensureSuccess(store.setGenesis(world.getWorldId()));
         lineage.setGenesis(world);
+        this.genesisWorldId = world.getWorldId();
+        this.currentHeadWorldId = world.getWorldId();
         emitEvent("world:created", Map.of("worldId", world.getWorldId().value(), "genesis", true));
         return world;
     }
@@ -130,6 +134,7 @@ public final class ManifestoWorld {
         }
 
         epoch += 1;
+        currentHeadWorldId = newBaseWorld;
         Set<String> staleProposalIds = new HashSet<>();
         for (Proposal proposal : proposalQueue.getIngressStage()) {
             if (proposal.getEpoch() < epoch) {
@@ -147,6 +152,20 @@ public final class ManifestoWorld {
             }
         }
         authorityEvaluator.dropPending(staleProposalIds);
+    }
+
+    public void resume(WorldId worldId) {
+        Objects.requireNonNull(worldId, "worldId is required");
+        if (!store.hasWorld(worldId)) {
+            throw new IllegalArgumentException("World not found: " + worldId.value());
+        }
+        if (genesisWorldId == null) {
+            World genesis = store.getGenesis();
+            if (genesis != null) {
+                genesisWorldId = genesis.getWorldId();
+            }
+        }
+        currentHeadWorldId = worldId;
     }
 
     public void tick(long nowMillis) {
@@ -353,6 +372,7 @@ public final class ManifestoWorld {
                 }
             }
             ensureSuccess(store.saveSnapshot(resultWorld.getWorldId(), terminalSnapshot));
+            currentHeadWorldId = resultWorld.getWorldId();
             emitEvent(
                     "world:created",
                     Map.of(
@@ -389,6 +409,7 @@ public final class ManifestoWorld {
                 }
             }
             ensureSuccess(store.saveSnapshot(failedWorld.getWorldId(), baseSnapshot));
+            currentHeadWorldId = failedWorld.getWorldId();
             emitEvent(
                     "world:created",
                     Map.of(
@@ -595,6 +616,18 @@ public final class ManifestoWorld {
 
     public World getGenesis() {
         return store.getGenesis();
+    }
+
+    public WorldId getCurrentHeadWorldId() {
+        return currentHeadWorldId;
+    }
+
+    public WorldId getGenesisWorldId() {
+        return genesisWorldId;
+    }
+
+    public boolean isInitialized() {
+        return genesisWorldId != null;
     }
 
     public long getEpoch() {

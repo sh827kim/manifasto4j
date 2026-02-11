@@ -58,3 +58,11 @@ Key rules:
 - `$system.*` is forbidden in Translator evaluation path
 - `core.apply()` only accepts concrete patches
 
+## 6. Java Runtime Boundary Status (2026-02-11)
+
+- Java host now separates runtime boundaries into:
+  - `ExecutionKey`
+  - `HostMailbox` (in-memory FIFO)
+  - `HostRunner` (single-runner drain)
+  - `HostJob` (`StartIntent`, `ContinueCompute`, `FulfillRequirements`)
+- Execution remains synchronous in-process, but the contract boundary is aligned for future TS event-loop parity.
