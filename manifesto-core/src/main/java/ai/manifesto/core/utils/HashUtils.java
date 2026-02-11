@@ -35,6 +35,10 @@ public final class HashUtils {
         return ValidationUtils.computeSchemaHash(schema);
     }
 
+    public static String hashSchemaEffective(DomainSchema schema) {
+        return ValidationUtils.computeSchemaHashEffective(schema);
+    }
+
     public static String generateRequirementId(String schemaHash, String intentId, String actionId, String flowNodePath) {
         String input = safe(schemaHash) + ":" + safe(intentId) + ":" + safe(actionId) + ":" + safe(flowNodePath);
         String hash = sha256Sync(input);

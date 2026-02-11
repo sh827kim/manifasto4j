@@ -68,6 +68,11 @@ import java.util.regex.Pattern;
  * ValidationUtils - 스키마 검증 보조 유틸리티
  */
 public final class ValidationUtils {
+    public enum SchemaHashMode {
+        SEMANTIC,
+        EFFECTIVE
+    }
+
     private static final Pattern SEMVER_REGEX = Pattern.compile(
         "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
     );
@@ -476,23 +481,49 @@ public final class ValidationUtils {
     }
 
     public static String computeSchemaHash(DomainSchema schema) {
-        Map<String, Object> schemaMap = toSchemaMap(schema);
+        return computeSchemaHash(schema, SchemaHashMode.SEMANTIC);
+    }
+
+    public static String computeSchemaHashEffective(DomainSchema schema) {
+        return computeSchemaHash(schema, SchemaHashMode.EFFECTIVE);
+    }
+
+    public static String computeSchemaHash(DomainSchema schema, SchemaHashMode mode) {
+        SchemaHashMode resolvedMode = mode != null ? mode : SchemaHashMode.SEMANTIC;
+        Map<String, Object> schemaMap = toSchemaMap(schema, resolvedMode);
         String canonical = toCanonicalJson(schemaMap);
         return sha256Hex(canonical);
     }
 
-    private static Map<String, Object> toSchemaMap(DomainSchema schema) {
+    private static Map<String, Object> toSchemaMap(DomainSchema schema, SchemaHashMode mode) {
         Map<String, Object> root = new LinkedHashMap<>();
         root.put("id", schema.getId());
         root.put("version", schema.getVersion());
         root.put("types", toTypeMap(schema.getTypes()));
-        root.put("state", Map.of("fields", toFieldMap(schema.getDataFields())));
+        root.put("state", Map.of("fields", toFieldMap(filterDataFieldsForHash(schema.getDataFields(), mode))));
         root.put("computed", Map.of("fields", toComputedMap(schema.getComputedFields())));
         root.put("actions", toActionMap(schema.getActions()));
         if (schema.getMeta() != null) {
             root.put("meta", toMetaMap(schema.getMeta()));
         }
         return root;
+    }
+
+    private static Map<String, FieldSpec> filterDataFieldsForHash(
+        Map<String, FieldSpec> dataFields,
+        SchemaHashMode mode
+    ) {
+        if (mode != SchemaHashMode.SEMANTIC || dataFields == null || dataFields.isEmpty()) {
+            return dataFields;
+        }
+
+        Map<String, FieldSpec> filtered = new LinkedHashMap<>();
+        for (Map.Entry<String, FieldSpec> entry : dataFields.entrySet()) {
+            if (!entry.getKey().startsWith("$")) {
+                filtered.put(entry.getKey(), entry.getValue());
+            }
+        }
+        return filtered;
     }
 
     private static Map<String, Object> toTypeMap(Map<String, TypeSpec> types) {
@@ -871,7 +902,7 @@ public final class ValidationUtils {
             return numberToJson(num);
         }
         if (value instanceof DomainSchema schema) {
-            return toCanonicalJson(toSchemaMap(schema));
+            return toCanonicalJson(toSchemaMap(schema, SchemaHashMode.SEMANTIC));
         }
         if (value instanceof ActionSpec action) {
             return toCanonicalJson(toActionSpecMap(action));

@@ -29,6 +29,7 @@ import java.util.Objects;
  * computed/meta patch는 무시된다.
  */
 public class Apply {
+    private static final String PLATFORM_NAMESPACE_PREFIX = "$";
 
     private Apply() {
         // 정적 메서드만 제공
@@ -59,8 +60,9 @@ public class Apply {
             switch (path.root) {
                 case DATA -> {
                     String normalized = path.subPath;
+                    String platformNamespace = getPlatformNamespace(normalized);
                     if (validateDataPaths
-                        && !isHostReservedPath(normalized)
+                        && platformNamespace == null
                         && !ValidationUtils.pathExistsInStateSpec(schema.getDataFields(), normalized)) {
                         validationErrors.add(ErrorValue.create(
                             "PATH_NOT_FOUND",
@@ -79,9 +81,33 @@ public class Apply {
                         } else if (patch instanceof Patch.Merge merge) {
                             value = merge.getValue();
                         }
+                        if (platformNamespace != null
+                            && normalized.equals(platformNamespace)
+                            && !isPlatformRootValueValid(value)) {
+                            validationErrors.add(ErrorValue.create(
+                                "TYPE_MISMATCH",
+                                "Invalid patch value at " + patch.getPath(),
+                                snapshot.getSystem().getCurrentAction(),
+                                patch.getPath(),
+                                ctx.getNow()
+                            ));
+                            break;
+                        }
+                        if (patch instanceof Patch.Merge && !isMergeTargetCompatible(newData, normalized)) {
+                            validationErrors.add(ErrorValue.create(
+                                "TYPE_MISMATCH",
+                                "Invalid merge target at " + patch.getPath() + ": target path must be an object or absent",
+                                snapshot.getSystem().getCurrentAction(),
+                                patch.getPath(),
+                                ctx.getNow()
+                            ));
+                            break;
+                        }
                         FieldSpec spec = getRootFieldSpec(schema, normalized);
                         boolean isNested = normalized != null && normalized.contains(".");
-                        if (spec != null && !isNested &&
+                        if (platformNamespace == null
+                            && spec != null
+                            && !isNested &&
                             !validateValueAgainstFieldSpec(value, spec, patch instanceof Patch.Merge)) {
                             validationErrors.add(ErrorValue.create(
                                 "TYPE_MISMATCH",
@@ -206,11 +232,43 @@ public class Apply {
         return new PatchPath(PatchRoot.DATA, path);
     }
 
-    private static boolean isHostReservedPath(String path) {
-        if (path == null) {
-            return false;
+    private static String getPlatformNamespace(String path) {
+        if (path == null || path.isEmpty()) {
+            return null;
         }
-        return path.equals("$host") || path.startsWith("$host.");
+        int dotIndex = path.indexOf('.');
+        String root = dotIndex < 0 ? path : path.substring(0, dotIndex);
+        if (root.startsWith(PLATFORM_NAMESPACE_PREFIX)) {
+            return root;
+        }
+        return null;
+    }
+
+    private static boolean isPlatformRootValueValid(Object value) {
+        return value == null || value instanceof Map<?, ?>;
+    }
+
+    private static boolean isMergeTargetCompatible(Object root, String path) {
+        if (path == null || path.isEmpty()) {
+            return root instanceof Map<?, ?>;
+        }
+
+        String[] segments = path.split("\\.");
+        Object current = root;
+
+        for (String segment : segments) {
+            if (!(current instanceof Map<?, ?> map)) {
+                return false;
+            }
+
+            if (!map.containsKey(segment)) {
+                // Path is absent; merge can create missing object chain.
+                return true;
+            }
+            current = map.get(segment);
+        }
+
+        return current instanceof Map<?, ?>;
     }
 
     private static Map<String, Object> applyPatchToMap(

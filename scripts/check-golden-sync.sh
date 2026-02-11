@@ -5,8 +5,15 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TS_REPO_DEFAULT="/workspace/manifasto-ts-core"
 TS_REPO="${1:-$TS_REPO_DEFAULT}"
 
-VECTOR_SOURCE="$TS_REPO/packages/compiler/vectors"
 VECTOR_DEST="$ROOT_DIR/manifesto-compiler/src/test/resources/vectors"
+
+VECTOR_SOURCE_CANDIDATES=(
+  "$TS_REPO/packages/compiler/vectors"
+  "$TS_REPO/packages/compiler/src/__tests__/vectors"
+  "$TS_REPO/packages/compiler/test/vectors"
+  "$TS_REPO/packages/compiler/tests/vectors"
+  "$TS_REPO/packages/compiler/__tests__/vectors"
+)
 
 VECTOR_FILES=(
   "evaluation.json"
@@ -16,8 +23,22 @@ VECTOR_FILES=(
   "lowering-runtime-patch.json"
 )
 
-if [[ ! -d "$VECTOR_SOURCE" ]]; then
-  echo "[check-golden-sync] source not found: $VECTOR_SOURCE" >&2
+find_existing_dir() {
+  local dir
+  for dir in "$@"; do
+    if [[ -d "$dir" ]]; then
+      echo "$dir"
+      return 0
+    fi
+  done
+  return 1
+}
+
+VECTOR_SOURCE="$(find_existing_dir "${VECTOR_SOURCE_CANDIDATES[@]}" || true)"
+
+if [[ -z "$VECTOR_SOURCE" ]]; then
+  echo "[check-golden-sync] vector source not found. tried:" >&2
+  printf '  - %s\n' "${VECTOR_SOURCE_CANDIDATES[@]}" >&2
   exit 2
 fi
 

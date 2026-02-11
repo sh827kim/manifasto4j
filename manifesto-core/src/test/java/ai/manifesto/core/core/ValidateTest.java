@@ -243,6 +243,68 @@ class ValidateTest {
     }
 
     @Test
+    @DisplayName("semantic schema hash는 platform namespace를 제외")
+    void testSchemaHashSemanticIgnoresPlatformNamespaces() {
+        DomainSchema.Builder baseBuilder = new DomainSchema.Builder("urn:test-schema", "1.0.0");
+        applySchemaFields(
+            baseBuilder,
+            List.of(FieldSpec.required("name", "string")),
+            List.of(),
+            List.of(new ActionSpec.Builder("noop").flow(FlowNode.Halt.of(null)).build())
+        );
+        DomainSchema base = baseBuilder.hash("").build();
+
+        DomainSchema.Builder withPlatformBuilder = new DomainSchema.Builder("urn:test-schema", "1.0.0");
+        applySchemaFields(
+            withPlatformBuilder,
+            List.of(
+                FieldSpec.required("name", "string"),
+                FieldSpec.optional("$host", "object"),
+                FieldSpec.optional("$mel", "object")
+            ),
+            List.of(),
+            List.of(new ActionSpec.Builder("noop").flow(FlowNode.Halt.of(null)).build())
+        );
+        DomainSchema withPlatform = withPlatformBuilder.hash("").build();
+
+        String semanticA = ValidationUtils.computeSchemaHash(base);
+        String semanticB = ValidationUtils.computeSchemaHash(withPlatform);
+
+        assertEquals(semanticA, semanticB);
+    }
+
+    @Test
+    @DisplayName("effective schema hash는 platform namespace를 포함")
+    void testSchemaHashEffectiveIncludesPlatformNamespaces() {
+        DomainSchema.Builder baseBuilder = new DomainSchema.Builder("urn:test-schema", "1.0.0");
+        applySchemaFields(
+            baseBuilder,
+            List.of(FieldSpec.required("name", "string")),
+            List.of(),
+            List.of(new ActionSpec.Builder("noop").flow(FlowNode.Halt.of(null)).build())
+        );
+        DomainSchema base = baseBuilder.hash("").build();
+
+        DomainSchema.Builder withPlatformBuilder = new DomainSchema.Builder("urn:test-schema", "1.0.0");
+        applySchemaFields(
+            withPlatformBuilder,
+            List.of(
+                FieldSpec.required("name", "string"),
+                FieldSpec.optional("$host", "object"),
+                FieldSpec.optional("$mel", "object")
+            ),
+            List.of(),
+            List.of(new ActionSpec.Builder("noop").flow(FlowNode.Halt.of(null)).build())
+        );
+        DomainSchema withPlatform = withPlatformBuilder.hash("").build();
+
+        String effectiveA = ValidationUtils.computeSchemaHashEffective(base);
+        String effectiveB = ValidationUtils.computeSchemaHashEffective(withPlatform);
+
+        assertNotEquals(effectiveA, effectiveB);
+    }
+
+    @Test
     @DisplayName("Computed deps 경로 존재 검증")
     void testComputedDepsMissingPath() {
         ComputedFieldDef computed = new ComputedFieldDef.Builder("computed.total", new Get("name"))

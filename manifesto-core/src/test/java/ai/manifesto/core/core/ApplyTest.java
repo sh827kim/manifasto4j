@@ -185,20 +185,56 @@ class ApplyTest {
     }
 
     @Test
-    @DisplayName("$host 예약 네임스페이스 patch는 state spec 없이도 허용")
-    void testHostReservedPathPatchAllowedWithoutStateSpecField() {
+    @DisplayName("$mel 예약 네임스페이스 patch는 state spec 없이도 허용")
+    void testMelReservedPathPatchAllowedWithoutStateSpecField() {
         Result<Snapshot, ErrorValue> result = Apply.apply(
             schema,
             snapshot,
-            Patch.set("$host.currentIntentId", "intent-1"),
-            Patch.set("$host.intentSlots.intent-1.type", "notify")
+            Patch.set("$mel.guards.intent.guard-1", "intent-1")
         );
 
         assertTrue(result.isOk());
         Snapshot updated = result.unwrap();
         @SuppressWarnings("unchecked")
-        Map<String, Object> hostState = (Map<String, Object>) updated.getData().get("$host");
-        assertNotNull(hostState);
-        assertEquals("intent-1", hostState.get("currentIntentId"));
+        Map<String, Object> melState = (Map<String, Object>) updated.getData().get("$mel");
+        assertNotNull(melState);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> guards = (Map<String, Object>) melState.get("guards");
+        assertNotNull(guards);
+    }
+
+    @Test
+    @DisplayName("플랫폼 네임스페이스 루트는 object 또는 null만 허용")
+    void testPlatformNamespaceRootRejectsNonObject() {
+        Result<Snapshot, ErrorValue> result = Apply.apply(
+            schema,
+            snapshot,
+            Patch.set("$mel", "invalid")
+        );
+
+        assertTrue(result.isOk());
+        Snapshot updated = result.unwrap();
+        assertFalse(updated.getData().containsKey("$mel"));
+        assertEquals(SystemState.Status.ERROR, updated.getSystem().getStatus());
+        assertNotNull(updated.getSystem().getLastError());
+        assertEquals("TYPE_MISMATCH", updated.getSystem().getLastError().getCode());
+    }
+
+    @Test
+    @DisplayName("merge 대상 경로가 객체가 아니면 TYPE_MISMATCH")
+    void testMergeTargetNonObjectRecordsTypeMismatch() {
+        Snapshot withInvalidMel = Apply.apply(schema, snapshot, Patch.set("$mel.guards", "invalid")).unwrap();
+
+        Result<Snapshot, ErrorValue> result = Apply.apply(
+            schema,
+            withInvalidMel,
+            Patch.merge("$mel.guards.intent", Map.of("guard-1", "intent-1"))
+        );
+
+        assertTrue(result.isOk());
+        Snapshot updated = result.unwrap();
+        assertEquals(SystemState.Status.ERROR, updated.getSystem().getStatus());
+        assertNotNull(updated.getSystem().getLastError());
+        assertEquals("TYPE_MISMATCH", updated.getSystem().getLastError().getCode());
     }
 }
