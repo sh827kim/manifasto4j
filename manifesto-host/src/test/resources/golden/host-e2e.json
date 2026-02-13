@@ -34,5 +34,16 @@
       "traceHasRunnerRecheck": true,
       "traceJobStartEqualsEnd": true
     }
+  },
+  {
+    "name": "trace-invariants-chained-reinjection",
+    "expected": {
+      "status": "HALTED",
+      "step3Done": true,
+      "traceContinueEnqueueCount": 3,
+      "traceRunnerStartEqualsEnd": true,
+      "traceJobStartEqualsEnd": true,
+      "traceSingleRunnerInvariant": true
+    }
   }
 ]

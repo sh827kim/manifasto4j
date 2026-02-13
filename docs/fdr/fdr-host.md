@@ -31,4 +31,7 @@ Translator evaluation path forbids $system.* to prevent bypassing system lifecyc
 
 - Compiler integration is required for Translator/MEL workflows.
 - Host needs strict serialization guarantees for compute cycles.
-
+- HCTS trace/reinjection/liveness invariant 보강 완료(2026-02-13):
+  - single-runner invariant 검증(trace 기반)
+  - chained reinjection 시 continue enqueue/liveness 검증
+  - host golden에 trace invariant 확장 케이스 추가

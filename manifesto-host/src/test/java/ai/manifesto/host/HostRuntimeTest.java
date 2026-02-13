@@ -14,6 +14,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -262,6 +263,109 @@ class HostRuntimeTest {
         assertTrue(events.stream().anyMatch(e -> "job:end".equals(e.type())));
         assertTrue(events.stream().anyMatch(e -> "continue:enqueue".equals(e.type())));
         assertTrue(events.stream().anyMatch(e -> "runner:end".equals(e.type())));
+    }
+
+    @Test
+    @DisplayName("HCTS 다단계 reinjection 시 trace/liveness invariant를 만족한다")
+    void testTraceInvariantsForChainedReinjection() throws Exception {
+        FlowNode flow = FlowNode.Seq.of(List.of(
+            FlowNode.If.of(
+                new ai.manifesto.core.expr.type.IsNull(new Get("step1")),
+                FlowNode.Effect.of("host.step1", Map.of())
+            ),
+            FlowNode.If.of(
+                new ai.manifesto.core.expr.logical.And(List.of(
+                    new Get("step1"),
+                    new ai.manifesto.core.expr.type.IsNull(new Get("step2"))
+                )),
+                FlowNode.Effect.of("host.step2", Map.of())
+            ),
+            FlowNode.If.of(
+                new ai.manifesto.core.expr.logical.And(List.of(
+                    new Get("step2"),
+                    new ai.manifesto.core.expr.type.IsNull(new Get("step3"))
+                )),
+                FlowNode.Effect.of("host.step3", Map.of())
+            ),
+            FlowNode.If.of(
+                new Eq(new Get("step3"), new Lit(true)),
+                FlowNode.Halt.of("done")
+            )
+        ));
+        ActionSpec action = new ActionSpec.Builder("chain").flow(flow).build();
+
+        DomainSchema schema = buildSchemaWithHash(
+            "urn:test:trace-chain",
+            "1.0.0",
+            new ActionSpec[] { action },
+            new FieldSpec[] {
+                new FieldSpec("step1", "boolean", false, null),
+                new FieldSpec("step2", "boolean", false, null),
+                new FieldSpec("step3", "boolean", false, null)
+            }
+        );
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("step1", null);
+        data.put("step2", null);
+        data.put("step3", null);
+        Snapshot snapshot = Snapshot.builder()
+            .data(data)
+            .computed(new HashMap<>())
+            .system(SystemState.initial())
+            .input(new HashMap<>())
+            .meta(Snapshot.SnapshotMeta.create(0, System.currentTimeMillis(), "seed", schema.getHash()))
+            .build();
+
+        HostRuntime host = new HostRuntime()
+            .register("host.step1", params -> EffectResult.of(List.of(Patch.set("step1", true))))
+            .register("host.step2", params -> EffectResult.of(List.of(Patch.set("step2", true))))
+            .register("host.step3", params -> EffectResult.of(List.of(Patch.set("step3", true))));
+
+        List<HostRuntimeTraceEvent> events = new java.util.ArrayList<>();
+        ComputeResult result = host.run(
+            schema,
+            snapshot,
+            new Intent("chain", new HashMap<>(), UUID.randomUUID().toString()),
+            HostRuntimeOptions.builder().traceSink(events::add).build()
+        );
+
+        assertEquals(ComputeStatus.HALTED, result.getStatus());
+        assertEquals(true, result.getSnapshot().getData().get("step1"));
+        assertEquals(true, result.getSnapshot().getData().get("step2"));
+        assertEquals(true, result.getSnapshot().getData().get("step3"));
+
+        long continueCount = events.stream().filter(e -> "continue:enqueue".equals(e.type())).count();
+        long recheckCount = events.stream().filter(e -> "runner:recheck".equals(e.type())).count();
+        long jobStartCount = events.stream().filter(e -> "job:start".equals(e.type())).count();
+        long jobEndCount = events.stream().filter(e -> "job:end".equals(e.type())).count();
+        long runnerStartCount = events.stream().filter(e -> "runner:start".equals(e.type())).count();
+        long runnerEndCount = events.stream().filter(e -> "runner:end".equals(e.type())).count();
+
+        assertTrue(continueCount >= 3, "continue:enqueue should happen for each effect cycle");
+        assertTrue(recheckCount >= 1, "runner:recheck should be observed");
+        assertEquals(jobStartCount, jobEndCount, "job start/end counts must match");
+        assertEquals(runnerStartCount, runnerEndCount, "runner start/end counts must match");
+        assertTrue(hasSingleRunnerInvariant(events), "runner:start must not overlap without runner:end");
+    }
+
+    private boolean hasSingleRunnerInvariant(List<HostRuntimeTraceEvent> events) {
+        int active = 0;
+        for (HostRuntimeTraceEvent event : events) {
+            if ("runner:start".equals(event.type())) {
+                active += 1;
+                if (active > 1) {
+                    return false;
+                }
+            }
+            if ("runner:end".equals(event.type())) {
+                active -= 1;
+                if (active < 0) {
+                    return false;
+                }
+            }
+        }
+        return active == 0;
     }
 
     private DomainSchema buildSchemaWithHash(

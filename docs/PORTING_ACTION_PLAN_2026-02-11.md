@@ -46,11 +46,13 @@
    - `manifesto-intent-ir` 모듈 생성 및 정규화 계약(`IntentIrNormalizer`) 추가
    - `manifesto-translator` 모듈 생성 및 프레임워크 비종속 인터페이스(`TranslatorMessageAdapter`, `Translator`) 추가
    - `manifesto-codegen` 모듈 생성 및 출력 계약(`CodeGenerator`, `GeneratedArtifact`) 추가
+7. P1 host HCTS 계약 보강 완료 (2026-02-13):
+   - trace 기반 single-runner invariant 검증 테스트 추가
+   - chained reinjection/liveness invariant 테스트 추가
+   - host golden `trace-invariants-chained-reinjection` 케이스 추가
 
 ## Remaining Work (P1~P2)
-1. Host HCTS 계약 보강 (P1):
-   - event-loop trace/reinjection/liveness invariant 확장
-2. Planned module implementation (P2):
+1. Planned module implementation (P2):
    - `manifesto-intent-ir` canonical serialization/hash 경계 구현
    - `manifesto-translator` stage 파이프라인(interpret/verify/refine) 기본 구현
    - `manifesto-codegen` 첫 타깃(Java DTO/typed client) 구현

@@ -41,10 +41,11 @@
 - `manifesto-app`: world 연계 + session snapshot store 1차 구현
 - `manifesto-compiler`: strict/runtime evaluator TS parity 1차 완료
 - `manifesto-world`: 승인/거절/lineage 경로 + edge 테스트 확장
+- `manifesto-host`: HCTS trace/reinjection/liveness invariant 테스트 보강 완료
 - `manifesto-intent-ir`: bootstrap 계약 추가
 - `manifesto-translator`: 프레임워크 비종속 adapter/translator 인터페이스 추가
 - `manifesto-codegen`: 코드 생성 계약 인터페이스 추가
-- 후속 핵심: host HCTS 계약 보강, bootstrap 모듈 구현 단계 진입
+- 후속 핵심: bootstrap 모듈 구현 단계(intent-ir/translator/codegen) 진입
 
 **체크포인트 질문**
 1. TS 최신 패키지 중 Java에 아직 없는 것은 무엇인가요.
