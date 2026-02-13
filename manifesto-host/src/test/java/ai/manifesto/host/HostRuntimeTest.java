@@ -9,6 +9,7 @@ import ai.manifesto.core.schema.ActionSpec;
 import ai.manifesto.core.schema.DomainSchema;
 import ai.manifesto.core.schema.FieldSpec;
 import ai.manifesto.core.core.ValidationUtils;
+import ai.manifesto.host.runtime.HostRuntimeTraceEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -219,6 +220,48 @@ class HostRuntimeTest {
 
         assertEquals(ComputeStatus.HALTED, result.getStatus());
         assertEquals("ok", result.getSnapshot().getData().get("status"));
+    }
+
+    @Test
+    @DisplayName("trace sink를 설정하면 runner/job 이벤트가 수집된다")
+    void testTraceSinkCollectsRunnerAndJobEvents() throws Exception {
+        FlowNode flow = FlowNode.If.of(
+            new Eq(new Get("status"), new Lit("ok")),
+            FlowNode.Halt.of("done"),
+            FlowNode.Effect.of("host.notify", Map.of("message", new Lit("hi")))
+        );
+        ActionSpec action = new ActionSpec.Builder("notify").flow(flow).build();
+        DomainSchema schema = buildSchemaWithHash(
+            "urn:test:trace-sink",
+            "1.0.0",
+            new ActionSpec[] { action },
+            new FieldSpec[] { new FieldSpec("status", "string", false, "") }
+        );
+        Snapshot snapshot = Snapshot.builder()
+            .data(new HashMap<>(Map.of("status", "")))
+            .computed(new HashMap<>())
+            .system(SystemState.initial())
+            .input(new HashMap<>())
+            .meta(Snapshot.SnapshotMeta.create(0, System.currentTimeMillis(), "seed", schema.getHash()))
+            .build();
+
+        HostRuntime host = new HostRuntime()
+            .register("host.notify", params -> EffectResult.of(List.of(Patch.set("status", "ok"))));
+        List<HostRuntimeTraceEvent> events = new java.util.ArrayList<>();
+        ComputeResult result = host.run(
+            schema,
+            snapshot,
+            new Intent("notify", new HashMap<>(), UUID.randomUUID().toString()),
+            HostRuntimeOptions.builder().traceSink(events::add).build()
+        );
+
+        assertEquals(ComputeStatus.HALTED, result.getStatus());
+        assertFalse(events.isEmpty());
+        assertTrue(events.stream().anyMatch(e -> "runner:start".equals(e.type())));
+        assertTrue(events.stream().anyMatch(e -> "job:start".equals(e.type())));
+        assertTrue(events.stream().anyMatch(e -> "job:end".equals(e.type())));
+        assertTrue(events.stream().anyMatch(e -> "continue:enqueue".equals(e.type())));
+        assertTrue(events.stream().anyMatch(e -> "runner:end".equals(e.type())));
     }
 
     private DomainSchema buildSchemaWithHash(

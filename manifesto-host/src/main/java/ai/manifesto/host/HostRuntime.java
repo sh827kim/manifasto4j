@@ -56,7 +56,11 @@ public final class HostRuntime {
         HostRunContext runContext = new HostRunContext(schema, snapshot, intent, options);
         ExecutionKey executionKey = ExecutionKey.fromIntentId(intent.getIntentId());
         HostMailbox mailbox = new InMemoryHostMailbox(executionKey);
-        HostRunner runner = new HostRunner(mailbox, (job, currentMailbox) -> processJob(job, currentMailbox, runContext));
+        HostRunner runner = new HostRunner(
+            mailbox,
+            (job, currentMailbox) -> processJob(job, currentMailbox, runContext),
+            options.getTraceSink()
+        );
         runner.enqueue(new StartIntentJob(intent));
         runner.runUntilIdle();
 
@@ -123,6 +127,7 @@ public final class HostRuntime {
         List<Requirement> requirements = pendingResult.getRequirements();
         if (requirements.isEmpty()) {
             mailbox.enqueue(new ContinueComputeJob(job.getIntent()));
+            emitContinueEnqueue(runContext);
             return;
         }
 
@@ -166,6 +171,20 @@ public final class HostRuntime {
         }
         runContext.setCurrentSnapshot(applied.unwrap());
         mailbox.enqueue(new ContinueComputeJob(intent));
+        emitContinueEnqueue(runContext);
+    }
+
+    private void emitContinueEnqueue(HostRunContext runContext) {
+        runContext.getOptions().getTraceSink().onEvent(
+            new ai.manifesto.host.runtime.HostRuntimeTraceEvent(
+                "continue:enqueue",
+                runContext.getExecutionKey(),
+                null,
+                null,
+                null,
+                null
+            )
+        );
     }
 
     private EffectResult executeEffectWithPolicy(
@@ -231,6 +250,7 @@ public final class HostRuntime {
     private static final class HostRunContext {
         private final DomainSchema schema;
         private final HostRuntimeOptions options;
+        private final String executionKey;
         private Snapshot currentSnapshot;
         private TraceGraph lastTrace;
         private ComputeResult finalResult;
@@ -244,8 +264,9 @@ public final class HostRuntime {
         ) {
             this.schema = Objects.requireNonNull(schema, "schema is required");
             this.currentSnapshot = Objects.requireNonNull(currentSnapshot, "currentSnapshot is required");
-            Objects.requireNonNull(intent, "intent is required");
+            Intent requiredIntent = Objects.requireNonNull(intent, "intent is required");
             this.options = Objects.requireNonNull(options, "options is required");
+            this.executionKey = requiredIntent.getIntentId();
             this.computeIterations = 0;
         }
 
@@ -255,6 +276,10 @@ public final class HostRuntime {
 
         public HostRuntimeOptions getOptions() {
             return options;
+        }
+
+        public String getExecutionKey() {
+            return executionKey;
         }
 
         public Snapshot getCurrentSnapshot() {

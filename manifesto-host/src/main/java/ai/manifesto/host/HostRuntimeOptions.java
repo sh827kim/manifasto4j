@@ -1,5 +1,7 @@
 package ai.manifesto.host;
 
+import ai.manifesto.host.runtime.HostRuntimeTraceSink;
+
 /**
  * KR: HostRuntimeOptions는 host 루프의 반복 한도, 타임아웃, effect 재시도 정책을 정의하는 설정 객체입니다.
  * EN: HostRuntimeOptions defines host-loop limits, timeout, and effect retry policies.
@@ -9,17 +11,20 @@ public final class HostRuntimeOptions {
     private final int maxIterations;
     private final int maxEffectRetries;
     private final long maxEffectDurationMillis;
+    private final HostRuntimeTraceSink traceSink;
 
     private HostRuntimeOptions(
         int timeoutSeconds,
         int maxIterations,
         int maxEffectRetries,
-        long maxEffectDurationMillis
+        long maxEffectDurationMillis,
+        HostRuntimeTraceSink traceSink
     ) {
         this.timeoutSeconds = timeoutSeconds;
         this.maxIterations = maxIterations;
         this.maxEffectRetries = maxEffectRetries;
         this.maxEffectDurationMillis = maxEffectDurationMillis;
+        this.traceSink = traceSink != null ? traceSink : HostRuntimeTraceSink.NOOP;
     }
 
     public int getTimeoutSeconds() {
@@ -38,9 +43,19 @@ public final class HostRuntimeOptions {
         return maxEffectDurationMillis;
     }
 
+    public HostRuntimeTraceSink getTraceSink() {
+        return traceSink;
+    }
+
     public static HostRuntimeOptions forTimeoutSeconds(int timeoutSeconds) {
         int normalizedTimeout = Math.max(1, timeoutSeconds);
-        return new HostRuntimeOptions(normalizedTimeout, normalizedTimeout * 100, 0, 0L);
+        return new HostRuntimeOptions(
+            normalizedTimeout,
+            normalizedTimeout * 100,
+            0,
+            0L,
+            HostRuntimeTraceSink.NOOP
+        );
     }
 
     public static Builder builder() {
@@ -56,6 +71,7 @@ public final class HostRuntimeOptions {
         private Integer maxIterations;
         private Integer maxEffectRetries;
         private Long maxEffectDurationMillis;
+        private HostRuntimeTraceSink traceSink;
 
         private Builder() {}
 
@@ -76,6 +92,11 @@ public final class HostRuntimeOptions {
 
         public Builder maxEffectDurationMillis(long maxEffectDurationMillis) {
             this.maxEffectDurationMillis = maxEffectDurationMillis;
+            return this;
+        }
+
+        public Builder traceSink(HostRuntimeTraceSink traceSink) {
+            this.traceSink = traceSink;
             return this;
         }
 
@@ -100,7 +121,8 @@ public final class HostRuntimeOptions {
                 normalizedTimeout,
                 resolvedMaxIterations,
                 resolvedMaxEffectRetries,
-                resolvedMaxEffectDurationMillis
+                resolvedMaxEffectDurationMillis,
+                traceSink != null ? traceSink : HostRuntimeTraceSink.NOOP
             );
         }
     }

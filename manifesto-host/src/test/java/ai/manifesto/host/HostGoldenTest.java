@@ -12,6 +12,7 @@ import ai.manifesto.core.schema.FieldSpec;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import ai.manifesto.host.runtime.HostRuntimeTraceEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -40,10 +41,11 @@ class HostGoldenTest {
             Map<String, Object> expected = (Map<String, Object>) vector.get("expected");
             assertNotNull(expected, "Expected golden data missing for: " + name);
 
-            ComputeResult result = switch (name) {
+            GoldenCaseResult result = switch (name) {
                 case "effect-applied-with-host-slot" -> runEffectAppliedCase();
                 case "missing-handler-pending" -> runMissingHandlerCase();
                 case "effect-failure-recorded-in-host-state" -> runEffectFailureRecordedCase();
+                case "trace-invariants-minimal" -> runTraceInvariantCase();
                 default -> throw new IllegalArgumentException("Unknown host golden case: " + name);
             };
 
@@ -52,24 +54,24 @@ class HostGoldenTest {
         }
     }
 
-    private ComputeResult runEffectAppliedCase() throws Exception {
+    private GoldenCaseResult runEffectAppliedCase() throws Exception {
         DomainSchema schema = createNotifySchema("urn:test:host:golden:1");
         Snapshot snapshot = createSnapshot(schema);
         HostRuntime host = new HostRuntime()
             .register("host.notify", params -> EffectResult.of(List.of(Patch.set("status", "ok"))));
         Intent intent = new Intent("notify", Map.of(), "intent-host-golden-1");
-        return host.run(schema, snapshot, intent, 5);
+        return new GoldenCaseResult(host.run(schema, snapshot, intent, 5), List.of());
     }
 
-    private ComputeResult runMissingHandlerCase() throws Exception {
+    private GoldenCaseResult runMissingHandlerCase() throws Exception {
         DomainSchema schema = createNotifySchema("urn:test:host:golden:2");
         Snapshot snapshot = createSnapshot(schema);
         HostRuntime host = new HostRuntime();
         Intent intent = new Intent("notify", Map.of(), "intent-host-golden-2");
-        return host.run(schema, snapshot, intent, 5);
+        return new GoldenCaseResult(host.run(schema, snapshot, intent, 5), List.of());
     }
 
-    private ComputeResult runEffectFailureRecordedCase() throws Exception {
+    private GoldenCaseResult runEffectFailureRecordedCase() throws Exception {
         DomainSchema schema = createNotifySchema("urn:test:host:golden:3");
         Snapshot snapshot = createSnapshot(schema);
         HostRuntime host = new HostRuntime()
@@ -77,12 +79,28 @@ class HostGoldenTest {
                 throw new RuntimeException("boom");
             });
         Intent intent = new Intent("notify", Map.of(), "intent-host-golden-3");
-        return host.run(
+        return new GoldenCaseResult(host.run(
             schema,
             snapshot,
             intent,
             HostRuntimeOptions.builder().maxEffectRetries(1).build()
+        ), List.of());
+    }
+
+    private GoldenCaseResult runTraceInvariantCase() throws Exception {
+        DomainSchema schema = createNotifySchema("urn:test:host:golden:4");
+        Snapshot snapshot = createSnapshot(schema);
+        java.util.List<HostRuntimeTraceEvent> events = new java.util.ArrayList<>();
+        HostRuntime host = new HostRuntime()
+            .register("host.notify", params -> EffectResult.of(List.of(Patch.set("status", "ok"))));
+        Intent intent = new Intent("notify", Map.of(), "intent-host-golden-4");
+        ComputeResult result = host.run(
+            schema,
+            snapshot,
+            intent,
+            HostRuntimeOptions.builder().traceSink(events::add).build()
         );
+        return new GoldenCaseResult(result, events);
     }
 
     private DomainSchema createNotifySchema(String schemaId) {
@@ -116,7 +134,8 @@ class HostGoldenTest {
             .build();
     }
 
-    private Map<String, Object> normalize(ComputeResult result, Map<String, Object> expected) {
+    private Map<String, Object> normalize(GoldenCaseResult run, Map<String, Object> expected) {
+        ComputeResult result = run.result();
         Map<String, Object> out = new LinkedHashMap<>();
         if (expected.containsKey("status")) {
             out.put("status", result.getStatus().name());
@@ -151,7 +170,27 @@ class HostGoldenTest {
             }
             out.put("hostErrorsCount", count);
         }
+        if (expected.containsKey("traceRunnerKickCount")) {
+            long count = run.traceEvents().stream().filter(e -> "runner:kick".equals(e.type())).count();
+            out.put("traceRunnerKickCount", (int) count);
+        }
+        if (expected.containsKey("traceHasContinueEnqueue")) {
+            boolean hasEvent = run.traceEvents().stream().anyMatch(e -> "continue:enqueue".equals(e.type()));
+            out.put("traceHasContinueEnqueue", hasEvent);
+        }
+        if (expected.containsKey("traceHasRunnerRecheck")) {
+            boolean hasEvent = run.traceEvents().stream().anyMatch(e -> "runner:recheck".equals(e.type()));
+            out.put("traceHasRunnerRecheck", hasEvent);
+        }
+        if (expected.containsKey("traceJobStartEqualsEnd")) {
+            long jobStart = run.traceEvents().stream().filter(e -> "job:start".equals(e.type())).count();
+            long jobEnd = run.traceEvents().stream().filter(e -> "job:end".equals(e.type())).count();
+            out.put("traceJobStartEqualsEnd", jobStart == jobEnd);
+        }
         return out;
+    }
+
+    private record GoldenCaseResult(ComputeResult result, List<HostRuntimeTraceEvent> traceEvents) {
     }
 
     private List<Map<String, Object>> loadVectors(String resourcePath) throws Exception {

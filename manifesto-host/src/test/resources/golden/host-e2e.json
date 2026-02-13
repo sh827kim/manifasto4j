@@ -23,5 +23,16 @@
       "hostLastErrorCode": "HOST_EFFECT_FAILED",
       "hostErrorsCount": 1
     }
+  },
+  {
+    "name": "trace-invariants-minimal",
+    "expected": {
+      "status": "HALTED",
+      "dataStatus": "ok",
+      "traceRunnerKickCount": 1,
+      "traceHasContinueEnqueue": true,
+      "traceHasRunnerRecheck": true,
+      "traceJobStartEqualsEnd": true
+    }
   }
 ]
