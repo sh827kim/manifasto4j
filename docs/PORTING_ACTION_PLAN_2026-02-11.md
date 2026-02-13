@@ -65,11 +65,15 @@
    - `TranslatorAdapterCapabilityValidator`/`Report` 추가
    - adapter capability 단위 테스트 추가
    - verifier 정책(`verified`, `verificationScore`, TRV 규칙) 강화
+12. P2 codegen typed client 1차 구현 완료 (2026-02-13):
+   - `JavaTypedClientCodeGenerator` 추가(`java-typed-client` target)
+   - action별 `<Action>Input` + `<Domain>Client` 산출 계약 반영
+   - typed client 단위 테스트 추가
 
 ## Remaining Work (P1~P2)
 1. Planned module implementation (P2):
    - `manifesto-translator` 도메인별 정책 룰셋 확장
-   - `manifesto-codegen` typed client 타깃 구현 및 템플릿 전략 확정
+   - `manifesto-codegen` 템플릿 전략(직접 렌더링 vs 템플릿 엔진) 확정
 
 ## Documentation Policy
 1. Docs are organized by:

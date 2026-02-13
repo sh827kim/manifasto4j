@@ -22,3 +22,11 @@ Codegen은 schema 입력을 받아 대상 플랫폼 코드 산출물 목록으�
 - `JavaDtoCodeGenerator`를 추가해 `java-dto` 타깃을 기본 지원한다.
 - 입력 계약: `schema.state.fields` map 기반 최소 스키마.
 - 출력 계약: `StateDto.java` 단일 산출물 생성(패키지 경로 기준 상대 경로).
+
+## 4. Typed Client Baseline (2026-02-13)
+
+- `JavaTypedClientCodeGenerator`를 추가해 `java-typed-client` 타깃을 지원한다.
+- 입력 계약: `schema.actions.*.input.fields` map 기반 action 입력 스키마.
+- 출력 계약:
+  - `<Domain>Client.java` 인터페이스
+  - `<Action>Input.java` DTO (action별 1개)

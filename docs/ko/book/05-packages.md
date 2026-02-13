@@ -47,6 +47,7 @@
 - `manifesto-translator`: interpret/verify/refine 파이프라인 1차 구현 완료
 - `manifesto-translator`: adapter capability contract + verifier 정책 점수화 구현 완료
 - `manifesto-codegen`: `java-dto` 첫 타깃(StateDto 생성) 1차 구현 완료
+- `manifesto-codegen`: `java-typed-client` 타깃(Domain Client + Action Input DTO) 1차 구현 완료
 - 후속 핵심: bootstrap 모듈 구현 단계(intent-ir/translator/codegen) 진입
 
 **체크포인트 질문**

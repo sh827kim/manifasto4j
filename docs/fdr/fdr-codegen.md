@@ -15,6 +15,8 @@
 - 구현 완료:
   - `JavaDtoCodeGenerator`로 첫 타깃(`java-dto`) 1차 구현
   - codegen 단위 테스트 추가
+- 추가 완료:
+  - `JavaTypedClientCodeGenerator`로 typed client 타깃(`java-typed-client`) 1차 구현
+  - typed client 단위 테스트 추가
 - 다음 단계:
-  - typed client 타깃 추가
   - 템플릿 엔진 선택(직접 렌더링 vs 템플릿 라이브러리) 및 표준화
