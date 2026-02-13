@@ -21,10 +21,12 @@
 ### SPEC
 - [spec-intent-ir.md](spec/spec-intent-ir.md)
 - [spec-translator.md](spec/spec-translator.md)
+- [spec-codegen.md](spec/spec-codegen.md)
 
 ### FDR
 - [fdr-intent-ir.md](fdr/fdr-intent-ir.md)
 - [fdr-translator.md](fdr/fdr-translator.md)
+- [fdr-codegen.md](fdr/fdr-codegen.md)
 
 ## Planning
 - [PORTING_ACTION_PLAN_2026-02-11.md](PORTING_ACTION_PLAN_2026-02-11.md)

@@ -17,7 +17,7 @@ class VectorCompatibilityTest {
         VectorHarness harness = new VectorHarness();
         List<Map<String, Object>> vectors = harness.load("vectors/lowering.json");
         assertFalse(vectors.isEmpty());
-        LoweringLite lowering = new LoweringLite();
+        Lowering lowering = new Lowering();
         for (Map<String, Object> vector : vectors) {
             Map<String, Object> input = (Map<String, Object>) vector.get("input");
             Map<String, Object> expected = (Map<String, Object>) vector.get("expected");
@@ -36,12 +36,16 @@ class VectorCompatibilityTest {
         VectorHarness harness = new VectorHarness();
         List<Map<String, Object>> vectors = harness.load("vectors/evaluation.json");
         assertFalse(vectors.isEmpty());
-        RuntimePatchEvaluatorLite evaluator = new RuntimePatchEvaluatorLite();
-        RuntimePatchEvaluatorLite.SnapshotContext snapshot = new RuntimePatchEvaluatorLite.SnapshotContext(
+        RuntimePatchEvaluator evaluator = new RuntimePatchEvaluator();
+        Map<String, Object> profile = new java.util.LinkedHashMap<>();
+        profile.put("name", "Alice");
+        profile.put("age", 30);
+        RuntimePatchEvaluator.SnapshotContext snapshot = new RuntimePatchEvaluator.SnapshotContext(
             Map.of(
                 "count", 10,
                 "name", "Alice",
-                "items", List.of(1, 2, 3)
+                "items", List.of(1, 2, 3),
+                "profile", profile
             ),
             Map.of("total", 100),
             Map.of("intentId", "test-intent-123"),
@@ -69,7 +73,7 @@ class VectorCompatibilityTest {
     void testLowerRuntimePatches() throws Exception {
         VectorHarness harness = new VectorHarness();
         List<Map<String, Object>> vectors = harness.load("vectors/lowering-runtime-patch.json");
-        LoweringLite lowering = new LoweringLite();
+        Lowering lowering = new Lowering();
         for (Map<String, Object> vector : vectors) {
             List<Map<String, Object>> input = (List<Map<String, Object>>) vector.get("input");
             List<Map<String, Object>> expected = (List<Map<String, Object>>) vector.get("expected");
@@ -83,7 +87,7 @@ class VectorCompatibilityTest {
     void testLowerPatchFragments() throws Exception {
         VectorHarness harness = new VectorHarness();
         List<Map<String, Object>> vectors = harness.load("vectors/lowering-patch-fragment.json");
-        LoweringLite lowering = new LoweringLite();
+        Lowering lowering = new Lowering();
         for (Map<String, Object> vector : vectors) {
             List<Map<String, Object>> input = (List<Map<String, Object>>) vector.get("input");
             List<Map<String, Object>> expected = (List<Map<String, Object>>) vector.get("expected");
@@ -97,9 +101,9 @@ class VectorCompatibilityTest {
     void testEvaluateRuntimePatches() throws Exception {
         VectorHarness harness = new VectorHarness();
         List<Map<String, Object>> vectors = harness.load("vectors/evaluation-runtime-patch.json");
-        RuntimePatchEvaluatorLite evaluator = new RuntimePatchEvaluatorLite();
+        RuntimePatchEvaluator evaluator = new RuntimePatchEvaluator();
 
-        RuntimePatchEvaluatorLite.SnapshotContext snapshot = new RuntimePatchEvaluatorLite.SnapshotContext(
+        RuntimePatchEvaluator.SnapshotContext snapshot = new RuntimePatchEvaluator.SnapshotContext(
             new java.util.LinkedHashMap<>(Map.of(
                 "count", 0,
                 "name", "Alice",
@@ -113,7 +117,7 @@ class VectorCompatibilityTest {
         for (Map<String, Object> vector : vectors) {
             List<Map<String, Object>> input = (List<Map<String, Object>>) vector.get("input");
             Object expected = vector.get("expected");
-            RuntimePatchEvaluatorLite.EvaluationResult result = evaluator.evaluate(input, snapshot);
+            RuntimePatchEvaluator.EvaluationResult result = evaluator.evaluate(input, snapshot);
             Object actual;
             if (expected instanceof Map<?, ?> expectedMap && expectedMap.containsKey("patches")) {
                 Map<String, Object> finalSnapshot = Map.of(

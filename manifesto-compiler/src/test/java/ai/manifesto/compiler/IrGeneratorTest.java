@@ -11,8 +11,8 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@DisplayName("IR Generator Lite 벡터 테스트")
-class IrGeneratorLiteTest {
+@DisplayName("IR Generator 벡터 테스트")
+class IrGeneratorTest {
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Test
@@ -20,7 +20,7 @@ class IrGeneratorLiteTest {
     void testIrVectors() throws Exception {
         VectorHarness harness = new VectorHarness();
         List<Map<String, Object>> vectors = harness.load("vectors/ir-generator.json");
-        IrGeneratorLite generator = new IrGeneratorLite();
+        IrGenerator generator = new IrGenerator();
 
         for (Map<String, Object> vector : vectors) {
             Map<String, Object> input = (Map<String, Object>) vector.get("input");

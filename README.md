@@ -18,10 +18,10 @@ Manifesto is a deterministic domain-runtime stack for stateful apps:
 Reference docs:
 https://docs.manifesto-ai.dev/
 
-## Current Status (2026-02-11)
+## Current Status (2026-02-13)
 - TS baseline packages are `app/codegen/compiler/core/host/intent-ir/translator/world`.
 - Java implemented modules are `core/host/app/compiler/world`.
-- Java next modules are `intent-ir/translator/codegen`.
+- Java bootstrap modules are now `intent-ir/translator/codegen` (contracts/skeleton).
 - Documentation and build graph were cleaned to remove out-of-scope packages.
 
 ## Modules
@@ -32,9 +32,9 @@ https://docs.manifesto-ai.dev/
 - `manifesto-world` - world/authority/lineage runtime
 
 ## Planned Modules
-- `manifesto-intent-ir` (planned)
-- `manifesto-translator` (planned)
-- `manifesto-codegen` (planned)
+- `manifesto-intent-ir` (bootstrap)
+- `manifesto-translator` (bootstrap, framework-agnostic interfaces)
+- `manifesto-codegen` (bootstrap)
 
 ## Docs in this repo
 - `docs/INDEX.md` - spec/fdr index

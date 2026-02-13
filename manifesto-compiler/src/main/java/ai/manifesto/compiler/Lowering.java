@@ -4,12 +4,13 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
- * KR: LoweringLite는 컴파일러 모듈에서 lowering lite 역할을 수행하는 구현 타입입니다.
- * EN: LoweringLite is an implementation type performing lowering lite roles in the compiler module.
+ * KR: 파서/AST 단계에서 생성된 표현식을 코어 런타임 IR 형태로 정규화합니다.
+ * EN: Normalizes parser/AST expressions into core runtime IR structures.
  */
-public final class LoweringLite {
+public final class Lowering {
 
     public Map<String, Object> lowerExprNode(Map<String, Object> node) {
         return lowerExprNodeStrict(node, LoweringContext.effectArgsContext());
@@ -45,10 +46,12 @@ public final class LoweringLite {
     }
 
     public List<Map<String, Object>> lowerRuntimePatchesStrict(List<Map<String, Object>> patches, CompilePatchOptions options) {
+        Objects.requireNonNull(options, "options must not be null");
         return lowerRuntimePatchesStrict(patches, LoweringContext.fromPatchOptions(options));
     }
 
     public List<Map<String, Object>> lowerRuntimePatchesStrict(List<Map<String, Object>> patches, LoweringContext ctx) {
+        Objects.requireNonNull(ctx, "ctx must not be null");
         List<Map<String, Object>> lowered = lowerRuntimePatches(patches, ctx);
         for (int i = 0; i < lowered.size(); i++) {
             Map<String, Object> patch = lowered.get(i);
@@ -71,10 +74,12 @@ public final class LoweringLite {
     }
 
     public List<Map<String, Object>> lowerRuntimePatches(List<Map<String, Object>> patches, CompilePatchOptions options) {
+        Objects.requireNonNull(options, "options must not be null");
         return lowerRuntimePatches(patches, LoweringContext.fromPatchOptions(options));
     }
 
     public List<Map<String, Object>> lowerRuntimePatches(List<Map<String, Object>> patches, LoweringContext ctx) {
+        Objects.requireNonNull(ctx, "ctx must not be null");
         List<Map<String, Object>> lowered = new ArrayList<>();
         if (patches == null) {
             throw LoweringError.invalidShape("Runtime patches are null");
@@ -110,10 +115,12 @@ public final class LoweringLite {
     }
 
     public List<Map<String, Object>> lowerPatchFragments(List<Map<String, Object>> fragments, CompilePatchOptions options) {
+        Objects.requireNonNull(options, "options must not be null");
         return lowerPatchFragments(fragments, LoweringContext.fromPatchOptions(options));
     }
 
     public List<Map<String, Object>> lowerPatchFragments(List<Map<String, Object>> fragments, LoweringContext ctx) {
+        Objects.requireNonNull(ctx, "ctx must not be null");
         List<Map<String, Object>> lowered = new ArrayList<>();
         if (fragments == null) {
             throw LoweringError.invalidShape("Patch fragments are null");

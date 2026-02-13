@@ -21,7 +21,7 @@
 ## Planned Packages
 - Intent-IR: [spec/spec-intent-ir.md](spec/spec-intent-ir.md), [fdr/fdr-intent-ir.md](fdr/fdr-intent-ir.md)
 - Translator: [spec/spec-translator.md](spec/spec-translator.md), [fdr/fdr-translator.md](fdr/fdr-translator.md)
-- Codegen: 아직 Java 문서/모듈 없음 (신규 추가 예정)
+- Codegen: [spec/spec-codegen.md](spec/spec-codegen.md), [fdr/fdr-codegen.md](fdr/fdr-codegen.md)
 
 ## 인덱스
 - [INDEX.md](INDEX.md)

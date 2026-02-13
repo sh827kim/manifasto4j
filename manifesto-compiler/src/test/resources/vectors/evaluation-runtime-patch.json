@@ -55,5 +55,46 @@
         }
       }
     }
+  },
+  {
+    "testName": "evaluateRuntimePatchesWithTrace: skip reason false",
+    "input": [
+      {
+        "op": "set",
+        "path": "count",
+        "condition": {
+          "kind": "lit",
+          "value": false
+        },
+        "value": {
+          "kind": "lit",
+          "value": 99
+        }
+      }
+    ],
+    "expected": {
+      "patches": [],
+      "skipped": [
+        {
+          "index": 0,
+          "path": "count",
+          "reason": "false"
+        }
+      ],
+      "finalSnapshot": {
+        "data": {
+          "count": 0,
+          "name": "Alice",
+          "items": [
+            1,
+            2,
+            3
+          ]
+        },
+        "computed": {
+          "total": 100
+        }
+      }
+    }
   }
 ]

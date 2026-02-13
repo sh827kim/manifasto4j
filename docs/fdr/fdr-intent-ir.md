@@ -5,7 +5,7 @@
 | --- | --- |
 | Source of Truth | `https://github.com/manifesto-ai/core/blob/main/packages/intent-ir/docs/VERSION-INDEX.md` |
 | Latest | `0.2.0` |
-| Status | Planned (Java module not yet created) |
+| Status | Bootstrap completed (Java skeleton) |
 | Scope | intent IR design notes |
 
 ## 1. Goals
@@ -14,4 +14,8 @@
 
 ## 2. Follow-ups
 
-- Decide if intent IR is required in Java runtime or can be delegated
+- Bootstrap 완료:
+  - `IntentIrDocument`, `IntentIrNormalizer`, `DefaultIntentIrNormalizer` 추가
+- 다음 단계:
+  - canonical serialization/hash 경계 정식화
+  - host/app 연동 경계 테스트 추가

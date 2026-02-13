@@ -19,3 +19,9 @@
 - Decide if Java port includes full MEL compiler or delegates to TS service
 - Define IR compatibility tests against core
 
+## 3. Current Action Checklist (2026-02-13)
+
+- [x] TS 대비 evaluator 누락 연산 보강: `substring`, `field`, `keys`, `values`, `entries`
+- [x] `at(record, string)` 경로 조회 동작 보강
+- [x] runtime patch skip reason 계약 정렬(`false|null|non-boolean`)
+- [x] compiler vectors/unit test에 parity case 추가

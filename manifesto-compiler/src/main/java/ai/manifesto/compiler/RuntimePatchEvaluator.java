@@ -1,21 +1,27 @@
 package ai.manifesto.compiler;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
- * KR: RuntimePatchEvaluatorLite는 컴파일러 모듈에서 runtime patch evaluator lite 역할을 수행하는 구현 타입입니다.
- * EN: RuntimePatchEvaluatorLite is an implementation type performing runtime patch evaluator lite roles in the compiler module.
+ * KR: 런타임 패치 표현식을 현재 스냅샷에 대해 계산해 구체 패치 목록으로 평가합니다.
+ * EN: Evaluates runtime patch expressions against the current snapshot into concrete patch operations.
  */
-public final class RuntimePatchEvaluatorLite {
+public final class RuntimePatchEvaluator {
     public EvaluationResult evaluate(List<Map<String, Object>> patches, SnapshotContext snapshot) {
+        Objects.requireNonNull(patches, "patches must not be null");
+        Objects.requireNonNull(snapshot, "snapshot must not be null");
         EvaluationTraceResult traced = evaluateWithTrace(patches, snapshot);
         return new EvaluationResult(traced.patches(), traced.skipped(), traced.finalSnapshot());
     }
 
     public EvaluationTraceResult evaluateWithTrace(List<Map<String, Object>> patches, SnapshotContext snapshot) {
+        Objects.requireNonNull(patches, "patches must not be null");
+        Objects.requireNonNull(snapshot, "snapshot must not be null");
         List<Map<String, Object>> outPatches = new ArrayList<>();
         List<Map<String, Object>> skipped = new ArrayList<>();
         List<Map<String, Object>> trace = new ArrayList<>();
@@ -23,12 +29,22 @@ public final class RuntimePatchEvaluatorLite {
 
         for (int i = 0; i < patches.size(); i++) {
             Map<String, Object> patch = patches.get(i);
+            if (patch == null) {
+                Map<String, Object> nullPatchTrace = new LinkedHashMap<>();
+                nullPatchTrace.put("index", i);
+                nullPatchTrace.put("path", null);
+                nullPatchTrace.put("event", "dropped");
+                nullPatchTrace.put("reason", "PATCH_NULL");
+                trace.add(nullPatchTrace);
+                continue;
+            }
             if (patch.containsKey("condition")) {
-                Object cond = evaluateExpr(castMap(patch.get("condition")), workingSnapshot);
+                Map<String, Object> conditionNode = asExprNodeOrNull(patch.get("condition"));
+                Object cond = evaluateExpr(conditionNode, workingSnapshot);
                 if (!(cond instanceof Boolean) || !((Boolean) cond)) {
                     String reason = cond == null
-                        ? "COND_NULL"
-                        : (cond instanceof Boolean ? "COND_FALSE" : "COND_NON_BOOLEAN");
+                        ? "null"
+                        : (cond instanceof Boolean ? "false" : "non-boolean");
                     Map<String, Object> skipInfo = new LinkedHashMap<>();
                     skipInfo.put("index", i);
                     skipInfo.put("path", patch.get("path"));
@@ -47,7 +63,7 @@ public final class RuntimePatchEvaluatorLite {
             String path = String.valueOf(patch.get("path"));
             Object concreteValue = null;
             if (patch.containsKey("value")) {
-                concreteValue = evaluateExpr(castMap(patch.get("value")), workingSnapshot);
+                concreteValue = evaluateExpr(asExprNodeOrNull(patch.get("value")), workingSnapshot);
             }
             Map<String, Object> out = buildConcretePatch(op, path, concreteValue);
             if (out != null) {
@@ -73,6 +89,8 @@ public final class RuntimePatchEvaluatorLite {
     }
 
     public StrictEvaluationResult evaluateStrict(List<Map<String, Object>> patches, SnapshotContext snapshot) {
+        Objects.requireNonNull(patches, "patches must not be null");
+        Objects.requireNonNull(snapshot, "snapshot must not be null");
         List<Map<String, Object>> outPatches = new ArrayList<>();
         List<Map<String, Object>> skipped = new ArrayList<>();
         List<Map<String, Object>> trace = new ArrayList<>();
@@ -97,8 +115,8 @@ public final class RuntimePatchEvaluatorLite {
                 Object cond = evaluateExpr(castMap(patch.get("condition")), workingSnapshot);
                 if (!(cond instanceof Boolean) || !((Boolean) cond)) {
                     String reason = cond == null
-                        ? "COND_NULL"
-                        : (cond instanceof Boolean ? "COND_FALSE" : "COND_NON_BOOLEAN");
+                        ? "null"
+                        : (cond instanceof Boolean ? "false" : "non-boolean");
                     Map<String, Object> skipInfo = new LinkedHashMap<>();
                     skipInfo.put("index", i);
                     skipInfo.put("path", patch.get("path"));
@@ -211,6 +229,7 @@ public final class RuntimePatchEvaluatorLite {
             case "trim" -> trim(evaluateExpr(castMap(expr.get("str")), snapshot));
             case "toLowerCase" -> toLowerCase(evaluateExpr(castMap(expr.get("str")), snapshot));
             case "toUpperCase" -> toUpperCase(evaluateExpr(castMap(expr.get("str")), snapshot));
+            case "substring" -> substring(expr, snapshot);
             case "at" -> at(evaluateExpr(castMap(expr.get("array")), snapshot),
                             evaluateExpr(castMap(expr.get("index")), snapshot));
             case "first" -> first(evaluateExpr(castMap(expr.get("array")), snapshot));
@@ -224,6 +243,10 @@ public final class RuntimePatchEvaluatorLite {
             case "every" -> every(expr, snapshot);
             case "includes" -> includes(expr, snapshot);
             case "object" -> object(expr, snapshot);
+            case "field" -> field(expr, snapshot);
+            case "keys" -> keys(expr, snapshot);
+            case "values" -> values(expr, snapshot);
+            case "entries" -> entries(expr, snapshot);
             case "merge" -> merge(expr, snapshot);
             default -> null;
         };
@@ -481,6 +504,30 @@ public final class RuntimePatchEvaluatorLite {
         return false;
     }
 
+    private Object substring(Map<String, Object> expr, SnapshotContext snapshot) {
+        Object str = evaluateExpr(castMap(expr.get("str")), snapshot);
+        if (!(str instanceof String value)) {
+            return null;
+        }
+
+        Object startValue = evaluateExpr(castMap(expr.get("start")), snapshot);
+        if (!(startValue instanceof Number startNum)) {
+            return null;
+        }
+        int start = startNum.intValue();
+
+        if (!expr.containsKey("end")) {
+            return value.substring(start);
+        }
+
+        Object endValue = evaluateExpr(castMap(expr.get("end")), snapshot);
+        if (!(endValue instanceof Number endNum)) {
+            return null;
+        }
+        int end = endNum.intValue();
+        return value.substring(start, end);
+    }
+
     private Object trim(Object value) {
         if (value instanceof String s) {
             return s.trim();
@@ -523,6 +570,9 @@ public final class RuntimePatchEvaluatorLite {
             if (idx >= 0 && idx < list.size()) {
                 return list.get(idx);
             }
+        }
+        if (array instanceof Map<?, ?> map && index instanceof String key) {
+            return map.getOrDefault(key, null);
         }
         return null;
     }
@@ -711,6 +761,43 @@ public final class RuntimePatchEvaluatorLite {
         return merged;
     }
 
+    private Object field(Map<String, Object> expr, SnapshotContext snapshot) {
+        Object objectValue = evaluateExpr(castMap(expr.get("object")), snapshot);
+        Object property = expr.get("property");
+        if (!(objectValue instanceof Map<?, ?> map) || !(property instanceof String name)) {
+            return null;
+        }
+        return map.getOrDefault(name, null);
+    }
+
+    private Object keys(Map<String, Object> expr, SnapshotContext snapshot) {
+        Object objectValue = evaluateExpr(castMap(expr.get("obj")), snapshot);
+        if (!(objectValue instanceof Map<?, ?> map)) {
+            return null;
+        }
+        return new ArrayList<>(map.keySet()).stream().map(String::valueOf).toList();
+    }
+
+    private Object values(Map<String, Object> expr, SnapshotContext snapshot) {
+        Object objectValue = evaluateExpr(castMap(expr.get("obj")), snapshot);
+        if (!(objectValue instanceof Map<?, ?> map)) {
+            return null;
+        }
+        return new ArrayList<>(map.values());
+    }
+
+    private Object entries(Map<String, Object> expr, SnapshotContext snapshot) {
+        Object objectValue = evaluateExpr(castMap(expr.get("obj")), snapshot);
+        if (!(objectValue instanceof Map<?, ?> map)) {
+            return null;
+        }
+        List<List<Object>> result = new ArrayList<>();
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            result.add(List.of(String.valueOf(entry.getKey()), entry.getValue()));
+        }
+        return result;
+    }
+
     private double toNumber(Object value) {
         if (value == null) return 0.0;
         if (value instanceof Number n) return n.doubleValue();
@@ -893,7 +980,7 @@ public final class RuntimePatchEvaluatorLite {
             if (value instanceof Map<?, ?> mapValue && !(value instanceof List<?>)) {
                 patch.put("op", "merge");
                 patch.put("path", path);
-                patch.put("value", mapValue);
+                patch.put("value", deepCopyValue(mapValue));
                 return patch;
             }
             patch.put("op", "set");
@@ -972,6 +1059,14 @@ public final class RuntimePatchEvaluatorLite {
     }
 
     @SuppressWarnings("unchecked")
+    private Map<String, Object> asExprNodeOrNull(Object obj) {
+        if (obj instanceof Map<?, ?> map) {
+            return (Map<String, Object>) map;
+        }
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
     private List<Map<String, Object>> castList(Object obj) {
         return obj == null ? List.of() : (List<Map<String, Object>>) obj;
     }
@@ -980,6 +1075,13 @@ public final class RuntimePatchEvaluatorLite {
                                   Map<String, Object> computed,
                                   Map<String, Object> meta,
                                   Map<String, Object> input) {
+        public SnapshotContext {
+            data = immutableMapCopy(data);
+            computed = immutableMapCopy(computed);
+            meta = immutableMapCopy(meta);
+            input = immutableMapCopy(input);
+        }
+
         public SnapshotContext withCollection(Object item, int index, List<?> array) {
             Map<String, Object> nextData = new LinkedHashMap<>(data);
             nextData.put("$item", item);
@@ -1000,16 +1102,59 @@ public final class RuntimePatchEvaluatorLite {
 
     public record EvaluationResult(List<Map<String, Object>> patches,
                                    List<Map<String, Object>> skipped,
-                                   SnapshotContext finalSnapshot) {}
+                                   SnapshotContext finalSnapshot) {
+        public EvaluationResult {
+            patches = immutablePatchList(patches);
+            skipped = immutablePatchList(skipped);
+            finalSnapshot = Objects.requireNonNull(finalSnapshot, "finalSnapshot must not be null");
+        }
+    }
 
     public record EvaluationTraceResult(List<Map<String, Object>> patches,
                                         List<Map<String, Object>> skipped,
                                         List<Map<String, Object>> trace,
-                                        SnapshotContext finalSnapshot) {}
+                                        SnapshotContext finalSnapshot) {
+        public EvaluationTraceResult {
+            patches = immutablePatchList(patches);
+            skipped = immutablePatchList(skipped);
+            trace = immutablePatchList(trace);
+            finalSnapshot = Objects.requireNonNull(finalSnapshot, "finalSnapshot must not be null");
+        }
+    }
 
     public record StrictEvaluationResult(List<Map<String, Object>> patches,
                                          List<Map<String, Object>> skipped,
                                          List<Map<String, Object>> errors,
                                          List<Map<String, Object>> trace,
-                                         SnapshotContext finalSnapshot) {}
+                                         SnapshotContext finalSnapshot) {
+        public StrictEvaluationResult {
+            patches = immutablePatchList(patches);
+            skipped = immutablePatchList(skipped);
+            errors = immutablePatchList(errors);
+            trace = immutablePatchList(trace);
+            finalSnapshot = Objects.requireNonNull(finalSnapshot, "finalSnapshot must not be null");
+        }
+    }
+
+    private static Map<String, Object> immutableMapCopy(Map<String, Object> map) {
+        if (map == null || map.isEmpty()) {
+            return Map.of();
+        }
+        return Collections.unmodifiableMap(new LinkedHashMap<>(map));
+    }
+
+    private static List<Map<String, Object>> immutablePatchList(List<Map<String, Object>> items) {
+        if (items == null || items.isEmpty()) {
+            return List.of();
+        }
+        List<Map<String, Object>> copied = new ArrayList<>(items.size());
+        for (Map<String, Object> item : items) {
+            if (item == null || item.isEmpty()) {
+                copied.add(Map.of());
+                continue;
+            }
+            copied.add(Collections.unmodifiableMap(new LinkedHashMap<>(item)));
+        }
+        return Collections.unmodifiableList(copied);
+    }
 }

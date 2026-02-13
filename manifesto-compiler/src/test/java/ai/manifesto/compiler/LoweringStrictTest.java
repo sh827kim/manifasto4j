@@ -9,11 +9,11 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class LoweringLiteStrictTest {
+class LoweringStrictTest {
 
     @Test
     void lowerRuntimePatchesStrictRejectsMissingValueForSet() {
-        LoweringLite lowering = new LoweringLite();
+        Lowering lowering = new Lowering();
         List<Map<String, Object>> patches = List.of(
             new LinkedHashMap<>(Map.of("op", "set", "path", "count"))
         );
@@ -27,7 +27,7 @@ class LoweringLiteStrictTest {
 
     @Test
     void lowerRuntimePatchesStrictAcceptsValidSetUnsetMerge() {
-        LoweringLite lowering = new LoweringLite();
+        Lowering lowering = new Lowering();
         Map<String, Object> litOne = new LinkedHashMap<>();
         litOne.put("kind", "lit");
         litOne.put("value", 1);
@@ -47,7 +47,7 @@ class LoweringLiteStrictTest {
 
     @Test
     void lowerRuntimePatchesStrictRejectsUnsetWithValue() {
-        LoweringLite lowering = new LoweringLite();
+        Lowering lowering = new Lowering();
         Map<String, Object> litOne = new LinkedHashMap<>();
         litOne.put("kind", "lit");
         litOne.put("value", 1);

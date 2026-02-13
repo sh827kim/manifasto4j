@@ -120,5 +120,99 @@
       }
     },
     "expected": 3
+  },
+  {
+    "testName": "evaluateExpr: substring",
+    "input": {
+      "kind": "substring",
+      "str": {
+        "kind": "lit",
+        "value": "abcdef"
+      },
+      "start": {
+        "kind": "lit",
+        "value": 1
+      },
+      "end": {
+        "kind": "lit",
+        "value": 4
+      }
+    },
+    "expected": "bcd"
+  },
+  {
+    "testName": "evaluateExpr: field",
+    "input": {
+      "kind": "field",
+      "object": {
+        "kind": "get",
+        "path": "profile"
+      },
+      "property": "name"
+    },
+    "expected": "Alice"
+  },
+  {
+    "testName": "evaluateExpr: keys",
+    "input": {
+      "kind": "keys",
+      "obj": {
+        "kind": "get",
+        "path": "profile"
+      }
+    },
+    "expected": [
+      "name",
+      "age"
+    ]
+  },
+  {
+    "testName": "evaluateExpr: values",
+    "input": {
+      "kind": "values",
+      "obj": {
+        "kind": "get",
+        "path": "profile"
+      }
+    },
+    "expected": [
+      "Alice",
+      30
+    ]
+  },
+  {
+    "testName": "evaluateExpr: entries",
+    "input": {
+      "kind": "entries",
+      "obj": {
+        "kind": "get",
+        "path": "profile"
+      }
+    },
+    "expected": [
+      [
+        "name",
+        "Alice"
+      ],
+      [
+        "age",
+        30
+      ]
+    ]
+  },
+  {
+    "testName": "evaluateExpr: at(record, string)",
+    "input": {
+      "kind": "at",
+      "array": {
+        "kind": "get",
+        "path": "profile"
+      },
+      "index": {
+        "kind": "lit",
+        "value": "name"
+      }
+    },
+    "expected": "Alice"
   }
 ]
