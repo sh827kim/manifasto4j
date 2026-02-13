@@ -91,4 +91,29 @@ class RuntimePatchEvaluatorLiteTest {
         assertTrue(result.errors().stream().anyMatch(e -> "RPV006".equals(e.get("code"))));
         assertTrue(result.errors().stream().anyMatch(e -> "RPV002".equals(e.get("code"))));
     }
+
+    @Test
+    void evaluateStrictRejectsUnsetWithValue() {
+        RuntimePatchEvaluatorLite evaluator = new RuntimePatchEvaluatorLite();
+        RuntimePatchEvaluatorLite.SnapshotContext snapshot = new RuntimePatchEvaluatorLite.SnapshotContext(
+            new LinkedHashMap<>(Map.of("count", 0)),
+            new LinkedHashMap<>(),
+            new LinkedHashMap<>(),
+            new LinkedHashMap<>()
+        );
+
+        Map<String, Object> validValue = new LinkedHashMap<>();
+        validValue.put("kind", "lit");
+        validValue.put("value", 1);
+
+        List<Map<String, Object>> patches = List.of(
+            new LinkedHashMap<>(Map.of("op", "unset", "path", "count", "value", validValue))
+        );
+
+        RuntimePatchEvaluatorLite.StrictEvaluationResult result = evaluator.evaluateStrict(patches, snapshot);
+
+        assertEquals(0, result.patches().size());
+        assertEquals(1, result.errors().size());
+        assertEquals("RPV008", result.errors().get(0).get("code"));
+    }
 }

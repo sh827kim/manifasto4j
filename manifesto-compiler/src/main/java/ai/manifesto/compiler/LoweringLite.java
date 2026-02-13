@@ -63,6 +63,9 @@ public final class LoweringLite {
             if (("set".equals(op) || "merge".equals(op)) && !patch.containsKey("value")) {
                 throw LoweringError.invalidShape("Runtime patch '" + op + "' requires 'value'");
             }
+            if ("unset".equals(op) && patch.containsKey("value")) {
+                throw LoweringError.invalidShape("Runtime patch 'unset' must not include 'value'");
+            }
         }
         return lowered;
     }

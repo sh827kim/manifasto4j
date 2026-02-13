@@ -922,6 +922,9 @@ public final class RuntimePatchEvaluatorLite {
         if (("set".equals(opObj) || "merge".equals(opObj)) && !patch.containsKey("value")) {
             return error("RPV006", "Runtime patch '" + opObj + "' requires 'value'", index, pathObj);
         }
+        if ("unset".equals(opObj) && patch.containsKey("value")) {
+            return error("RPV008", "Runtime patch 'unset' must not include 'value'", index, pathObj);
+        }
         if (patch.containsKey("value") && !(patch.get("value") instanceof Map<?, ?>)) {
             return error("RPV007", "Runtime patch 'value' must be expression node", index, pathObj);
         }

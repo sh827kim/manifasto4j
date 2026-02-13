@@ -44,4 +44,22 @@ class LoweringLiteStrictTest {
         List<Map<String, Object>> lowered = lowering.lowerRuntimePatchesStrict(patches);
         assertEquals(3, lowered.size());
     }
+
+    @Test
+    void lowerRuntimePatchesStrictRejectsUnsetWithValue() {
+        LoweringLite lowering = new LoweringLite();
+        Map<String, Object> litOne = new LinkedHashMap<>();
+        litOne.put("kind", "lit");
+        litOne.put("value", 1);
+
+        List<Map<String, Object>> patches = List.of(
+            new LinkedHashMap<>(Map.of("op", "unset", "path", "count", "value", litOne))
+        );
+
+        LoweringError error = assertThrows(
+            LoweringError.class,
+            () -> lowering.lowerRuntimePatchesStrict(patches)
+        );
+        assertEquals(LoweringErrorCode.INVALID_SHAPE, error.getCode());
+    }
 }
