@@ -50,10 +50,12 @@
    - trace 기반 single-runner invariant 검증 테스트 추가
    - chained reinjection/liveness invariant 테스트 추가
    - host golden `trace-invariants-chained-reinjection` 케이스 추가
+8. P2 intent-ir canonical/hash 경계 구현 완료 (2026-02-13):
+   - `IntentIrCanonicalizer`, `IntentIrHashing` 추가
+   - canonical serialization/hash 안정성 테스트 추가
 
 ## Remaining Work (P1~P2)
 1. Planned module implementation (P2):
-   - `manifesto-intent-ir` canonical serialization/hash 경계 구현
    - `manifesto-translator` stage 파이프라인(interpret/verify/refine) 기본 구현
    - `manifesto-codegen` 첫 타깃(Java DTO/typed client) 구현
 
