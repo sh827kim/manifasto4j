@@ -22,3 +22,13 @@ Translator defines a multi-stage pipeline for converting NL input into intents/p
 - 프레임워크 종속 구현체는 기본 모듈에 포함하지 않는다.
 - `TranslatorMessageAdapter<TExternalMessage>` 인터페이스로 외부 SDK 메시지 변환 경계를 고정한다.
 - `Translator` 인터페이스는 `TranslationRequest`를 받아 `TranslationResult(Intent IR + diagnostics)`를 반환한다.
+
+## 4. Pipeline Baseline (2026-02-13)
+
+- 기본 파이프라인은 `interpret -> verify -> refine` 3단계를 순차 실행한다.
+- 기본 구현:
+  - `RuleBasedInterpreter`
+  - `DefaultTranslatorVerifier`
+  - `DefaultTranslatorRefiner`
+  - `DefaultTranslator`
+- 이 파이프라인은 프레임워크 비종속 계약 위에서 동작하며, 이후 LLM adapter 구현체는 교체 가능하다.

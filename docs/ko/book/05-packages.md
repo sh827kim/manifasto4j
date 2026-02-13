@@ -44,8 +44,8 @@
 - `manifesto-host`: HCTS trace/reinjection/liveness invariant 테스트 보강 완료
 - `manifesto-intent-ir`: bootstrap 계약 추가
 - `manifesto-intent-ir`: canonical serialization/hash 경계 1차 구현 완료
-- `manifesto-translator`: 프레임워크 비종속 adapter/translator 인터페이스 추가
-- `manifesto-codegen`: 코드 생성 계약 인터페이스 추가
+- `manifesto-translator`: interpret/verify/refine 파이프라인 1차 구현 완료
+- `manifesto-codegen`: `java-dto` 첫 타깃(StateDto 생성) 1차 구현 완료
 - 후속 핵심: bootstrap 모듈 구현 단계(intent-ir/translator/codegen) 진입
 
 **체크포인트 질문**

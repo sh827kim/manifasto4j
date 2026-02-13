@@ -18,6 +18,9 @@
 - Bootstrap 완료:
   - `TranslatorMessageAdapter<TExternalMessage>` 인터페이스 추가
   - `Translator`/`TranslationRequest`/`TranslationResult` 계약 추가
+- 구현 완료:
+  - `interpret -> verify -> refine` 기본 파이프라인(`DefaultTranslator`) 추가
+  - rule-based interpreter 및 기본 verifier/refiner 추가
 - 다음 단계:
-  - interpret/verify/refine 단계 파이프라인 구현
   - adapter capability test contract 정의
+  - policy/score 기반 verifier 강화

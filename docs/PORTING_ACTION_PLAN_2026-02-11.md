@@ -53,11 +53,19 @@
 8. P2 intent-ir canonical/hash 경계 구현 완료 (2026-02-13):
    - `IntentIrCanonicalizer`, `IntentIrHashing` 추가
    - canonical serialization/hash 안정성 테스트 추가
+9. P2 translator 파이프라인 1차 구현 완료 (2026-02-13):
+   - `DefaultTranslator` 기반 interpret/verify/refine 파이프라인 추가
+   - rule-based interpreter + 기본 verifier/refiner 추가
+   - translator 단위 테스트 추가
+10. P2 codegen 첫 타깃 1차 구현 완료 (2026-02-13):
+   - `JavaDtoCodeGenerator` 추가(`java-dto` target)
+   - `schema.state.fields` 기반 `StateDto.java` 생성 계약 반영
+   - codegen 단위 테스트 추가
 
 ## Remaining Work (P1~P2)
 1. Planned module implementation (P2):
-   - `manifesto-translator` stage 파이프라인(interpret/verify/refine) 기본 구현
-   - `manifesto-codegen` 첫 타깃(Java DTO/typed client) 구현
+   - `manifesto-translator` adapter capability test contract 정의 및 verifier 정책 강화
+   - `manifesto-codegen` typed client 타깃 구현 및 템플릿 전략 확정
 
 ## Documentation Policy
 1. Docs are organized by:
