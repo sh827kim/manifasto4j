@@ -32,3 +32,11 @@ Translator defines a multi-stage pipeline for converting NL input into intents/p
   - `DefaultTranslatorRefiner`
   - `DefaultTranslator`
 - 이 파이프라인은 프레임워크 비종속 계약 위에서 동작하며, 이후 LLM adapter 구현체는 교체 가능하다.
+
+## 5. Adapter Capability Contract (2026-02-13)
+
+- `TranslatorAdapterCapabilityValidator`를 통해 adapter 최소 호환성을 점검한다.
+- 점검 항목:
+  - translator message round-trip(role/content/attributes) 보존
+  - external message round-trip 크기/구조 보존
+- 결과는 `TranslatorAdapterCapabilityReport`로 반환되며 CI 테스트에 바로 사용할 수 있다.

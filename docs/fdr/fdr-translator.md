@@ -21,6 +21,8 @@
 - 구현 완료:
   - `interpret -> verify -> refine` 기본 파이프라인(`DefaultTranslator`) 추가
   - rule-based interpreter 및 기본 verifier/refiner 추가
+- 추가 완료:
+  - `TranslatorAdapterCapabilityValidator`/`TranslatorAdapterCapabilityReport` 추가
+  - verifier 정책 강화(`verified`, `verificationScore`, TRV 규칙 코드)
 - 다음 단계:
-  - adapter capability test contract 정의
-  - policy/score 기반 verifier 강화
+  - 도메인별 정책 룰셋(허용 action whitelist, context policy) 확장

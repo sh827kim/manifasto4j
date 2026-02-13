@@ -61,10 +61,14 @@
    - `JavaDtoCodeGenerator` 추가(`java-dto` target)
    - `schema.state.fields` 기반 `StateDto.java` 생성 계약 반영
    - codegen 단위 테스트 추가
+11. P2 translator adapter/verifier 강화 완료 (2026-02-13):
+   - `TranslatorAdapterCapabilityValidator`/`Report` 추가
+   - adapter capability 단위 테스트 추가
+   - verifier 정책(`verified`, `verificationScore`, TRV 규칙) 강화
 
 ## Remaining Work (P1~P2)
 1. Planned module implementation (P2):
-   - `manifesto-translator` adapter capability test contract 정의 및 verifier 정책 강화
+   - `manifesto-translator` 도메인별 정책 룰셋 확장
    - `manifesto-codegen` typed client 타깃 구현 및 템플릿 전략 확정
 
 ## Documentation Policy
