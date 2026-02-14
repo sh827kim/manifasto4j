@@ -33,7 +33,20 @@ Minimal conformance for server/CLI:
 - MUST use explicit initialization (ready)
 - MUST expose action execution as observable handle
 
-## 4. Optional Features (defer)
+## 4. ActionHandle Lifecycle (2026-02-14)
+
+- `ActionHandle`는 최종 `ComputeResult` 외에 phase update history를 함께 보관한다.
+- 표준 phase 집합:
+  - `PREPARING`
+  - `SUBMITTED`
+  - `EXECUTING`
+  - `COMPLETED`
+  - `FAILED`
+  - `REJECTED`
+  - `PREPARATION_FAILED`
+- App 구현체는 world/non-world 경로 모두에서 최소 `PREPARING -> ... -> terminal` 전이를 기록해야 한다.
+
+## 5. Optional Features (defer)
 
 - Branch management
 - Session management

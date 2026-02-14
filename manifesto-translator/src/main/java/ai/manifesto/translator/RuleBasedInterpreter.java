@@ -39,6 +39,9 @@ public final class RuleBasedInterpreter implements TranslatorInterpreter {
         if (request.context() != null && !request.context().isEmpty()) {
             meta.putAll(request.context());
         }
+        if (request.actionHint() != null && !request.actionHint().isBlank()) {
+            meta.put("actionHint", request.actionHint().trim());
+        }
         meta.putIfAbsent("source", "translator-rule-based");
 
         return new TranslationDraft(

@@ -27,6 +27,10 @@ Java App starts with a minimal subset:
 Action execution should return a handle for status/result/trace.
 This supports CLI progress reporting and server logs.
 
+### 2.3 Action Phase History
+`ActionHandle` now stores explicit phase updates (`ActionUpdate`) so runtime transitions can be inspected after execution.
+This closes the gap between minimal synchronous execution and lifecycle observability requirements.
+
 ## 3. Deferred Areas
 
 - Branch/session management

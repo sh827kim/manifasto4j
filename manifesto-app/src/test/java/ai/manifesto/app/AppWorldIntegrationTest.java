@@ -65,6 +65,8 @@ class AppWorldIntegrationTest {
 
         var first = app.act(new Intent("bump", Map.of(), UUID.randomUUID().toString()));
         assertEquals(ai.manifesto.core.ComputeStatus.COMPLETE, first.getStatus());
+        assertEquals(ActionPhase.COMPLETED, first.getPhase());
+        assertTrue(first.getUpdates().stream().anyMatch(update -> update.phase() == ActionPhase.SUBMITTED));
         assertEquals("ok", app.getSnapshot().getData().get("status"));
 
         var world = app.getWorld();

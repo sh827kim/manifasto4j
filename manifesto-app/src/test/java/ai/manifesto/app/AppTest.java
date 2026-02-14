@@ -63,6 +63,10 @@ class AppTest {
         assertTrue(
             handle.getStatus() == ComputeStatus.HALTED || handle.getStatus() == ComputeStatus.COMPLETE
         );
+        assertEquals(ActionPhase.COMPLETED, handle.getPhase());
+        assertTrue(handle.getUpdates().size() >= 3);
+        assertEquals(ActionPhase.PREPARING, handle.getUpdates().get(0).phase());
+        assertEquals(ActionPhase.EXECUTING, handle.getUpdates().get(1).phase());
         assertEquals("ok", latest.get());
     }
 

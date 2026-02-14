@@ -18,11 +18,17 @@ Manifesto is a deterministic domain-runtime stack for stateful apps:
 Reference docs:
 https://docs.manifesto-ai.dev/
 
-## Current Status (2026-02-13)
-- TS baseline packages are `app/codegen/compiler/core/host/intent-ir/translator/world`.
-- Java implemented modules are `core/host/app/compiler/world`.
-- Java bootstrap modules are now `intent-ir/translator/codegen` (contracts/skeleton).
-- Documentation and build graph were cleaned to remove out-of-scope packages.
+## Current Status (2026-02-14)
+- TS baseline packages: `app/codegen/compiler/core/host/intent-ir/translator/world`
+- TS latest reviewed commit: `3b40070`
+- TS diff `754d860..3b40070` is docs/ADR/SPEC updates (no package source behavior change)
+- Java active modules: `core/host/app/compiler/world`
+- Java planned-but-implemented baseline modules: `intent-ir/translator/codegen`
+
+## Current Priority
+1. App ActionHandle lifecycle parity (phase/update history)
+2. Intent-IR key derivation + lexicon/resolver minimum core
+3. Translator pipeline/plugin architecture hardening
 
 ## Modules
 - `manifesto-core` - core runtime (schema/expr/flow/compute)
@@ -30,20 +36,18 @@ https://docs.manifesto-ai.dev/
 - `manifesto-app` - high-level API surface
 - `manifesto-compiler` - MEL compiler + lowering
 - `manifesto-world` - world/authority/lineage runtime
-
-## Planned Modules
-- `manifesto-intent-ir` (bootstrap)
-- `manifesto-translator` (bootstrap, framework-agnostic interfaces)
-- `manifesto-codegen` (bootstrap)
+- `manifesto-intent-ir` - intent IR normalization/canonical/hash and key pipeline bootstrap
+- `manifesto-translator` - framework-agnostic translator contracts and baseline pipeline
+- `manifesto-codegen` - code generation contracts and Java targets baseline
 
 ## Docs in this repo
-- `docs/INDEX.md` - spec/fdr index
-- `docs/PORTING_ACTION_PLAN_2026-02-11.md` - current gap analysis and action items
-- `docs/ko/book/index.md` - Korean learning guide for Java developers
-- `docs/spec/spec-*.md`, `docs/fdr/fdr-*.md` - package-level references
+- `/workspace/manifesto-java-core/docs/INDEX.md` - spec/fdr index
+- `/workspace/manifesto-java-core/docs/PORTING_ACTION_PLAN_2026-02-11.md` - parity status and action plan
+- `/workspace/manifesto-java-core/docs/ko/book/index.md` - Korean learning guide for Java developers
+- `/workspace/manifesto-java-core/docs/spec/spec-*.md`, `/workspace/manifesto-java-core/docs/fdr/fdr-*.md` - package-level references
 
 ## Local-only Notes
-- `local-only-docs/` is intentionally ignored by Git and is for local workspace notes only.
+- `/workspace/manifesto-java-core/local-only-docs/` is intentionally ignored by Git and is for local workspace notes only.
 
 ## Build / Test
 ```bash
@@ -53,5 +57,6 @@ https://docs.manifesto-ai.dev/
 ## Useful Verification Commands
 ```bash
 ./gradlew :manifesto-core:test :manifesto-host:test :manifesto-app:test :manifesto-compiler:test :manifesto-world:test
+./gradlew :manifesto-intent-ir:test :manifesto-translator:test :manifesto-codegen:test
 ./gradlew checkGoldenSync
 ```

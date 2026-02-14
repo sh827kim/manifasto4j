@@ -10,15 +10,14 @@ import java.util.Objects;
  * EN: Default Translator implementation that runs interpret -> verify -> refine stages sequentially.
  */
 public final class DefaultTranslator implements Translator {
-    private final TranslatorInterpreter interpreter;
-    private final TranslatorVerifier verifier;
-    private final TranslatorRefiner refiner;
+    private final TranslatorPipeline pipeline;
 
     public DefaultTranslator() {
         this(
             new RuleBasedInterpreter(),
             new DefaultTranslatorVerifier(),
-            new DefaultTranslatorRefiner(new DefaultIntentIrNormalizer())
+            new DefaultTranslatorRefiner(new DefaultIntentIrNormalizer()),
+            List.of()
         );
     }
 
@@ -27,19 +26,25 @@ public final class DefaultTranslator implements Translator {
         TranslatorVerifier verifier,
         TranslatorRefiner refiner
     ) {
-        this.interpreter = Objects.requireNonNull(interpreter, "interpreter must not be null");
-        this.verifier = Objects.requireNonNull(verifier, "verifier must not be null");
-        this.refiner = Objects.requireNonNull(refiner, "refiner must not be null");
+        this(interpreter, verifier, refiner, List.of());
+    }
+
+    public DefaultTranslator(
+        TranslatorInterpreter interpreter,
+        TranslatorVerifier verifier,
+        TranslatorRefiner refiner,
+        List<TranslatorPipelinePlugin> plugins
+    ) {
+        this.pipeline = new TranslatorPipeline(
+            Objects.requireNonNull(interpreter, "interpreter must not be null"),
+            Objects.requireNonNull(verifier, "verifier must not be null"),
+            Objects.requireNonNull(refiner, "refiner must not be null"),
+            plugins == null ? List.of() : plugins
+        );
     }
 
     @Override
     public TranslationResult translate(TranslationRequest request) {
-        Objects.requireNonNull(request, "request must not be null");
-        TranslationDraft interpreted = interpreter.interpret(request);
-        TranslationDraft verified = verifier.verify(request, interpreted);
-        return new TranslationResult(
-            refiner.refine(request, verified),
-            verified.diagnostics() == null ? List.of() : verified.diagnostics()
-        );
+        return pipeline.run(request);
     }
 }

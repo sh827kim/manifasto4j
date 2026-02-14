@@ -101,12 +101,17 @@ public final class DefaultApp implements App {
 
     @Override
     public ActionHandle act(Intent intent) throws Exception {
+        List<ActionUpdate> updates = new ArrayList<>();
+        appendUpdate(updates, ActionPhase.PREPARING, "Preparing action");
+
         if (world == null) {
+            appendUpdate(updates, ActionPhase.EXECUTING, "Executing action via HostRuntime");
             ComputeResult result = host.run(schema, snapshot, intent, 5);
             snapshot = result.getSnapshot();
             persistSessionSnapshot();
             notifySubscribers(snapshot);
-            return new ActionHandle(result);
+            appendTerminalUpdate(updates, result.getStatus(), null);
+            return new ActionHandle(result, updates);
         }
 
         if (appActor == null) {
@@ -128,16 +133,19 @@ public final class DefaultApp implements App {
         );
 
         ProposalResult proposalResult = world.submitProposal(appActor.getActorId(), intentInstance, currentWorldId, null);
+        appendUpdate(updates, ActionPhase.SUBMITTED, "Proposal submitted to world");
 
         if (proposalResult.getError() != null) {
+            appendUpdate(updates, ActionPhase.FAILED, "World proposal failed: " + proposalResult.getError());
             return new ActionHandle(ComputeResult.builder()
                     .snapshot(snapshot)
                     .trace((TraceGraph) null)
                     .status(ComputeStatus.ERROR)
-                    .build());
+                    .build(), updates);
         }
 
         if (proposalResult.getResultWorld() != null) {
+            appendUpdate(updates, ActionPhase.EXECUTING, "Proposal approved and executed");
             currentWorldId = proposalResult.getResultWorld().getWorldId();
             Snapshot terminalSnapshot = world.getStore().getSnapshot(currentWorldId);
             if (terminalSnapshot != null) {
@@ -154,7 +162,7 @@ public final class DefaultApp implements App {
                 .snapshot(snapshot)
                 .trace((TraceGraph) null)
                 .status(computeStatus)
-                .build());
+                .build(), finalizeWorldUpdates(updates, status));
     }
 
     @Override
@@ -243,4 +251,37 @@ public final class DefaultApp implements App {
     }
 
     private record Subscription(Function<Snapshot, Object> selector, Consumer<Object> handler) {}
+
+    private List<ActionUpdate> finalizeWorldUpdates(List<ActionUpdate> updates, ProposalStatus status) {
+        if (status == ProposalStatus.COMPLETED || status == ProposalStatus.APPROVED) {
+            appendUpdate(updates, ActionPhase.COMPLETED, "World proposal completed");
+            return updates;
+        }
+        if (status == ProposalStatus.REJECTED) {
+            appendUpdate(updates, ActionPhase.REJECTED, "World proposal rejected");
+            return updates;
+        }
+        if (status == ProposalStatus.FAILED) {
+            appendUpdate(updates, ActionPhase.FAILED, "World proposal failed");
+            return updates;
+        }
+        appendUpdate(updates, ActionPhase.EXECUTING, "World proposal pending: " + status);
+        return updates;
+    }
+
+    private void appendTerminalUpdate(List<ActionUpdate> updates, ComputeStatus status, String message) {
+        if (status == ComputeStatus.COMPLETE || status == ComputeStatus.HALTED) {
+            appendUpdate(updates, ActionPhase.COMPLETED, message == null ? "Action completed" : message);
+            return;
+        }
+        if (status == ComputeStatus.ERROR) {
+            appendUpdate(updates, ActionPhase.FAILED, message == null ? "Action failed" : message);
+            return;
+        }
+        appendUpdate(updates, ActionPhase.EXECUTING, message == null ? "Action is still running" : message);
+    }
+
+    private void appendUpdate(List<ActionUpdate> updates, ActionPhase phase, String message) {
+        updates.add(new ActionUpdate(phase, message, System.currentTimeMillis()));
+    }
 }

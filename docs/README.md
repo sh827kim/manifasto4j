@@ -3,13 +3,15 @@
 이 폴더는 Java 포팅 문서의 단일 인덱스 공간입니다.
 
 ## 기준
-- 기준일: `2026-02-11`
+- 기준일: `2026-02-14`
 - TS 소스 기준: `/workspace/manifasto-ts-core`
+- TS 최신 확인 커밋: `3b40070`
+- 최근 비교 범위: `754d860..3b40070` (문서/ADR/SPEC 변경, 런타임 소스 변경 없음)
 - 최신 분석/액션: [PORTING_ACTION_PLAN_2026-02-11.md](PORTING_ACTION_PLAN_2026-02-11.md)
 
 ## 문서 분류
 1. Active parity (TS와 직접 정합 대상)
-2. Planned packages (Java 신규 포팅 예정)
+2. Planned packages (Java 신규 포팅 대상, 현재 baseline 구현 포함)
 
 ## Active Parity
 - Core: [spec/spec-core.md](spec/spec-core.md), [fdr/fdr-core.md](fdr/fdr-core.md)

@@ -48,3 +48,19 @@ Translator defines a multi-stage pipeline for converting NL input into intents/p
   - `TRV101`: 도메인 허용 action 목록 위반
   - `TRV102`: 도메인 필수 context key 누락
 - 기본 구현체로 `InMemoryTranslatorPolicyProvider`를 제공한다.
+
+## 7. Pipeline/Plugin Architecture (2026-02-14)
+
+- `TranslatorPipeline` 실행기를 도입해 `interpret -> verify -> refine`를 명시적 stage로 분리했다.
+- `TranslatorPipelinePlugin` hook 계약을 추가했다.
+  - `before/after interpret`
+  - `before/after verify`
+  - `before/after refine`
+- `DefaultTranslator`는 파이프라인 실행기에 위임하며, plugin 목록 주입을 지원한다.
+
+## 8. Intent-IR Bridge Plugin (2026-02-14)
+
+- `IntentIrResolutionPlugin` 추가:
+  - verify 이후 Intent-IR resolver/lexicon을 적용해 draft 보정
+  - resolver/lexicon 진단 코드를 translator diagnostics에 병합
+  - `lexiconValid` 메타 플래그를 결과 Intent IR에 반영

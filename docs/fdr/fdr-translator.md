@@ -27,5 +27,9 @@
 - 추가 완료:
   - 도메인 정책 룰셋 주입 계약(`TranslatorPolicyProvider`) 추가
   - `InMemoryTranslatorPolicyProvider` 및 정책 검증 코드(TRV101/TRV102) 반영
+- 추가 완료 (2026-02-14):
+  - `TranslatorPipeline` + `TranslatorPipelinePlugin` 도입
+  - `DefaultTranslator`를 pipeline 기반으로 전환
+  - `IntentIrResolutionPlugin` 추가(resolver/lexicon bridge)
 - 다음 단계:
   - 정책 소스 외부화(DB/설정 서버) 및 hot-reload 전략 검토
