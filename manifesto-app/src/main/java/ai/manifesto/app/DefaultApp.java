@@ -40,12 +40,15 @@ public final class DefaultApp implements App {
     private Snapshot snapshot;
     private final List<Subscription> subscriptions = new ArrayList<>();
     private final List<AppHook> hooks = new ArrayList<>();
+    private final List<AppPlugin> plugins = new ArrayList<>();
     private final Map<String, WorldId> branchAliases = new LinkedHashMap<>();
     private final String sessionId;
     private final AppSnapshotStore snapshotStore;
 
     private final ManifestoWorld world;
     private final ActorRef appActor;
+    private final AppPolicyService policyService;
+    private final AppWorldStore worldStore;
     private final SystemFacade systemFacade;
     private final MemoryFacade memoryFacade;
 
@@ -54,7 +57,7 @@ public final class DefaultApp implements App {
     private String currentBranchName = "main";
 
     public DefaultApp(DomainSchema schema, Snapshot initialSnapshot, HostRuntime host) {
-        this(schema, initialSnapshot, host, null, null, null, null);
+        this(schema, initialSnapshot, host, null, null, null, null, null, null);
     }
 
     public DefaultApp(
@@ -64,7 +67,7 @@ public final class DefaultApp implements App {
             ManifestoWorld world,
             ActorRef appActor
     ) {
-        this(schema, initialSnapshot, host, world, appActor, null, null);
+        this(schema, initialSnapshot, host, world, appActor, null, null, null, null);
     }
 
     public DefaultApp(
@@ -74,7 +77,9 @@ public final class DefaultApp implements App {
             ManifestoWorld world,
             ActorRef appActor,
             String sessionId,
-            AppSnapshotStore snapshotStore
+            AppSnapshotStore snapshotStore,
+            AppPolicyService policyService,
+            AppWorldStore worldStore
     ) {
         this.schema = Objects.requireNonNull(schema, "schema is required");
         this.snapshot = Objects.requireNonNull(initialSnapshot, "snapshot is required");
@@ -83,6 +88,8 @@ public final class DefaultApp implements App {
         this.appActor = appActor;
         this.sessionId = sessionId;
         this.snapshotStore = snapshotStore;
+        this.policyService = policyService == null ? new AllowAllPolicyService() : policyService;
+        this.worldStore = worldStore;
         this.systemFacade = new DefaultSystemFacade(this);
         this.memoryFacade = new InMemoryMemoryFacade();
 
@@ -97,6 +104,9 @@ public final class DefaultApp implements App {
         ensureNotDisposed();
         if (world == null) {
             status = AppStatus.READY;
+            for (AppPlugin plugin : plugins) {
+                plugin.onInit(this);
+            }
             emitReadyHook();
             return;
         }
@@ -113,8 +123,12 @@ public final class DefaultApp implements App {
         if (genesisSnapshot != null) {
             this.snapshot = genesisSnapshot;
             persistSessionSnapshot();
+            persistWorldStoreState(currentBranchName, currentWorldId, genesisSnapshot);
         }
         status = AppStatus.READY;
+        for (AppPlugin plugin : plugins) {
+            plugin.onInit(this);
+        }
         emitReadyHook();
     }
 
@@ -124,6 +138,10 @@ public final class DefaultApp implements App {
             return;
         }
         status = AppStatus.DISPOSING;
+        for (AppPlugin plugin : plugins) {
+            plugin.onDispose(this);
+        }
+        plugins.clear();
         hooks.clear();
         subscriptions.clear();
         status = AppStatus.DISPOSED;
@@ -140,6 +158,22 @@ public final class DefaultApp implements App {
             : RuntimeKind.DOMAIN;
         ActionHandle handle = ActionHandle.start(runtimeKind);
 
+        AppPolicyService.PolicyDecision policyDecision = policyService.decide(intent, snapshot);
+        if (!policyDecision.allowed()) {
+            appendUpdate(intent, handle, ActionPhase.REJECTED, "Rejected by policy: " + policyDecision.reason());
+            ComputeResult result = ComputeResult.builder()
+                .snapshot(snapshot)
+                .trace((TraceGraph) null)
+                .status(ComputeStatus.ERROR)
+                .build();
+            handle.complete(result, new RejectedActionResult(policyDecision.reason(), runtimeKind));
+            emitAfterActHook(intent, handle);
+            return handle;
+        }
+
+        for (AppPlugin plugin : sortedPlugins()) {
+            plugin.beforeAct(intent, snapshot);
+        }
         emitBeforeActHook(intent);
         appendUpdate(intent, handle, ActionPhase.PREPARING, "Preparing action");
 
@@ -152,6 +186,9 @@ public final class DefaultApp implements App {
             appendTerminalUpdate(intent, handle, result.getStatus(), null);
             ActionResult actionResult = toActionResult(result.getStatus(), runtimeKind, null, null);
             handle.complete(result, actionResult);
+            for (AppPlugin plugin : sortedPlugins()) {
+                plugin.afterAct(intent, handle, snapshot);
+            }
             emitAfterActHook(intent, handle);
             return handle;
         }
@@ -165,6 +202,9 @@ public final class DefaultApp implements App {
                 .build();
             appendUpdate(intent, handle, ActionPhase.PREPARATION_FAILED, "World-enabled app requires appActor");
             handle.complete(result, failure);
+            for (AppPlugin plugin : sortedPlugins()) {
+                plugin.afterAct(intent, handle, snapshot);
+            }
             emitAfterActHook(intent, handle);
             return handle;
         }
@@ -177,6 +217,9 @@ public final class DefaultApp implements App {
                 .build();
             appendUpdate(intent, handle, ActionPhase.PREPARATION_FAILED, "App is not ready. Call ready() before act().");
             handle.complete(result, failure);
+            for (AppPlugin plugin : sortedPlugins()) {
+                plugin.afterAct(intent, handle, snapshot);
+            }
             emitAfterActHook(intent, handle);
             return handle;
         }
@@ -205,6 +248,9 @@ public final class DefaultApp implements App {
                 .build();
             ActionResult actionResult = new FailedActionResult(proposalResult.getError(), worldIdValue(currentWorldId), runtimeKind);
             handle.complete(errorResult, actionResult);
+            for (AppPlugin plugin : sortedPlugins()) {
+                plugin.afterAct(intent, handle, snapshot);
+            }
             emitAfterActHook(intent, handle);
             return handle;
         }
@@ -217,6 +263,7 @@ public final class DefaultApp implements App {
             if (terminalSnapshot != null) {
                 snapshot = terminalSnapshot;
                 persistSessionSnapshot();
+                persistWorldStoreState(currentBranchName, currentWorldId, terminalSnapshot);
                 notifySubscribers(snapshot);
             }
         }
@@ -237,6 +284,9 @@ public final class DefaultApp implements App {
             proposalResult.getError()
         );
         handle.complete(result, actionResult);
+        for (AppPlugin plugin : sortedPlugins()) {
+            plugin.afterAct(intent, handle, snapshot);
+        }
         emitAfterActHook(intent, handle);
         return handle;
     }
@@ -337,6 +387,7 @@ public final class DefaultApp implements App {
             this.snapshot = branchSnapshot;
             persistSessionSnapshot();
             notifySubscribers(snapshot);
+            persistWorldStoreState(currentBranchName, worldId, branchSnapshot);
         }
         emitBranchSwitchedHook(worldId);
     }
@@ -362,6 +413,28 @@ public final class DefaultApp implements App {
         return memoryFacade;
     }
 
+    @Override
+    public AppPolicyService getPolicyService() {
+        return policyService;
+    }
+
+    @Override
+    public AppWorldStore getWorldStore() {
+        return worldStore;
+    }
+
+    @Override
+    public void addPlugin(AppPlugin plugin) {
+        if (plugin != null) {
+            plugins.add(plugin);
+        }
+    }
+
+    @Override
+    public void removePlugin(AppPlugin plugin) {
+        plugins.remove(plugin);
+    }
+
     private Snapshot loadSessionSnapshot() {
         if (sessionId == null || snapshotStore == null) {
             return null;
@@ -374,6 +447,13 @@ public final class DefaultApp implements App {
             return;
         }
         snapshotStore.save(sessionId, snapshot);
+    }
+
+    private void persistWorldStoreState(String branchName, WorldId worldId, Snapshot snapshot) {
+        if (worldStore == null || branchName == null || worldId == null || snapshot == null) {
+            return;
+        }
+        worldStore.save(branchName, worldId, snapshot);
     }
 
     private ComputeStatus toComputeStatus(ProposalStatus status) {
@@ -457,6 +537,10 @@ public final class DefaultApp implements App {
         List<AppHook> ordered = new ArrayList<>(hooks);
         ordered.sort(Comparator.comparingInt(AppHook::priority).reversed());
         return ordered;
+    }
+
+    private List<AppPlugin> sortedPlugins() {
+        return List.copyOf(plugins);
     }
 
     private void runHook(AppHookEventType type, Runnable invoker, AppHook hook) {

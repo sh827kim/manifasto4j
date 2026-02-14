@@ -38,11 +38,11 @@
 ## 4. Unified Action Checklist
 
 ### P0-A App Parity Surface Expansion
-- [ ] A1-1 app plugin/policy/world-store 경계 인터페이스 정식화
-- [ ] A1-2 schema compatibility/resume-recovery 에러 타입 정식화
-- [ ] A1-3 memory hub/backfill/recall 계약 반영
-- [ ] A1-4 app 회귀 테스트 확장(lifecycle/action/session/branch/hook/system/memory)
-- [ ] A1-5 app world-store/recovery/compatibility 회귀 테스트 확장
+- [x] A1-1 app plugin/policy/world-store 경계 인터페이스 정식화
+- [x] A1-2 schema compatibility/resume-recovery 에러 타입 정식화
+- [x] A1-3 memory hub/backfill/recall 계약 반영
+- [x] A1-4 app 회귀 테스트 확장(lifecycle/action/session/branch/hook/system/memory)
+- [x] A1-5 app world-store/recovery/compatibility 회귀 테스트 확장
 
 Validation:
 - `./gradlew :manifesto-app:test`

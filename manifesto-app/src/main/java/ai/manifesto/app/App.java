@@ -81,6 +81,20 @@ public interface App {
         return null;
     }
 
+    default AppPolicyService getPolicyService() {
+        return new AllowAllPolicyService();
+    }
+
+    default AppWorldStore getWorldStore() {
+        return null;
+    }
+
+    default void addPlugin(AppPlugin plugin) {
+    }
+
+    default void removePlugin(AppPlugin plugin) {
+    }
+
     default SystemFacade getSystemFacade() {
         return new DefaultSystemFacade(this);
     }
