@@ -2,7 +2,7 @@
 
 ## 1. Baseline
 - TS baseline: `/workspace/manifasto-ts-core` @ `3b40070`
-- Java baseline: `/workspace/manifesto-java-core` @ `ccbdd3e`
+- Java baseline: `/workspace/manifesto-java-core` @ `517d3ac`
 - Method:
   - module directory/package shape comparison
   - exported surface comparison (`index.ts` and package structure)

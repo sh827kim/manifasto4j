@@ -4,7 +4,7 @@
 
 ## 1. Baseline
 - TS baseline: `/workspace/manifasto-ts-core` @ `3b40070`
-- Java baseline: `/workspace/manifesto-java-core` @ `ccbdd3e`
+- Java baseline: `/workspace/manifesto-java-core` @ `517d3ac`
 - 상세 전수 점검: `docs/TS_JAVA_FULL_AUDIT_2026-02-14.md`
 
 ## 2. Source-Validated Findings
@@ -99,9 +99,9 @@ Validation:
 - `./gradlew checkGoldenSync`
 
 ## 5. Completion Gate
-- [ ] `./gradlew test`
-- [ ] `./gradlew checkGoldenSync`
-- [ ] 문서 동기화(`docs/README.md`, `docs/INDEX.md`, `docs/MASTER_COMPLETION_PLAN_2026-02-14.md`, `docs/TS_JAVA_FULL_AUDIT_2026-02-14.md`)
+- [x] `./gradlew test`
+- [x] `./gradlew checkGoldenSync`
+- [x] 문서 동기화(`docs/README.md`, `docs/INDEX.md`, `docs/MASTER_COMPLETION_PLAN_2026-02-14.md`, `docs/TS_JAVA_FULL_AUDIT_2026-02-14.md`)
 
 ## 6. Global DoD
 1. TS 공개 계약의 핵심 runtime/API 의미를 Java에서 재현한다.

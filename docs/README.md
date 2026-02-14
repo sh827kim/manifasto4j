@@ -5,7 +5,7 @@
 ## Baseline
 - 기준일: `2026-02-14`
 - TS baseline: `/workspace/manifasto-ts-core` @ `3b40070`
-- Java baseline: `/workspace/manifesto-java-core` @ `ccbdd3e`
+- Java baseline: `/workspace/manifesto-java-core` @ `517d3ac`
 
 ## Core Planning Docs
 - 마스터 완료 계획(통합 실행 문서): [MASTER_COMPLETION_PLAN_2026-02-14.md](MASTER_COMPLETION_PLAN_2026-02-14.md)
