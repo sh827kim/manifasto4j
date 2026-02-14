@@ -26,9 +26,9 @@ https://docs.manifesto-ai.dev/
 - Java planned-but-implemented baseline modules: `intent-ir/translator/codegen`
 
 ## Current Priority
-1. App ActionHandle lifecycle parity (phase/update history)
-2. Intent-IR key derivation + lexicon/resolver minimum core
-3. Translator pipeline/plugin architecture hardening
+1. App parity surface expansion (runtime/policy/memory/recovery contracts)
+2. Host compliance hardening (error taxonomy + compliance-style tests)
+3. Intent-IR / Translator / Codegen semantic depth improvements
 
 ## Modules
 - `manifesto-core` - core runtime (schema/expr/flow/compute)
@@ -42,9 +42,8 @@ https://docs.manifesto-ai.dev/
 
 ## Docs in this repo
 - `/workspace/manifesto-java-core/docs/INDEX.md` - spec/fdr index
-- `/workspace/manifesto-java-core/docs/MASTER_COMPLETION_PLAN_2026-02-14.md` - master execution roadmap
-- `/workspace/manifesto-java-core/docs/TS_PARITY_PROGRESS_REPORT_2026-02-14.md` - TS shape-based progress report
-- `/workspace/manifesto-java-core/docs/TS_PARITY_MATRIX_2026-02-14.md` - TS-to-Java capability parity matrix
+- `/workspace/manifesto-java-core/docs/MASTER_COMPLETION_PLAN_2026-02-14.md` - unified master execution roadmap (plan + actions)
+- `/workspace/manifesto-java-core/docs/TS_JAVA_FULL_AUDIT_2026-02-14.md` - TS/Java full audit report
 - `/workspace/manifesto-java-core/docs/ko/book/index.md` - Korean learning guide for Java developers
 - `/workspace/manifesto-java-core/docs/spec/spec-*.md`, `/workspace/manifesto-java-core/docs/fdr/fdr-*.md` - package-level references
 

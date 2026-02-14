@@ -1,37 +1,23 @@
 # Java Porting Docs
 
-이 폴더는 Java 포팅 문서의 단일 인덱스 공간입니다.
+이 폴더는 manifesto TS -> Java 포팅 문서의 기준 인덱스입니다.
 
-## 기준
+## Baseline
 - 기준일: `2026-02-14`
-- TS 소스 기준: `/workspace/manifasto-ts-core`
-- TS 최신 확인 커밋: `3b40070`
-- 최근 비교 범위: `754d860..3b40070` (문서/ADR/SPEC 변경, 런타임 소스 변경 없음)
-- 마스터 실행 계획: [MASTER_COMPLETION_PLAN_2026-02-14.md](MASTER_COMPLETION_PLAN_2026-02-14.md)
-- Cycle 7 실행 문서: [CYCLE_7_EXECUTION_TASKS_2026-02-14.md](CYCLE_7_EXECUTION_TASKS_2026-02-14.md)
-- 릴리즈 체크리스트: [RELEASE_READINESS_CHECKLIST_2026-02-14.md](RELEASE_READINESS_CHECKLIST_2026-02-14.md)
-- 진행률 리포트: [TS_PARITY_PROGRESS_REPORT_2026-02-14.md](TS_PARITY_PROGRESS_REPORT_2026-02-14.md)
-- 정합 매트릭스: [TS_PARITY_MATRIX_2026-02-14.md](TS_PARITY_MATRIX_2026-02-14.md)
+- TS baseline: `/workspace/manifasto-ts-core` @ `3b40070`
+- Java baseline: `/workspace/manifesto-java-core` @ `ccbdd3e`
 
-## 문서 분류
-1. Active parity (TS와 직접 정합 대상)
-2. Planned packages (Java 신규 포팅 대상, 현재 baseline 구현 포함)
+## Core Planning Docs
+- 마스터 완료 계획(통합 실행 문서): [MASTER_COMPLETION_PLAN_2026-02-14.md](MASTER_COMPLETION_PLAN_2026-02-14.md)
+- 전수 점검 리포트: [TS_JAVA_FULL_AUDIT_2026-02-14.md](TS_JAVA_FULL_AUDIT_2026-02-14.md)
 
-## Active Parity
-- Core: [spec/spec-core.md](spec/spec-core.md), [fdr/fdr-core.md](fdr/fdr-core.md)
-- Host: [spec/spec-host.md](spec/spec-host.md), [fdr/fdr-host.md](fdr/fdr-host.md)
-- App: [spec/spec-app.md](spec/spec-app.md), [fdr/fdr-app.md](fdr/fdr-app.md)
-- Compiler: [spec/spec-compiler.md](spec/spec-compiler.md), [fdr/fdr-compiler.md](fdr/fdr-compiler.md)
-- World: [spec/spec-world.md](spec/spec-world.md), [fdr/fdr-world.md](fdr/fdr-world.md)
+## Module Specs
+- SPEC: `docs/spec/*`
+- FDR: `docs/fdr/*`
 
-## Planned Packages
-- Intent-IR: [spec/spec-intent-ir.md](spec/spec-intent-ir.md), [fdr/fdr-intent-ir.md](fdr/fdr-intent-ir.md)
-- Translator: [spec/spec-translator.md](spec/spec-translator.md), [fdr/fdr-translator.md](fdr/fdr-translator.md)
-- Codegen: [spec/spec-codegen.md](spec/spec-codegen.md), [fdr/fdr-codegen.md](fdr/fdr-codegen.md)
+## Index
+- 문서 인덱스: [INDEX.md](INDEX.md)
+- 학습 문서: [ko/book/index.md](ko/book/index.md)
 
-## 인덱스
-- [INDEX.md](INDEX.md)
-- [ko/book/index.md](ko/book/index.md)
-
-## 로컬 전용 문서
-- `local-only-docs/`는 Git 추적 대상이 아닙니다.
+## Note
+- `local-only-docs/`는 로컬 전용이며 Git 추적 대상이 아님.

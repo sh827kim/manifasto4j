@@ -1,224 +1,115 @@
-# Master Completion Plan (2026-02-14)
+# Master Completion Plan & Actions (Unified, 2026-02-14)
 
-## 1. 목적
-- TS 기준 코드 형상(`3b40070`) 대비 Java 포팅을 **기능/계약/테스트/문서**까지 완료한다.
-- 현재 진행률(형상 기준 약 55%)을 단계적으로 90%+까지 끌어올린다.
+이 문서는 기존 `MASTER_COMPLETION_PLAN` + `NEXT_ACTIONS`를 통합한 단일 실행 기준 문서입니다.
 
-## 2. 기준선
-- TS 기준 저장소: `/workspace/manifasto-ts-core`
-- Java 대상 저장소: `/workspace/manifesto-java-core`
-- 기준 문서:
-  - 진행률 리포트: `TS_PARITY_PROGRESS_REPORT_2026-02-14.md`
-  - 모듈 spec/fdr: `docs/spec/*`, `docs/fdr/*`
+## 1. Baseline
+- TS baseline: `/workspace/manifasto-ts-core` @ `3b40070`
+- Java baseline: `/workspace/manifesto-java-core` @ `ccbdd3e`
+- 상세 전수 점검: `docs/TS_JAVA_FULL_AUDIT_2026-02-14.md`
 
-실행 상태(2026-02-14):
-- Cycle 1~7 코드/테스트 작업 완료
-- 잔여 Blocker: `checkGoldenSync`가 TS compiler vector 경로 변경으로 실패
+## 2. Source-Validated Findings
 
-## 3. 전체 완료 정의 (Global DoD)
-1. TS 패키지 `app/core/host/world/compiler/intent-ir/translator/codegen`의 공개 계약이 Java에서 대응된다.
-2. 모듈별 핵심 시나리오 회귀 테스트가 존재한다.
-3. `./gradlew test` 상시 통과 + 골든/정합 검증 유지.
-4. 문서(`README`, `docs/*`, `ko/book`)가 코드 상태와 일치한다.
-5. TS 업데이트 발생 시 parity 매트릭스를 선갱신하고 영향 범위를 반영한다.
+1. App parity gap is still highest.
+- TS app export surface is broad (`/workspace/manifasto-ts-core/packages/app/src/index.ts`).
+- Java app is still facade-centric (`/workspace/manifesto-java-core/manifesto-app/src/main/java/ai/manifesto/app/App.java`, `/workspace/manifesto-java-core/manifesto-app/src/main/java/ai/manifesto/app/DefaultApp.java`).
 
-## 4. 워크스트림
-- WS-A: App API 정합
-- WS-B: Intent-IR 정합
-- WS-C: Translator 정합
-- WS-D: Codegen 정합
-- WS-E: Host/World 고도화
-- WS-F: Compiler/Core 잔여 갭 제거
-- WS-G: 통합/골든/문서 마감
+2. Host compliance density is still low.
+- TS host has large compliance/golden/unit suites (`/workspace/manifasto-ts-core/packages/host/src/__tests__`).
+- Java host currently has small test surface (`/workspace/manifesto-java-core/manifesto-host/src/test/java`).
 
-## 5. 단계별 실행 계획
+3. Host golden/vector standardization is needed.
+- Java has only one host golden vector file (`/workspace/manifesto-java-core/manifesto-host/src/test/resources/golden/host-e2e.json`) and ad-hoc loader path in `HostGoldenTest`.
+- Therefore “회귀 벡터 표준화”는 실제 소스 기준으로 유효한 작업 항목이다.
 
-### Phase 0. Parity Matrix 확정 (착수 기준 단계)
-목표:
-- TS export/디렉토리 형상을 Java 대응표로 고정하고, 이후 모든 작업의 판단 기준으로 사용한다.
+4. checkGoldenSync is in N/A policy mode.
+- Current script behavior treats missing TS compiler vectors as N/A (`/workspace/manifesto-java-core/scripts/check-golden-sync.sh`).
+- 운영 정책 문서화/자동 복구 절차는 계속 필요하다.
 
-작업:
-1. TS `src/index.ts` 및 하위 디렉토리 책임 목록화
-2. Java 대응 타입/API 매핑표 작성
-3. 항목별 상태(`완료/부분/미구현`) 표시
-4. 모듈별 수치 목표치 설정
+## 3. Priority Execution Order
+1. P0-A App parity surface expansion
+2. P0-B Host compliance hardening
+3. P1-A Intent-IR semantic depth
+4. P1-B Translator conformance depth
+5. P1-C Codegen option materialization
+6. P2-A World ingress/query hardening
+7. P2-B Compiler auxiliary surface and sync policy
+8. Final docs sync + full verification
 
-산출물:
-- `docs/TS_PARITY_MATRIX_2026-02-14.md`
+## 4. Unified Action Checklist
 
-완료 조건:
-- 8개 모듈 전부에 대해 API/기능/테스트 매트릭스가 존재
+### P0-A App Parity Surface Expansion
+- [ ] A1-1 app plugin/policy/world-store 경계 인터페이스 정식화
+- [ ] A1-2 schema compatibility/resume-recovery 에러 타입 정식화
+- [ ] A1-3 memory hub/backfill/recall 계약 반영
+- [ ] A1-4 app 회귀 테스트 확장(lifecycle/action/session/branch/hook/system/memory)
+- [ ] A1-5 app world-store/recovery/compatibility 회귀 테스트 확장
 
----
-
-### Phase 1. App 완성 (우선순위 P1)
-현재 이행:
-- lifecycle phase/update, session/branch/hook 기본 계약 반영 완료
-
-남은 작업:
-1. `AppStatus`, `ActionResult` 계열 타입 명시화
-2. `ActionHandle` 비동기/대기/취소 계약 강화
-3. Session API 확장(고정 actor + context 전파)
-4. Branch API 확장(fork/list/switch semantics 정밀화)
-5. System facade, Memory facade 최소/표준 구현
-6. Hook 시스템 확장(우선순위, 에러 격리, 필터)
-7. app 통합 시나리오 테스트 확대
-
-검증:
+Validation:
 - `./gradlew :manifesto-app:test`
 
-완료 조건:
-- TS app shape 대비 주요 facade/runtime 계약 80% 이상
+### P0-B Host Compliance Hardening
+- [ ] A2-1 HostError taxonomy 정식화
+- [ ] A2-2 mailbox/runner/job ordering/liveness compliance 테스트 추가
+- [ ] A2-3 effect retry/timeout/failure/trace invariant 테스트 추가
+- [ ] A2-4 host-owned namespace consistency 테스트 추가
+- [ ] A2-5 host golden/vector harness 표준화 (fixture/loader/assertion 규약 통일)
 
----
+Validation:
+- `./gradlew :manifesto-host:test`
 
-### Phase 2. Intent-IR 완성 (P1~P2)
-현재 이행:
-- canonical/hash + key(strict/semantic/sim) + lexicon/resolver 최소 코어 반영
+### P1-A Intent-IR Semantic Depth
+- [ ] A3-1 schema validator rule/code 세분화
+- [ ] A3-2 lexicon feature(role/theta/selectional) 정책 강화
+- [ ] A3-3 resolver discourse/focus 규칙 강화
+- [ ] A3-4 lower edge-case 회귀 벡터 확장
 
-남은 작업:
-1. schema 계층 정식화(heads/term/pred/event/resolved/specs)
-2. lower 경계 구현(Intent-IR -> 실행 경계 payload)
-3. lexicon feature check 체계 확장
-4. resolver discourse/focus 문맥 모델 확장
-5. key derivation 경계 테스트 강화
-
-검증:
+Validation:
 - `./gradlew :manifesto-intent-ir:test`
 
-완료 조건:
-- TS intent-ir 구조 항목 대부분 대응(85% 목표)
+### P1-B Translator Conformance Depth
+- [ ] A4-1 plugin family(coverage/dependency/or/task-enumeration 계열) 보강
+- [ ] A4-2 그래프 invariant/diagnostics/parallel conformance 테스트 확장
+- [ ] A4-3 manifesto exporter lowering failure taxonomy 정밀화
 
----
-
-### Phase 3. Translator Core 완성 (P1~P2)
-현재 이행:
-- pipeline/plugin, policy provider reload, intent-ir resolution plugin 반영
-
-남은 작업:
-1. core type 확장(chunk/intent-graph/execution-plan/diagnostics)
-2. strategy 계층 확장(decompose/translate/merge)
-3. invariants(helper 포함) 구현
-4. diagnostics bag/parallel executor 정합
-5. verifier/refiner 정책 룰 체계 고도화
-
-검증:
+Validation:
 - `./gradlew :manifesto-translator:test`
 
-완료 조건:
-- TS translator core shape 대비 80% 이상
+### P1-C Codegen Option Materialization
+- [ ] A5-1 naming/nullability/style 옵션 실반영 구현
+- [ ] A5-2 옵션 조합 snapshot 회귀 테스트 확장
 
----
-
-### Phase 4. Translator Adapter/Target 계층 정합 (P2)
-목표:
-- framework 종속 구현을 코어에서 분리한 채 TS 패밀리 구조를 맞춘다.
-
-작업:
-1. adapter 모듈 경계 문서화 및 인터페이스 고정
-2. target exporter(JSON/Manifesto/OpenAPI) 계약 구현
-3. adapter capability 테스트를 exporter 조합까지 확장
-
-검증:
-- translator integration 테스트 + 계약 테스트
-
-완료 조건:
-- TS translator adapters/targets 형상에 대응 가능한 확장 구조 확보
-
----
-
-### Phase 5. Codegen 완성 (P2)
-현재 이행:
-- plugin/registry/runner + java-dto/java-typed-client 편입 완료
-
-남은 작업:
-1. path safety 계층 추가
-2. stable hash + 헤더 정책 정합
-3. virtual fs 계층 추가
-4. plugin 옵션 계약(네이밍/nullability/style) 정식화
-5. integration snapshot 테스트 확장
-
-검증:
+Validation:
 - `./gradlew :manifesto-codegen:test`
 
-완료 조건:
-- TS codegen shape 대비 85% 목표
+### P2-A World Ingress/Query Hardening
+- [ ] A6-1 ingress context/epoch 계약 강화
+- [ ] A6-2 query filter/sort/limit 계약 강화
+- [ ] A6-3 world governance/query 회귀 테스트 보강
 
----
+Validation:
+- `./gradlew :manifesto-world:test`
 
-### Phase 6. Host/World 고도화 (P2)
-목표:
-- 실행 안정성 및 거버넌스 경계를 TS shape 수준으로 보강한다.
+### P2-B Compiler Auxiliary Surface
+- [ ] A7-1 cli/formatter 지원 범위 재정의 및 보강
+- [ ] A7-2 checkGoldenSync N/A 정책 문서화 고도화
+- [ ] A7-3 TS vector 재도입 시 sync 복구 절차 자동화
 
-Host 작업:
-1. context-provider/execution-context 분리 강화
-2. effect registry/executor 에러 경계 정밀화
-3. trace invariant 회귀 케이스 증설
-
-World 작업:
-1. ingress/epoch 경계 테스트 보강
-2. authority(HITL/tribunal/policy) 상태 전이 확장
-3. event/query/persistence 계약 보강
-
-검증:
-- `./gradlew :manifesto-host:test :manifesto-world:test`
-
-완료 조건:
-- host/world 모두 85% 목표
-
----
-
-### Phase 7. Compiler/Core 잔여 갭 제거 (P2)
-목표:
-- compiler/core에서 TS 대비 남은 edge behavior를 정리한다.
-
-작업:
-1. compiler api/loader/renderer 주변 갭 제거
-2. core explain/validate edge case 회귀 강화
-3. parity vector 확장
-
-검증:
-- `./gradlew :manifesto-compiler:test :manifesto-core:test`
-
-완료 조건:
-- compiler/core 모두 90% 근접
-
----
-
-### Phase 8. 통합 마감 (Release Readiness)
-작업:
-1. 전체 테스트 + 골든 정합 통과
-2. 문서 전체 동기화(README/spec/fdr/book/report)
-3. 최종 parity 리포트 갱신
-4. 릴리즈 체크리스트/태그 준비
-
-검증:
-- `./gradlew test`
+Validation:
+- `./gradlew :manifesto-compiler:test`
 - `./gradlew checkGoldenSync`
 
-완료 조건:
-- 코드/테스트/문서 기준 완료 선언 가능
+## 5. Completion Gate
+- [ ] `./gradlew test`
+- [ ] `./gradlew checkGoldenSync`
+- [ ] 문서 동기화(`docs/README.md`, `docs/INDEX.md`, `docs/MASTER_COMPLETION_PLAN_2026-02-14.md`, `docs/TS_JAVA_FULL_AUDIT_2026-02-14.md`)
 
-## 6. 실행 순서 (권장 사이클)
-1. Cycle 1: Phase 0 + Phase 1
-2. Cycle 2: Phase 2
-3. Cycle 3: Phase 3
-4. Cycle 4: Phase 4
-5. Cycle 5: Phase 5
-6. Cycle 6: Phase 6
-7. Cycle 7: Phase 7 + Phase 8
+## 6. Global DoD
+1. TS 공개 계약의 핵심 runtime/API 의미를 Java에서 재현한다.
+2. 모듈별 핵심/경계 시나리오 회귀 테스트가 존재한다.
+3. 통합 테스트와 골든 검증이 안정 통과한다.
+4. 문서가 코드 상태와 일치한다.
 
-## 7. 리스크 및 대응
-1. TS 변경 추종 리스크:
-- 대응: 사이클 시작 전 TS diff 스캔 + parity matrix 갱신 의무화
-
-2. 모듈 간 계약 드리프트:
-- 대응: spec/fdr 동시 갱신, cross-module integration test 추가
-
-3. 테스트 부채 증가:
-- 대응: 각 phase 완료 조건에 테스트 증설을 강제
-
-## 8. 운영 규칙
-1. 기능 추가는 반드시 테스트와 같은 커밋 시퀀스로 반영
-2. 문서는 사이클 종료마다 동기화
-3. 우선순위 이탈 금지(현재 phase 완료 전 다음 phase 착수 금지)
+## 7. Operating Rules
+1. 상위 우선순위(P0 -> P1 -> P2) 완료 전 다음 우선순위로 이동하지 않는다.
+2. 기능 변경은 테스트와 같은 작업 사이클에서 반영한다.
+3. 각 phase 종료 시 문서를 즉시 동기화한다.

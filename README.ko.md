@@ -31,9 +31,8 @@ https://docs.manifesto-ai.dev/
 
 ## 저장소 문서 위치
 - `docs/INDEX.md` (spec/fdr 인덱스)
-- `docs/MASTER_COMPLETION_PLAN_2026-02-14.md` (전체 완성 단계별 실행 계획)
-- `docs/TS_PARITY_PROGRESS_REPORT_2026-02-14.md` (TS 코드 형상 기준 진행률 리포트)
-- `docs/TS_PARITY_MATRIX_2026-02-14.md` (TS 대비 기능 정합 매트릭스)
+- `docs/MASTER_COMPLETION_PLAN_2026-02-14.md` (통합 실행 계획/액션 문서)
+- `docs/TS_JAVA_FULL_AUDIT_2026-02-14.md` (TS/Java 전수 점검 리포트)
 - `docs/ko/book/index.md` (자바 개발자용 학습 문서)
 - `docs/spec/spec-*.md`, `docs/fdr/fdr-*.md` (패키지별 레퍼런스)
 
