@@ -121,6 +121,63 @@ class MemoryWorldStoreTest {
         assertEquals(1, store.listBindings().size());
     }
 
+
+    @Test
+    void listProposalsByStatusFiltersExpectedItems() {
+        ProposalId approvedId = ProposalId.of("p-approved");
+        ProposalId evaluatingId = ProposalId.of("p-evaluating");
+
+        Proposal approved = Proposal.submitted(
+                approvedId,
+                ExecutionKeys.createExecutionKey(approvedId, 1),
+                new ActorRef("alice", ActorKind.HUMAN),
+                new ai.manifesto.world.schema.IntentInstance(
+                        new ai.manifesto.world.schema.IntentBody("act", Map.of(), null),
+                        "intent-approved",
+                        "intent-key-approved",
+                        new ai.manifesto.world.schema.IntentMeta(
+                                new ai.manifesto.world.schema.IntentOrigin(
+                                        "projection",
+                                        new ai.manifesto.world.schema.IntentSource("ui", "event-approved"),
+                                        new ActorRef("alice", ActorKind.HUMAN)
+                                )
+                        )
+                ),
+                WorldId.of("w1"),
+                null,
+                0,
+                10L
+        ).withTransition(ProposalStatus.APPROVED, null, null, null, null, null);
+
+        Proposal evaluating = Proposal.submitted(
+                evaluatingId,
+                ExecutionKeys.createExecutionKey(evaluatingId, 1),
+                new ActorRef("bob", ActorKind.HUMAN),
+                new ai.manifesto.world.schema.IntentInstance(
+                        new ai.manifesto.world.schema.IntentBody("act", Map.of(), null),
+                        "intent-evaluating",
+                        "intent-key-evaluating",
+                        new ai.manifesto.world.schema.IntentMeta(
+                                new ai.manifesto.world.schema.IntentOrigin(
+                                        "projection",
+                                        new ai.manifesto.world.schema.IntentSource("ui", "event-evaluating"),
+                                        new ActorRef("bob", ActorKind.HUMAN)
+                                )
+                        )
+                ),
+                WorldId.of("w2"),
+                null,
+                0,
+                10L
+        ).withTransition(ProposalStatus.EVALUATING, null, null, null, null, null);
+
+        assertTrue(store.saveProposal(approved).isSuccess());
+        assertTrue(store.saveProposal(evaluating).isSuccess());
+
+        assertEquals(1, store.listProposalsByStatus(ProposalStatus.APPROVED).size());
+        assertEquals(1, store.listProposalsByStatus(ProposalStatus.EVALUATING).size());
+        assertEquals(0, store.listProposalsByStatus(ProposalStatus.FAILED).size());
+    }
     @Test
     void saveSnapshotStripsPlatformNamespacesAndReturnsDefensiveCopy() {
         World world = new World(WorldId.of("w-platform"), "schema", "s-platform", 1L, null, null);

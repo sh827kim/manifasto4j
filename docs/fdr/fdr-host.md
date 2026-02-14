@@ -35,3 +35,9 @@ Translator evaluation path forbids $system.* to prevent bypassing system lifecyc
   - single-runner invariant 검증(trace 기반)
   - chained reinjection 시 continue enqueue/liveness 검증
   - host golden에 trace invariant 확장 케이스 추가
+
+- Host effect 경계 고도화 완료(2026-02-14, Cycle 6):
+  - context provider + context-aware effect handler 도입
+  - effect executor(retry/timeout/error 분류) 도입
+  - effect trace 이벤트(attempt/retry/success/failure) 확장
+  - host runtime 테스트에 context/trace 회귀 케이스 추가

@@ -26,6 +26,7 @@ import java.util.Objects;
  */
 public final class HostRuntime {
     private final Map<String, EffectHandler> handlers = new HashMap<>();
+    private final EffectExecutor effectExecutor = new EffectExecutor();
 
     public HostRuntime register(String effectType, EffectHandler handler) {
         Objects.requireNonNull(effectType, "effectType is required");
@@ -142,19 +143,29 @@ public final class HostRuntime {
                 runContext.setFinalResult(pendingResult);
                 return;
             }
-            EffectResult effectResult = executeEffectWithPolicy(handler, requirement, runContext.getOptions());
-            if (effectResult == null) {
+            EffectExecutionOutcome effectOutcome = effectExecutor.execute(
+                handler,
+                requirement,
+                runContext.getExecutionKey(),
+                intent.getIntentId(),
+                runContext.getComputeIterations(),
+                pendingResult.getSnapshot(),
+                runContext.getOptions(),
+                runContext.getOptions().getTraceSink()
+            );
+            if (!effectOutcome.isSuccess()) {
                 Snapshot failed = applyHostFailure(
                     runContext.getSchema(),
                     pendingResult.getSnapshot(),
                     requirement,
                     "HOST_EFFECT_FAILED",
-                    "Effect execution failed after retries"
+                    effectOutcome.error() == null ? "Effect execution failed" : effectOutcome.error().message(),
+                    effectOutcome.error()
                 );
                 runContext.setFinalResult(ComputeResult.error(failed, runContext.getLastTrace()));
                 return;
             }
-            patches.addAll(effectResult.getPatches());
+            patches.addAll(effectOutcome.result().getPatches());
         }
         patches.add(Patch.set("system.pendingRequirements", java.util.List.of()));
 
@@ -187,41 +198,24 @@ public final class HostRuntime {
         );
     }
 
-    private EffectResult executeEffectWithPolicy(
-        EffectHandler handler,
-        Requirement requirement,
-        HostRuntimeOptions options
-    ) {
-        int attempts = options.getMaxEffectRetries() + 1;
-        for (int attempt = 1; attempt <= attempts; attempt++) {
-            try {
-                long startedAt = System.nanoTime();
-                EffectResult effectResult = handler.handle(requirement.getParams());
-                long elapsedMillis = (System.nanoTime() - startedAt) / 1_000_000L;
-                long maxDuration = options.getMaxEffectDurationMillis();
-                if (maxDuration > 0L && elapsedMillis > maxDuration) {
-                    continue;
-                }
-                return effectResult;
-            } catch (RuntimeException error) {
-                // retry path
-            }
-        }
-        return null;
-    }
-
     private Snapshot applyHostFailure(
         DomainSchema schema,
         Snapshot snapshot,
         Requirement requirement,
         String code,
-        String message
+        String message,
+        EffectExecutionError executionError
     ) {
         Map<String, Object> errorMap = new LinkedHashMap<>();
         errorMap.put("code", code);
         errorMap.put("message", message);
         errorMap.put("requirementId", requirement.getId());
         errorMap.put("requirementType", requirement.getType());
+        if (executionError != null) {
+            errorMap.put("effectErrorCode", executionError.code().name());
+            errorMap.put("effectAttempts", executionError.attempts());
+            errorMap.put("effectRetryable", executionError.retryable());
+        }
 
         List<Patch> patches = new java.util.ArrayList<>();
         patches.add(Patch.set("$host.lastError", errorMap));

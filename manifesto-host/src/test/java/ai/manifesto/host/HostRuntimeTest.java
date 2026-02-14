@@ -349,6 +349,85 @@ class HostRuntimeTest {
         assertTrue(hasSingleRunnerInvariant(events), "runner:start must not overlap without runner:end");
     }
 
+    @Test
+    @DisplayName("context-aware effect handler는 execution context를 전달받는다")
+    void testContextAwareEffectHandlerReceivesExecutionContext() throws Exception {
+        FlowNode flow = FlowNode.If.of(
+            new Eq(new Get("status"), new Lit("ok")),
+            FlowNode.Halt.of("done"),
+            FlowNode.Effect.of("host.context", Map.of("message", new Lit("ctx")))
+        );
+        ActionSpec action = new ActionSpec.Builder("notify").flow(flow).build();
+        DomainSchema schema = buildSchemaWithHash(
+            "urn:test:context-aware",
+            "1.0.0",
+            new ActionSpec[] { action },
+            new FieldSpec[] { new FieldSpec("status", "string", false, "") }
+        );
+        Snapshot snapshot = Snapshot.builder()
+            .data(new HashMap<>(Map.of("status", "")))
+            .computed(new HashMap<>())
+            .system(SystemState.initial())
+            .input(new HashMap<>())
+            .meta(Snapshot.SnapshotMeta.create(0, System.currentTimeMillis(), "seed", schema.getHash()))
+            .build();
+
+        List<EffectExecutionContext> capturedContexts = new java.util.ArrayList<>();
+        HostRuntime host = new HostRuntime()
+            .register("host.context", (ContextAwareEffectHandler) (params, context) -> {
+                capturedContexts.add(context);
+                return EffectResult.of(List.of(Patch.set("status", "ok")));
+            });
+
+        Intent intent = new Intent("notify", new HashMap<>(), UUID.randomUUID().toString());
+        ComputeResult result = host.run(schema, snapshot, intent, HostRuntimeOptions.builder().build());
+
+        assertEquals(ComputeStatus.HALTED, result.getStatus());
+        assertEquals(1, capturedContexts.size());
+        EffectExecutionContext context = capturedContexts.get(0);
+        assertEquals(intent.getIntentId(), context.intentId());
+        assertEquals("host.context", context.requirementType());
+        assertTrue(context.attempt() >= 1);
+    }
+
+    @Test
+    @DisplayName("effect trace에는 attempt/retry/failure 이벤트가 남는다")
+    void testEffectTraceEventsForRetriesAndFailure() throws Exception {
+        FlowNode effectFlow = FlowNode.Effect.of("host.retry", Map.of());
+        ActionSpec action = new ActionSpec.Builder("retry").flow(effectFlow).build();
+        DomainSchema schema = buildSchemaWithHash(
+            "urn:test:effect-trace",
+            "1.0.0",
+            new ActionSpec[] { action },
+            new FieldSpec[] { new FieldSpec("status", "string", false, "") }
+        );
+        Snapshot snapshot = Snapshot.builder()
+            .data(new HashMap<>(Map.of("status", "")))
+            .computed(new HashMap<>())
+            .system(SystemState.initial())
+            .input(new HashMap<>())
+            .meta(Snapshot.SnapshotMeta.create(0, System.currentTimeMillis(), "seed", schema.getHash()))
+            .build();
+
+        List<HostRuntimeTraceEvent> events = new java.util.ArrayList<>();
+        HostRuntime host = new HostRuntime()
+            .register("host.retry", params -> {
+                throw new RuntimeException("always fail");
+            });
+
+        ComputeResult result = host.run(
+            schema,
+            snapshot,
+            new Intent("retry", new HashMap<>(), UUID.randomUUID().toString()),
+            HostRuntimeOptions.builder().maxEffectRetries(1).traceSink(events::add).build()
+        );
+
+        assertEquals(ComputeStatus.ERROR, result.getStatus());
+        assertTrue(events.stream().anyMatch(e -> "effect:attempt".equals(e.type())));
+        assertTrue(events.stream().anyMatch(e -> "effect:retry".equals(e.type())));
+        assertTrue(events.stream().anyMatch(e -> "effect:failure".equals(e.type())));
+    }
+
     private boolean hasSingleRunnerInvariant(List<HostRuntimeTraceEvent> events) {
         int active = 0;
         for (HostRuntimeTraceEvent event : events) {

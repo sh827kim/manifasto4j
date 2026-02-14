@@ -18,3 +18,13 @@ World defines governance: proposals, authority checks, decisions, and lineage DA
 - Decision recording
 - Worldline DAG integrity
 - Actor registry contracts
+
+
+## 3. Event / Query / Persistence Contracts (2026-02-14, Cycle 6)
+
+- event query sink 추가:
+  - `InMemoryWorldEventJournal` (`queryByType`, `querySince`, `listAll`, `clear`)
+- persistence query 계약 확장:
+  - `WorldStore.listProposalsByStatus(status)` default API 추가
+- 통합 검증:
+  - world proposal lifecycle + event journal + proposal status query를 통합 테스트로 검증

@@ -14,6 +14,7 @@ import ai.manifesto.world.schema.WorldEdge;
 import ai.manifesto.world.schema.WorldId;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * KR: WorldStore는 저장/조회 경계를 정의하는 저장소 인터페이스입니다.
@@ -43,6 +44,14 @@ public interface WorldStore {
     boolean hasProposal(ProposalId proposalId);
     List<Proposal> listProposals();
     List<Proposal> getEvaluatingProposals();
+    default List<Proposal> listProposalsByStatus(ProposalStatus status) {
+        if (status == null) {
+            return List.of();
+        }
+        return listProposals().stream()
+            .filter(proposal -> proposal != null && proposal.getStatus() == status)
+            .collect(Collectors.toList());
+    }
 
     StoreResult<DecisionRecord> saveDecision(DecisionRecord decisionRecord);
     DecisionRecord getDecision(DecisionId decisionId);

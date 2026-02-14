@@ -12,19 +12,22 @@ public final class HostRuntimeOptions {
     private final int maxEffectRetries;
     private final long maxEffectDurationMillis;
     private final HostRuntimeTraceSink traceSink;
+    private final EffectContextProvider contextProvider;
 
     private HostRuntimeOptions(
         int timeoutSeconds,
         int maxIterations,
         int maxEffectRetries,
         long maxEffectDurationMillis,
-        HostRuntimeTraceSink traceSink
+        HostRuntimeTraceSink traceSink,
+        EffectContextProvider contextProvider
     ) {
         this.timeoutSeconds = timeoutSeconds;
         this.maxIterations = maxIterations;
         this.maxEffectRetries = maxEffectRetries;
         this.maxEffectDurationMillis = maxEffectDurationMillis;
         this.traceSink = traceSink != null ? traceSink : HostRuntimeTraceSink.NOOP;
+        this.contextProvider = contextProvider != null ? contextProvider : EffectContextProvider.defaultProvider();
     }
 
     public int getTimeoutSeconds() {
@@ -47,6 +50,10 @@ public final class HostRuntimeOptions {
         return traceSink;
     }
 
+    public EffectContextProvider getContextProvider() {
+        return contextProvider;
+    }
+
     public static HostRuntimeOptions forTimeoutSeconds(int timeoutSeconds) {
         int normalizedTimeout = Math.max(1, timeoutSeconds);
         return new HostRuntimeOptions(
@@ -54,7 +61,8 @@ public final class HostRuntimeOptions {
             normalizedTimeout * 100,
             0,
             0L,
-            HostRuntimeTraceSink.NOOP
+            HostRuntimeTraceSink.NOOP,
+            EffectContextProvider.defaultProvider()
         );
     }
 
@@ -72,6 +80,7 @@ public final class HostRuntimeOptions {
         private Integer maxEffectRetries;
         private Long maxEffectDurationMillis;
         private HostRuntimeTraceSink traceSink;
+        private EffectContextProvider contextProvider;
 
         private Builder() {}
 
@@ -100,6 +109,11 @@ public final class HostRuntimeOptions {
             return this;
         }
 
+        public Builder contextProvider(EffectContextProvider contextProvider) {
+            this.contextProvider = contextProvider;
+            return this;
+        }
+
         public HostRuntimeOptions build() {
             int resolvedTimeout = timeoutSeconds != null ? timeoutSeconds : 5;
             int normalizedTimeout = Math.max(1, resolvedTimeout);
@@ -122,7 +136,8 @@ public final class HostRuntimeOptions {
                 resolvedMaxIterations,
                 resolvedMaxEffectRetries,
                 resolvedMaxEffectDurationMillis,
-                traceSink != null ? traceSink : HostRuntimeTraceSink.NOOP
+                traceSink != null ? traceSink : HostRuntimeTraceSink.NOOP,
+                contextProvider != null ? contextProvider : EffectContextProvider.defaultProvider()
             );
         }
     }

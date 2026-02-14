@@ -10,8 +10,8 @@
 | --- | ---: | ---: | ---: | ---: |
 | app | 123 | 32 | 25 | 3 |
 | core | 45 | 11 | 102 | 17 |
-| host | 54 | 33 | 17 | 4 |
-| world | 47 | 9 | 66 | 11 |
+| host | 54 | 33 | 24 | 4 |
+| world | 47 | 9 | 67 | 13 |
 | compiler | 49 | 7 | 88 | 13 |
 | intent-ir | 34 | 6 | 12 | 3 |
 | translator (core+adapters+targets) | 82 | 12 | 101 | 9 |
@@ -22,8 +22,8 @@
 | Module | Progress | Assessment |
 | --- | ---: | --- |
 | core | 82% | 계산 엔진/표현식/적용 경계는 강함. TS 대비 고수준 정합 양호. |
-| host | 68% | mailbox/runner/job 경계와 trace 계약은 반영. TS host의 더 넓은 테스트/컨텍스트 조합은 추가 필요. |
-| world | 74% | proposal/authority/lineage/persistence 축은 비교적 탄탄. TS world의 세부 ingress/이벤트 조합 확장 여지 존재. |
+| host | 76% | context-provider/effect-executor/error-boundary + effect trace 이벤트까지 반영. app/session 연동이 다음 과제. |
+| world | 80% | proposal/authority/lineage/persistence + event-query/persistence filter 계약 보강. ingress edge-case 골든 확장이 다음 과제. |
 | compiler | 76% | lexer/parser/analyzer/lowering/evaluation 핵심 축 반영. TS compiler의 API/CLI/loader 주변 기능은 추가 여지. |
 | app | 48% | ActionResult/AppStatus, session/branch alias, hook priority/filter/error mode, system/memory facade baseline 반영. |
 | intent-ir | 62% | schema validator + lower layer + key/lexicon/resolver 고도화 반영. lower 통합 범위 확장이 다음 과제. |
@@ -31,7 +31,7 @@
 | codegen | 80% | java-dto/java-typed-client + plugin runner + path-safety/stable-hash/header/virtual-fs + detailed run contract 반영. plugin 옵션 실반영 확대가 다음 과제. |
 
 ## 3. Overall Progress
-- Weighted by TS module source shape: **약 70% 완료**
+- Weighted by TS module source shape: **약 72% 완료**
 - 의미:
   - `core/host/world/compiler`는 실사용 가능한 포팅 기반 확보
   - `app/intent-ir/translator/codegen`은 구조는 올라왔으나 TS 전체 형상 대비 확장 단계
@@ -54,17 +54,17 @@
 - 잔여 과제는 plugin ecosystem 확장(ts/zod 등)과 옵션 실반영 범위 확대.
 
 ## 5. Recommended Next Sequence
-1. Host/World (P2)
-- Phase 6 기준 context-provider/effect 경계 + authority/ingress/event/persistence 테스트 보강
+1. Compiler/Core (P2)
+- loader/renderer edge-case와 explain/validate parity vector 보강
 
-2. App (P2)
+2. Release Readiness (P2)
+- 전체 골든/통합 테스트 + 문서 동기화 + 최종 parity 리포트 정리
+
+3. App (P2)
 - runtime/session/branch/hook/system 테스트 표면 확대
 
-3. Intent-IR (P2)
+4. Intent-IR (P2)
 - lower/schema 계약 확장, key/lexicon/resolver와 translator 연동 테스트 강화
-
-4. Compiler/Core (P2)
-- loader/renderer edge-case와 explain/validate parity vector 보강
 
 ## 6. Confidence
 - Confidence: **Medium**

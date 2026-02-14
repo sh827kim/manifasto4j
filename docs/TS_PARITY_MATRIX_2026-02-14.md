@@ -14,8 +14,8 @@
 | --- | --- | --- | --- | --- |
 | app | `runtime/hooks/execution/storage` + broad types | lifecycle/session/branch/hook/system/memory baseline | Partial | 48% -> 80% |
 | core | pure compute/apply/validate/explain + expr/evaluator | broad expr/evaluator/schema/runtime utils implemented | Strong Partial | 82% -> 90% |
-| host | mailbox/runner/job/context/effects/errors | runtime+job+runner+trace contract implemented | Partial | 68% -> 85% |
-| world | authority/registry/proposal/lineage/ingress/events/persistence | major governance runtime implemented | Strong Partial | 74% -> 85% |
+| host | mailbox/runner/job/context/effects/errors | runtime+job+runner+trace + context-provider/effect-executor boundary implemented | Strong Partial | 76% -> 86% |
+| world | authority/registry/proposal/lineage/ingress/events/persistence | major governance runtime + event query/persistence filter contract implemented | Strong Partial | 80% -> 88% |
 | compiler | lexer/parser/analyzer/generator/lowering/eval/api/renderer | broad compiler pipeline implemented | Strong Partial | 76% -> 90% |
 | intent-ir | schema/canonical/keys/lexicon/resolver/lower | schema/validator/lower + keys/lexicon/resolver advanced baseline | Partial | 62% -> 85% |
 | translator | core pipeline/plugins/strategies/invariants/helpers + adapters/targets | core models + strategies/helpers/invariants + adapter SPI + target exporters + export orchestration | Strong Partial | 78% -> 88% |
@@ -88,14 +88,14 @@ Java mapping:
 | --- | --- | --- | --- |
 | mailbox + runner model | Yes | Yes | Partial |
 | job typed execution | Yes | Yes | Partial |
-| effect registry/executor | Yes | Basic handler map | Partial |
-| context-provider/execution-context | Yes | Minimal | Partial |
-| host error model | Yes | Limited | Partial |
+| effect registry/executor | Yes | dedicated `EffectExecutor` + retry/timeout/error boundary | Partial |
+| context-provider/execution-context | Yes | `EffectContextProvider` + `EffectExecutionContext` | Partial |
+| host error model | Yes | error code + effect failure details(payload) | Partial |
 
 Priority actions:
-1. effect registry/executor 분리
-2. host error code model 고도화
-3. context-provider 경계 보강
+1. context-aware handler 도입 범위를 plugin/adapter 경계까지 확대
+2. effect diagnostics를 typed trace/report 구조로 확장
+3. host context-provider를 app/session 정책과 연동
 
 ---
 
@@ -114,12 +114,12 @@ Java mapping:
 | authority handlers | Yes | Yes (auto/hitl/policy/tribunal) | Partial |
 | lineage + branching | Yes | Yes | Strong Partial |
 | ingress context/epoch | Yes | Basic epoch flows | Partial |
-| events/query/store contract | Yes | Largely present | Partial |
+| events/query/store contract | Yes | event journal + proposal status filter까지 반영 | Partial |
 
 Priority actions:
-1. ingress context parity 강화
-2. authority state transition edge-case 강화
-3. query filtering/contract 고도화
+1. ingress epoch edge-case를 golden fixture로 확장
+2. authority timeout/escalation 전이 케이스 추가
+3. world query API의 정렬/limit/filter 계약 명시화
 
 ---
 
@@ -232,7 +232,7 @@ Priority actions:
 | app | 32 | 3 | High |
 | core | 11 | 17 | Low/Medium |
 | host | 33 | 4 | High |
-| world | 9 | 11 | Medium |
+| world | 9 | 13 | Low/Medium |
 | compiler | 7 | 13 | Low/Medium |
 | intent-ir | 6 | 3 | Medium/High |
 | translator | 12 | 9 | Medium |
@@ -244,7 +244,7 @@ Priority actions:
 - `Partial`: 핵심 축 일부 구현, 확장 필요
 - `Missing`: 대응 구조/기능 부재
 
-## 6. Immediate Execution Focus (Post Cycle 5)
-1. Host/World 고도화(Phase 6) 착수
-2. App 테스트 표면 확장(현재 test shape gap 상위)
-3. Translator/Codegen 골든 회귀 테스트 강화
+## 6. Immediate Execution Focus (Post Cycle 6)
+1. Compiler/Core 잔여 갭 제거(Phase 7) 착수
+2. Release readiness(Phase 8): 통합 골든/문서 동기화
+3. App 테스트 표면 확장(잔여 high gap)

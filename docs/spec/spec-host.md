@@ -66,3 +66,18 @@ Key rules:
   - `HostRunner` (single-runner drain)
   - `HostJob` (`StartIntent`, `ContinueCompute`, `FulfillRequirements`)
 - Execution remains synchronous in-process, but the contract boundary is aligned for future TS event-loop parity.
+
+
+## 7. Context Provider + Effect Executor Boundary (2026-02-14, Cycle 6)
+
+- Host effect 실행 경계 보강:
+  - `EffectExecutionContext`, `EffectContextProvider`
+  - `ContextAwareEffectHandler`
+  - `EffectExecutor` + `EffectExecutionOutcome/Error`
+- `HostRuntimeOptions` 확장:
+  - `contextProvider` 옵션 추가(기본 provider 제공)
+- trace 확장:
+  - `effect:attempt`, `effect:retry`, `effect:success`, `effect:failure` 이벤트 추가
+- host 에러 payload 확장:
+  - 기존 `HOST_EFFECT_FAILED` 유지
+  - 세부 필드(`effectErrorCode`, `effectAttempts`, `effectRetryable`) 추가
