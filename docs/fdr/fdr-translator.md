@@ -24,5 +24,8 @@
 - 추가 완료:
   - `TranslatorAdapterCapabilityValidator`/`TranslatorAdapterCapabilityReport` 추가
   - verifier 정책 강화(`verified`, `verificationScore`, TRV 규칙 코드)
+- 추가 완료:
+  - 도메인 정책 룰셋 주입 계약(`TranslatorPolicyProvider`) 추가
+  - `InMemoryTranslatorPolicyProvider` 및 정책 검증 코드(TRV101/TRV102) 반영
 - 다음 단계:
-  - 도메인별 정책 룰셋(허용 action whitelist, context policy) 확장
+  - 정책 소스 외부화(DB/설정 서버) 및 hot-reload 전략 검토

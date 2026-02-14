@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -59,5 +60,39 @@ class DefaultTranslatorVerifierTest {
         assertTrue(verified.diagnostics().stream().anyMatch(d -> d.startsWith("TRV002")));
         assertTrue(verified.diagnostics().stream().anyMatch(d -> d.startsWith("TRV004")));
         assertTrue(verified.diagnostics().stream().anyMatch(d -> d.startsWith("TRV006")));
+    }
+
+    @Test
+    void verifyAppliesDomainPolicyAllowedActionsAndRequiredContext() {
+        TranslatorPolicyProvider policyProvider = new InMemoryTranslatorPolicyProvider(
+            Map.of(
+                "todo",
+                new TranslatorDomainPolicy(
+                    "todo",
+                    Set.of("createTask", "closeTask"),
+                    Set.of("tenantId", "userId")
+                )
+            )
+        );
+        DefaultTranslatorVerifier verifier = new DefaultTranslatorVerifier(policyProvider);
+        TranslationRequest request = new TranslationRequest(
+            "todo",
+            "deleteTask",
+            List.of(new TranslatorMessage("user", "action:deleteTask", Map.of())),
+            Map.of("tenantId", "t-1")
+        );
+        TranslationDraft draft = new TranslationDraft(
+            "todo",
+            "deleteTask",
+            Map.of("text", "action:deleteTask"),
+            Map.of(),
+            List.of()
+        );
+
+        TranslationDraft verified = verifier.verify(request, draft);
+
+        assertFalse(Boolean.TRUE.equals(verified.meta().get("verified")));
+        assertTrue(verified.diagnostics().stream().anyMatch(d -> d.startsWith("TRV101")));
+        assertTrue(verified.diagnostics().stream().anyMatch(d -> d.startsWith("TRV102")));
     }
 }

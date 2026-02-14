@@ -40,3 +40,11 @@ Translator defines a multi-stage pipeline for converting NL input into intents/p
   - translator message round-trip(role/content/attributes) 보존
   - external message round-trip 크기/구조 보존
 - 결과는 `TranslatorAdapterCapabilityReport`로 반환되며 CI 테스트에 바로 사용할 수 있다.
+
+## 6. Domain Policy Ruleset (2026-02-13)
+
+- `TranslatorPolicyProvider`로 도메인별 정책 룰셋을 주입할 수 있다.
+- 기본 verifier는 다음 정책을 추가 검증한다.
+  - `TRV101`: 도메인 허용 action 목록 위반
+  - `TRV102`: 도메인 필수 context key 누락
+- 기본 구현체로 `InMemoryTranslatorPolicyProvider`를 제공한다.

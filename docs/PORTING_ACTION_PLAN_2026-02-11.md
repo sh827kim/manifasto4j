@@ -69,10 +69,14 @@
    - `JavaTypedClientCodeGenerator` 추가(`java-typed-client` target)
    - action별 `<Action>Input` + `<Domain>Client` 산출 계약 반영
    - typed client 단위 테스트 추가
+13. P2 translator 도메인 정책 룰셋 1차 완료 (2026-02-13):
+   - `TranslatorPolicyProvider`/`InMemoryTranslatorPolicyProvider` 추가
+   - verifier에 도메인 정책 검사(TRV101/TRV102) 반영
+   - 도메인 정책 단위 테스트 추가
 
 ## Remaining Work (P1~P2)
 1. Planned module implementation (P2):
-   - `manifesto-translator` 도메인별 정책 룰셋 확장
+   - `manifesto-translator` 정책 소스 외부화 및 hot-reload 전략 정리
    - `manifesto-codegen` 템플릿 전략(직접 렌더링 vs 템플릿 엔진) 확정
 
 ## Documentation Policy

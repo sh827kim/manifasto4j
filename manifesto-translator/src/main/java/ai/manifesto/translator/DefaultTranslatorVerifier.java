@@ -1,10 +1,12 @@
 package ai.manifesto.translator;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -13,6 +15,15 @@ import java.util.regex.Pattern;
  */
 public final class DefaultTranslatorVerifier implements TranslatorVerifier {
     private static final Pattern ACTION_NAME_PATTERN = Pattern.compile("^[A-Za-z][A-Za-z0-9_.-]{1,63}$");
+    private final TranslatorPolicyProvider policyProvider;
+
+    public DefaultTranslatorVerifier() {
+        this(domain -> java.util.Optional.empty());
+    }
+
+    public DefaultTranslatorVerifier(TranslatorPolicyProvider policyProvider) {
+        this.policyProvider = Objects.requireNonNull(policyProvider, "policyProvider must not be null");
+    }
 
     @Override
     public TranslationDraft verify(TranslationRequest request, TranslationDraft draft) {
@@ -58,6 +69,8 @@ public final class DefaultTranslatorVerifier implements TranslatorVerifier {
             diagnostics.add("TRV006: input.text must not be blank");
         }
 
+        applyDomainPolicyChecks(request, domainName, actionName, diagnostics);
+
         Map<String, Object> meta = new LinkedHashMap<>();
         if (draft.meta() != null) {
             meta.putAll(draft.meta());
@@ -77,5 +90,33 @@ public final class DefaultTranslatorVerifier implements TranslatorVerifier {
 
     private String safe(String value) {
         return value == null ? "" : value;
+    }
+
+    private void applyDomainPolicyChecks(
+        TranslationRequest request,
+        String domainName,
+        String actionName,
+        List<String> diagnostics
+    ) {
+        policyProvider.findByDomain(domainName).ifPresent(policy -> {
+            Set<String> allowedActions = policy.allowedActions() == null
+                ? Set.of()
+                : policy.allowedActions();
+            if (!allowedActions.isEmpty() && !allowedActions.contains(actionName)) {
+                diagnostics.add("TRV101: action is not allowed by domain policy");
+            }
+
+            Set<String> requiredContextKeys = policy.requiredContextKeys() == null
+                ? Set.of()
+                : policy.requiredContextKeys();
+            Map<String, Object> context = request.context() == null
+                ? Collections.emptyMap()
+                : request.context();
+            for (String key : requiredContextKeys) {
+                if (!context.containsKey(key)) {
+                    diagnostics.add("TRV102: required context key is missing: " + key);
+                }
+            }
+        });
     }
 }
