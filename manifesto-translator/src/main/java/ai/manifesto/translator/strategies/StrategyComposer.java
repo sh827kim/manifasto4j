@@ -34,9 +34,19 @@ public final class StrategyComposer {
         TranslateOptions translateOptions,
         MergeOptions mergeOptions
     ) {
+        return composeResult(request, decomposeOptions, translateOptions, mergeOptions).executionPlan();
+    }
+
+    public StrategyCompositionResult composeResult(
+        TranslationRequest request,
+        DecomposeOptions decomposeOptions,
+        TranslateOptions translateOptions,
+        MergeOptions mergeOptions
+    ) {
         List<Chunk> chunks = decomposeStrategy.decompose(request, decomposeOptions);
         IntentGraph baseGraph = translateStrategy.translate(chunks, translateOptions);
         IntentGraph merged = mergeStrategy.merge(List.of(baseGraph), mergeOptions);
-        return new ExecutionPlanBuilder().build(merged);
+        ExecutionPlan executionPlan = new ExecutionPlanBuilder().build(merged);
+        return new StrategyCompositionResult(merged, executionPlan);
     }
 }

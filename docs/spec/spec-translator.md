@@ -103,3 +103,29 @@ Translator defines a multi-stage pipeline for converting NL input into intents/p
   - `priority()`
   - `type()` (`INSPECTOR`, `TRANSFORMER`)
 - `DefaultTranslator`가 options 주입 생성자를 지원하도록 확장
+
+## 12. Adapter SPI + Target Exporters (2026-02-14, Cycle 4)
+
+- adapter SPI 추가:
+  - `adapters.spi`: `LlmPort`, `LlmRequest`, `LlmResponse`, `LlmCallOptions`, `LlmException` 등
+  - `adapters.spi.provider`: `ProviderCapabilityProfile`, `ProviderRequestMapper`, `ProviderResponseNormalizer`, `ProviderAdapterBinding`
+- provider profile 구현 추가:
+  - `adapters.profile`: OpenAI/Ollama/Claude capability profile + mapper + normalizer
+  - 네트워크 SDK 직접 의존 없이 payload mapping/normalization 계약만 코어에 반영
+- target exporter 계약 추가:
+  - `targets`: `ExportInput`, `TargetExporter`, `TargetExporters`
+  - `targets.json`: `JsonTargetExporter`
+  - `targets.manifesto`: `ManifestoTargetExporter`, `ManifestoBundle`, `InvocationPlan/Step`, `LoweringResult`
+  - `targets.openapi`: `OpenApiTargetExporter`
+
+## 13. Translation + Export Orchestration (2026-02-14, Cycle 4)
+
+- `DefaultTranslator` 확장:
+  - `translateAndExport(request, exporter, context)` 추가
+  - 실행 순서: `strategy compose -> graph validator + invariant suite -> pipeline run -> target export`
+- 통합 결과 모델:
+  - `TranslatorExportResult<TOut>` (translation result + graph + execution plan + graph diagnostics + exported output)
+- 테스트:
+  - adapter contract test
+  - target exporter test(json/manifesto/openapi)
+  - multi-target integration test

@@ -18,7 +18,7 @@
 | world | authority/registry/proposal/lineage/ingress/events/persistence | major governance runtime implemented | Strong Partial | 74% -> 85% |
 | compiler | lexer/parser/analyzer/generator/lowering/eval/api/renderer | broad compiler pipeline implemented | Strong Partial | 76% -> 90% |
 | intent-ir | schema/canonical/keys/lexicon/resolver/lower | schema/validator/lower + keys/lexicon/resolver advanced baseline | Partial | 62% -> 85% |
-| translator | core pipeline/plugins/strategies/invariants/helpers + adapters/targets | core models + strategies/helpers/invariants + pipeline options baseline | Partial | 63% -> 80% |
+| translator | core pipeline/plugins/strategies/invariants/helpers + adapters/targets | core models + strategies/helpers/invariants + adapter SPI + target exporters + export orchestration | Strong Partial | 78% -> 88% |
 | codegen | plugin runner/types/path-safety/hash/header/virtual-fs/plugins | plugin runner + 2 Java plugins baseline | Partial | 58% -> 85% |
 
 ## 3. Detailed Mapping
@@ -181,6 +181,8 @@ TS shape:
 Java mapping:
 - module: `manifesto-translator`
 - core: interpreter/verifier/refiner + pipeline/plugins + policy providers + intent-ir lower bridge + strategies/helpers/invariants
+- adapter SPI: provider profile/mapper/normalizer(OpenAI/Ollama/Claude) with provider-neutral contracts
+- targets: json/manifesto/openapi exporter implementations + `DefaultTranslator.translateAndExport()`
 
 | Capability | TS | Java | Status |
 | --- | --- | --- | --- |
@@ -189,13 +191,13 @@ Java mapping:
 | policy verification | Yes | Yes | Partial |
 | strategies (decompose/translate/merge) | Yes | Yes (baseline) | Partial |
 | invariants/helpers | Yes | Yes (baseline) | Partial |
-| adapter family | Yes | interface-level only | Missing/Partial |
-| target exporters | Yes | Missing | Missing |
+| adapter family | Yes | provider-neutral SPI + profile/mapper/normalizer | Partial |
+| target exporters | Yes | json/manifesto/openapi implemented | Partial |
 
 Priority actions:
-1. strategy semantics를 TS 세부 규칙 수준으로 확장
-2. invariant/helper 진단 코드/판정 정밀화
-3. adapter/target module 분리 구현
+1. exporter 결과의 snapshot/golden 회귀 테스트 강화
+2. adapter 실연동 구현체를 외부 모듈로 분리하고 계약 테스트 연동
+3. manifesto exporter lowering failure taxonomy/diagnostics 정밀화
 
 ---
 
@@ -231,7 +233,7 @@ Priority actions:
 | world | 9 | 11 | Medium |
 | compiler | 7 | 13 | Low/Medium |
 | intent-ir | 6 | 3 | Medium/High |
-| translator | 12 | 5 | Medium/High |
+| translator | 12 | 9 | Medium |
 | codegen | 9 | 3 | High |
 
 ## 5. Status Labels
@@ -240,7 +242,7 @@ Priority actions:
 - `Partial`: 핵심 축 일부 구현, 확장 필요
 - `Missing`: 대응 구조/기능 부재
 
-## 6. Immediate Execution Focus (Cycle 1)
-1. App 세부 semantics 고도화(action result/rejection/session runtime wiring)
-2. Parity matrix를 기준으로 각 기능 단위 test TODO 생성
-3. 다음 사이클에서 intent-ir lower + translator invariants 착수
+## 6. Immediate Execution Focus (Post Cycle 4)
+1. Codegen `path-safety/stable-hash/virtual-fs` 계층 구현 및 snapshot 테스트 확장
+2. App/Host 테스트 표면 확장(현재 test shape gap 상위)
+3. Translator exporter 결과의 골든 회귀 테스트 추가

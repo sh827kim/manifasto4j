@@ -14,7 +14,7 @@
 | world | 47 | 9 | 66 | 11 |
 | compiler | 49 | 7 | 88 | 13 |
 | intent-ir | 34 | 6 | 12 | 3 |
-| translator (core+adapters+targets) | 82 | 12 | 57 | 6 |
+| translator (core+adapters+targets) | 82 | 12 | 101 | 9 |
 | codegen | 19 | 9 | 9 | 3 |
 
 ## 2. Parity Assessment (TS shape-based)
@@ -27,11 +27,11 @@
 | compiler | 76% | lexer/parser/analyzer/lowering/evaluation 핵심 축 반영. TS compiler의 API/CLI/loader 주변 기능은 추가 여지. |
 | app | 48% | ActionResult/AppStatus, session/branch alias, hook priority/filter/error mode, system/memory facade baseline 반영. |
 | intent-ir | 62% | schema validator + lower layer + key/lexicon/resolver 고도화 반영. lower 통합 범위 확장이 다음 과제. |
-| translator | 63% | core models + strategies/helpers/invariants + pipeline diagnostics/options까지 반영. adapter/target 확장이 핵심 과제. |
+| translator | 78% | core + adapter SPI + target exporters(json/manifesto/openapi) + translate/export 통합 경로 반영. exporter 회귀 고도화가 핵심 과제. |
 | codegen | 58% | java-dto/java-typed-client + plugin runner 구조 도입. TS codegen의 virtual-fs/path-safety/plugin ecosystem 대비 미완. |
 
 ## 3. Overall Progress
-- Weighted by TS module source shape: **약 66% 완료**
+- Weighted by TS module source shape: **약 69% 완료**
 - 의미:
   - `core/host/world/compiler`는 실사용 가능한 포팅 기반 확보
   - `app/intent-ir/translator/codegen`은 구조는 올라왔으나 TS 전체 형상 대비 확장 단계
@@ -42,7 +42,7 @@
 
 2. Translator
 - TS translator는 `pipeline/plugins/strategies/invariants/helpers` + adapter/target 패밀리 구조.
-- Java는 core 축은 상당 부분 반영했으며, adapter/target 패밀리 확장이 주요 잔여 과제.
+- Java는 adapter SPI + json/manifesto/openapi exporter까지 반영되어 구조 갭이 축소되었고, 잔여 과제는 회귀/정밀도 영역.
 
 3. Intent-IR
 - TS는 `schema`, `keys`, `lexicon`, `resolver`, `lower`가 완결된 패키지 구조.
@@ -56,14 +56,14 @@
 1. App (P1)
 - session API 고도화, hook 에러 격리/우선순위, system/memory facade 경계 확대
 
-2. Translator (P2)
-- invariant/helper 레이어 추가, target exporter 계약 추가, adapter/target 모듈 분화
+2. Codegen (P2)
+- path safety/stable hash/header 계층 추가, virtual fs 계층 + snapshot 테스트 강화
 
 3. Intent-IR (P2)
 - lower/schema 계약 확장, key/lexicon/resolver와 translator 연동 테스트 강화
 
-4. Codegen (P2)
-- path safety/stable hash/virtual fs 계층 도입, plugin 옵션 계약 확장
+4. Host/App (P2)
+- runtime context/effect/hook 경계 테스트 표면 확대
 
 ## 6. Confidence
 - Confidence: **Medium**

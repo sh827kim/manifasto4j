@@ -39,5 +39,12 @@
   - strategies 계층(`decompose/translate/merge`) + `StrategyComposer` 도입
   - helpers/invariants 계층 및 검증 테스트 추가
   - pipeline options + diagnostics aggregation + plugin priority/type 규칙 도입
+- 추가 완료 (2026-02-14, Cycle 4):
+  - adapter SPI 계층(`LlmPort`, provider profile/mapper/normalizer binding) 도입
+  - provider-neutral OpenAI/Ollama/Claude profile 구현 추가(직접 SDK 구현 없음)
+  - target exporter 계층(`json/manifesto/openapi`) 구현
+  - `DefaultTranslator.translateAndExport()` 통합 경로 추가(strategy->invariant->pipeline->exporter)
+  - adapter/target/integration 테스트 증설
 - 다음 단계:
-  - adapter/target 패밀리(모듈 분리) 구현 확대
+  - translator exporter의 snapshot 회귀 케이스 확대
+  - adapter 실연동 모듈을 코어 외부 프로젝트로 분리하고 capability contract test로 연계
