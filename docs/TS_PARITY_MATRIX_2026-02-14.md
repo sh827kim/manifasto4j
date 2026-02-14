@@ -19,7 +19,7 @@
 | compiler | lexer/parser/analyzer/generator/lowering/eval/api/renderer | broad compiler pipeline implemented | Strong Partial | 76% -> 90% |
 | intent-ir | schema/canonical/keys/lexicon/resolver/lower | schema/validator/lower + keys/lexicon/resolver advanced baseline | Partial | 62% -> 85% |
 | translator | core pipeline/plugins/strategies/invariants/helpers + adapters/targets | core models + strategies/helpers/invariants + adapter SPI + target exporters + export orchestration | Strong Partial | 78% -> 88% |
-| codegen | plugin runner/types/path-safety/hash/header/virtual-fs/plugins | plugin runner + 2 Java plugins baseline | Partial | 58% -> 85% |
+| codegen | plugin runner/types/path-safety/hash/header/virtual-fs/plugins | plugin runner + 2 Java plugins + runtime utilities(path/hash/header/vfs) + detailed run contract | Strong Partial | 80% -> 90% |
 
 ## 3. Detailed Mapping
 
@@ -209,19 +209,21 @@ TS shape:
 Java mapping:
 - module: `manifesto-codegen`
 - `CodegenPlugin`, `CodegenPluginRegistry`, `CodegenRunner`, `JavaDto`, `JavaTypedClient`
+- runtime utility: `PathSafety`, `StableHash`, `HeaderGenerator`, `VirtualFileSystem`
+- detailed run contract: `CodegenExecutionOptions`, `CodegenPluginOptions`, `CodegenRunResult`
 
 | Capability | TS | Java | Status |
 | --- | --- | --- | --- |
 | plugin runner | Yes | Yes | Partial |
 | plugin implementations | Yes | 2 plugins | Partial |
-| path safety | Yes | Missing | Missing |
-| stable hash | Yes | Missing | Missing |
-| header policy | Yes | Missing | Missing |
-| virtual fs | Yes | Missing | Missing |
+| path safety | Yes | Implemented | Partial |
+| stable hash | Yes | Implemented | Partial |
+| header policy | Yes | Implemented | Partial |
+| virtual fs | Yes | Implemented | Partial |
 
 Priority actions:
-1. path safety/stable hash/header 계층 추가
-2. virtual fs + integration snapshot test 추가
+1. plugin 옵션을 각 generator에 실제 반영(현재 계약/검증 중심)
+2. TS plugin ecosystem(`ts/zod`) 대응 generator 확장
 
 ## 4. Test Shape Gap
 
@@ -234,7 +236,7 @@ Priority actions:
 | compiler | 7 | 13 | Low/Medium |
 | intent-ir | 6 | 3 | Medium/High |
 | translator | 12 | 9 | Medium |
-| codegen | 9 | 3 | High |
+| codegen | 9 | 7 | Medium |
 
 ## 5. Status Labels
 - `Complete`: TS shape 핵심 계약 대응 완료
@@ -242,7 +244,7 @@ Priority actions:
 - `Partial`: 핵심 축 일부 구현, 확장 필요
 - `Missing`: 대응 구조/기능 부재
 
-## 6. Immediate Execution Focus (Post Cycle 4)
-1. Codegen `path-safety/stable-hash/virtual-fs` 계층 구현 및 snapshot 테스트 확장
-2. App/Host 테스트 표면 확장(현재 test shape gap 상위)
-3. Translator exporter 결과의 골든 회귀 테스트 추가
+## 6. Immediate Execution Focus (Post Cycle 5)
+1. Host/World 고도화(Phase 6) 착수
+2. App 테스트 표면 확장(현재 test shape gap 상위)
+3. Translator/Codegen 골든 회귀 테스트 강화

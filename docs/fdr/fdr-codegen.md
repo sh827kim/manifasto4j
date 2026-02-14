@@ -21,5 +21,11 @@
 - 추가 완료 (2026-02-14):
   - `CodegenPlugin`/`CodegenPluginRegistry`/`CodegenRunner` 도입
   - 기존 Java DTO/typed-client 생성기를 plugin으로 편입
+- 추가 완료 (2026-02-14, Cycle 5):
+  - runtime utility 계층 도입(`path-safety`, `stable-hash`, `header`, `virtual-fs`)
+  - `CodegenRunner.generateDetailed()` + `CodegenRunResult` 도입
+  - plugin 옵션 계약(`CodegenPluginOptions`, `CodegenExecutionOptions`) 도입
+  - utility/runner 통합 테스트(path safety/hash/vfs/integration) 증설
 - 다음 단계:
-  - 템플릿 엔진 선택(직접 렌더링 vs 템플릿 라이브러리) 및 표준화
+  - plugin별 옵션 실제 반영 범위 확대(현재는 계약/검증 중심)
+  - snapshot/golden 테스트를 target별 fixture 기반으로 확장

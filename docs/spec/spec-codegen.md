@@ -42,3 +42,36 @@ Codegen은 schema 입력을 받아 대상 플랫폼 코드 산출물 목록으�
 - 기본 runner(`CodegenRunner.withDefaults`)는 다음 plugin을 내장:
   - `JavaDtoCodeGenerator`
   - `JavaTypedClientCodeGenerator`
+
+## 6. Utility Layer Parity (2026-02-14, Cycle 5)
+
+- TS `path-safety`, `stable-hash`, `header`, `virtual-fs` 유틸을 Java에 대응 구현:
+  - `runtime/PathSafety`, `PathValidationResult`
+  - `runtime/StableHash`
+  - `runtime/HeaderGenerator`, `HeaderOptions`
+  - `runtime/VirtualFileSystem`, `FilePatch`
+- 경로 정책:
+  - POSIX 상대경로만 허용
+  - `..` traversal, absolute path, drive-letter, null-byte 차단
+
+## 7. Runner Detailed Execution Contract (2026-02-14, Cycle 5)
+
+- `CodegenRunner.generateDetailed(request, options)` 추가:
+  - schema stable hash 계산
+  - generated header prepend(옵션)
+  - path safety 검증
+  - virtual-fs patch 충돌 규칙 적용
+  - `CodegenRunResult(files/diagnostics/schemaHash/pluginOptions)` 반환
+- 기존 `generate(request)`는 호환 유지:
+  - 내부적으로 detailed API를 사용
+  - error diagnostics 존재 시 예외로 실패 처리
+
+## 8. Plugin Option Contract (2026-02-14, Cycle 5)
+
+- `CodegenPluginOptions` 추가:
+  - `naming` (`CAMEL_CASE`, `SNAKE_CASE`, `PASCAL_CASE`)
+  - `nullability` (`STRICT`, `RELAXED`)
+  - `style` (`STANDARD`, `COMPACT`)
+- `CodegenExecutionOptions` 추가:
+  - `sourceId`, `stamp`, `prependGeneratedHeader`, `pluginOptions`
+- 옵션 누락/불량 입력은 diagnostics error로 수집
