@@ -198,8 +198,8 @@ Validation:
 ### 9.4 Stage C (P2)
 
 #### `TASK-C1` Compiler CLI Operationalization
-- [ ] compile/format/check CLI entrypoint 제공
-- [ ] `checkGoldenSync` strict lane(CI용) 실행 경로 문서화
+- [x] compile/format/check CLI entrypoint 제공
+- [x] `checkGoldenSync` strict lane(CI용) 실행 경로 문서화
 
 Validation:
 - `./gradlew :manifesto-compiler:test`

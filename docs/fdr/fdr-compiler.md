@@ -30,3 +30,5 @@
 - [x] CLI 보조 계약(`CompilerCliSupport`) 및 formatter 옵션 추가
 - [x] `checkGoldenSync` strict 모드(`CHECK_GOLDEN_SYNC_REQUIRE_SOURCE=1`) 추가
 - [x] TS vector 재도입 복구 스크립트(`scripts/recover-golden-sync.sh`) 추가
+- [x] compile/format/check 서브커맨드 CLI entrypoint(`CompilerCli`) 추가
+- [x] CI strict lane 실행 경로 문서화(`CHECK_GOLDEN_SYNC_REQUIRE_SOURCE=1 ./gradlew checkGoldenSync`)

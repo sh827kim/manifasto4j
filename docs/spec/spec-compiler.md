@@ -46,3 +46,22 @@ Compiler specifies lowering MEL into core IR and diagnostics.
   `CHECK_GOLDEN_SYNC_REQUIRE_SOURCE=1` strict 모드에서는 실패한다.
 - `recover-golden-sync.sh`는 `sync-golden.sh` + strict `check-golden-sync.sh`를 연속 실행해
   TS vector 재도입 시 동기화 복구 절차를 자동화한다.
+
+## 7. CLI Entrypoint (Cycle 9 / TASK-C1)
+
+- compiler CLI entrypoint `ai.manifesto.compiler.CompilerCli`를 제공한다.
+- 지원 서브커맨드:
+  - `compile`: MEL을 컴파일해 canonical schema JSON 출력(`--out` 또는 stdout)
+  - `format`: renderer 기반 deterministic MEL 포맷 출력
+  - `check`: 컴파일 성공 여부 검증(`OK`/non-zero exit)
+- 공통 입력 옵션:
+  - `--source=...` 또는 `--classpath=...` (상호배타)
+  - `--out=...`, `--indent=...`, `--newline=lf|crlf`, `--format-only`
+
+## 8. Strict Golden Sync Lane (CI)
+
+- 기본 `checkGoldenSync`는 소스 미존재 시 N/A 성공을 허용한다.
+- CI strict lane은 아래처럼 환경변수를 강제한다.
+  - `CHECK_GOLDEN_SYNC_REQUIRE_SOURCE=1 ./gradlew checkGoldenSync`
+- TS core 경로를 명시할 때:
+  - `TS_CORE_REPO=/path/to/manifasto-ts-core CHECK_GOLDEN_SYNC_REQUIRE_SOURCE=1 ./gradlew checkGoldenSync`
