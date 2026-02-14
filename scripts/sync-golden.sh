@@ -2,8 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TS_REPO_DEFAULT="/workspace/manifasto-ts-core"
-TS_REPO="${1:-$TS_REPO_DEFAULT}"
+TS_REPO="${1:-${TS_CORE_REPO:-}}"
 
 VECTORS_DEST="$ROOT_DIR/manifesto-compiler/src/test/resources/vectors"
 GOLDEN_DEST="$ROOT_DIR/manifesto-compiler/src/test/resources/golden"
@@ -22,22 +21,29 @@ GOLDEN_FILES=(
   "compiler-e2e.json"
 )
 
-VECTOR_SOURCE_CANDIDATES=(
-  "$TS_REPO/packages/compiler/vectors"
-  "$TS_REPO/packages/compiler/src/__tests__/vectors"
-  "$TS_REPO/packages/compiler/test/vectors"
-  "$TS_REPO/packages/compiler/tests/vectors"
-)
-GOLDEN_SOURCE_CANDIDATES=(
-  "$TS_REPO/packages/compiler/golden"
-  "$TS_REPO/packages/compiler/src/__tests__/golden"
-  "$TS_REPO/packages/compiler/test/golden"
-  "$TS_REPO/packages/compiler/tests/golden"
-)
+VECTOR_SOURCE_CANDIDATES=()
+GOLDEN_SOURCE_CANDIDATES=()
+if [[ -n "$TS_REPO" ]]; then
+  VECTOR_SOURCE_CANDIDATES=(
+    "$TS_REPO/packages/compiler/vectors"
+    "$TS_REPO/packages/compiler/src/__tests__/vectors"
+    "$TS_REPO/packages/compiler/test/vectors"
+    "$TS_REPO/packages/compiler/tests/vectors"
+  )
+  GOLDEN_SOURCE_CANDIDATES=(
+    "$TS_REPO/packages/compiler/golden"
+    "$TS_REPO/packages/compiler/src/__tests__/golden"
+    "$TS_REPO/packages/compiler/test/golden"
+    "$TS_REPO/packages/compiler/tests/golden"
+  )
+fi
 
 find_existing_dir() {
   local dir
   for dir in "$@"; do
+    if [[ -z "$dir" ]]; then
+      continue
+    fi
     if [[ -d "$dir" ]]; then
       echo "$dir"
       return 0
@@ -71,9 +77,18 @@ copy_files() {
 }
 
 echo "[sync-golden] ts_repo=$TS_REPO"
+if [[ -z "$TS_REPO" ]]; then
+  echo "[sync-golden] TS core repo is not configured. set -PtsCoreRepo or TS_CORE_REPO."
+fi
 
-VECTOR_SOURCE="$(find_existing_dir "${VECTOR_SOURCE_CANDIDATES[@]}" || true)"
-GOLDEN_SOURCE="$(find_existing_dir "${GOLDEN_SOURCE_CANDIDATES[@]}" || true)"
+VECTOR_SOURCE=""
+GOLDEN_SOURCE=""
+if [[ "${#VECTOR_SOURCE_CANDIDATES[@]}" -gt 0 ]]; then
+  VECTOR_SOURCE="$(find_existing_dir "${VECTOR_SOURCE_CANDIDATES[@]}" || true)"
+fi
+if [[ "${#GOLDEN_SOURCE_CANDIDATES[@]}" -gt 0 ]]; then
+  GOLDEN_SOURCE="$(find_existing_dir "${GOLDEN_SOURCE_CANDIDATES[@]}" || true)"
+fi
 
 status=0
 if [[ -n "$VECTOR_SOURCE" ]]; then
@@ -83,7 +98,11 @@ if [[ -n "$VECTOR_SOURCE" ]]; then
 else
   echo "[sync-golden] vector source not found. skip vector sync for current TS baseline."
   echo "[sync-golden] tried candidates:"
-  printf '  - %s\n' "${VECTOR_SOURCE_CANDIDATES[@]}"
+  if [[ "${#VECTOR_SOURCE_CANDIDATES[@]}" -eq 0 ]]; then
+    echo "  - (none)"
+  else
+    printf '  - %s\n' "${VECTOR_SOURCE_CANDIDATES[@]}"
+  fi
 fi
 
 if [[ -n "$GOLDEN_SOURCE" ]]; then
@@ -91,7 +110,11 @@ if [[ -n "$GOLDEN_SOURCE" ]]; then
   copy_files "$GOLDEN_SOURCE" "$GOLDEN_DEST" "${GOLDEN_FILES[@]}" || true
 else
   echo "[sync-golden] golden source not found (optional). tried:" >&2
-  printf '  - %s\n' "${GOLDEN_SOURCE_CANDIDATES[@]}" >&2
+  if [[ "${#GOLDEN_SOURCE_CANDIDATES[@]}" -eq 0 ]]; then
+    echo "  - (none)" >&2
+  else
+    printf '  - %s\n' "${GOLDEN_SOURCE_CANDIDATES[@]}" >&2
+  fi
 fi
 
 if [[ "$status" -ne 0 ]]; then

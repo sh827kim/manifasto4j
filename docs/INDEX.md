@@ -28,11 +28,6 @@
 - [fdr-translator.md](fdr/fdr-translator.md)
 - [fdr-codegen.md](fdr/fdr-codegen.md)
 
-## Planning
-- [MASTER_COMPLETION_PLAN_2026-02-14.md](MASTER_COMPLETION_PLAN_2026-02-14.md)
-- [TS_JAVA_FULL_AUDIT_2026-02-14.md](TS_JAVA_FULL_AUDIT_2026-02-14.md)
-- [PACKAGE_GAP_ANALYSIS_2026-02-14.md](PACKAGE_GAP_ANALYSIS_2026-02-14.md)
-
 ## Other
 - [README.md](README.md)
 - [ko/book/index.md](ko/book/index.md)

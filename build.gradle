@@ -6,19 +6,19 @@ plugins {
 def resolvedTsCoreRepo() {
     return project.findProperty('tsCoreRepo')
         ?: System.getenv('TS_CORE_REPO')
-        ?: '/workspace/manifasto-ts-core'
+        ?: ''
 }
 
 tasks.register('syncGoldenVectors', Exec) {
     group = 'verification'
-    description = 'Sync compiler golden/vector resources from TS core repo'
+    description = 'Sync compiler golden/vector resources from TS core repo (optional; set -PtsCoreRepo or TS_CORE_REPO)'
     workingDir = rootProject.projectDir
     commandLine 'bash', './scripts/sync-golden.sh', resolvedTsCoreRepo()
 }
 
 tasks.register('checkGoldenSync', Exec) {
     group = 'verification'
-    description = 'Verify compiler vectors are synchronized with TS core repo'
+    description = 'Verify compiler vectors are synchronized with TS core repo (optional; strict with CHECK_GOLDEN_SYNC_REQUIRE_SOURCE=1)'
     workingDir = rootProject.projectDir
     commandLine 'bash', './scripts/check-golden-sync.sh', resolvedTsCoreRepo()
 }

@@ -41,14 +41,12 @@ https://docs.manifesto-ai.dev/
 - `manifesto-codegen` - code generation contracts and Java targets baseline
 
 ## Docs in this repo
-- `/workspace/manifesto-java-core/docs/INDEX.md` - spec/fdr index
-- `/workspace/manifesto-java-core/docs/MASTER_COMPLETION_PLAN_2026-02-14.md` - unified master execution roadmap (plan + actions)
-- `/workspace/manifesto-java-core/docs/TS_JAVA_FULL_AUDIT_2026-02-14.md` - TS/Java full audit report
-- `/workspace/manifesto-java-core/docs/ko/book/index.md` - Korean learning guide for Java developers
-- `/workspace/manifesto-java-core/docs/spec/spec-*.md`, `/workspace/manifesto-java-core/docs/fdr/fdr-*.md` - package-level references
+- `docs/INDEX.md` - spec/fdr index
+- `docs/ko/book/index.md` - Korean learning guide for Java developers
+- `docs/spec/spec-*.md`, `docs/fdr/fdr-*.md` - package-level references
 
-## Local-only Notes
-- `/workspace/manifesto-java-core/local-only-docs/` is intentionally ignored by Git and is for local workspace notes only.
+## Planning/Local Notes
+- Planning docs, gap analysis, and local-environment notes are maintained in `local-only-docs/` (not tracked by Git).
 
 ## Build / Test
 ```bash

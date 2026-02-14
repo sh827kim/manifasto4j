@@ -31,13 +31,11 @@ https://docs.manifesto-ai.dev/
 
 ## 저장소 문서 위치
 - `docs/INDEX.md` (spec/fdr 인덱스)
-- `docs/MASTER_COMPLETION_PLAN_2026-02-14.md` (통합 실행 계획/액션 문서)
-- `docs/TS_JAVA_FULL_AUDIT_2026-02-14.md` (TS/Java 전수 점검 리포트)
 - `docs/ko/book/index.md` (자바 개발자용 학습 문서)
 - `docs/spec/spec-*.md`, `docs/fdr/fdr-*.md` (패키지별 레퍼런스)
 
-## 로컬 전용 문서 정책
-- `local-only-docs/`는 Git 추적 대상이 아니며, 로컬 작업 기록 용도입니다.
+## 계획/로컬 문서 정책
+- 작업 계획, 갭 분석, 로컬 환경 정보는 `local-only-docs/`에서 관리하며 Git 추적 대상이 아닙니다.
 
 ## 빌드/테스트
 ```bash

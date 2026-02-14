@@ -2,19 +2,21 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TS_REPO_DEFAULT="/workspace/manifasto-ts-core"
-TS_REPO="${1:-$TS_REPO_DEFAULT}"
+TS_REPO="${1:-${TS_CORE_REPO:-}}"
 REQUIRE_SOURCE="${CHECK_GOLDEN_SYNC_REQUIRE_SOURCE:-0}"
 
 VECTOR_DEST="$ROOT_DIR/manifesto-compiler/src/test/resources/vectors"
 
-VECTOR_SOURCE_CANDIDATES=(
-  "$TS_REPO/packages/compiler/vectors"
-  "$TS_REPO/packages/compiler/src/__tests__/vectors"
-  "$TS_REPO/packages/compiler/test/vectors"
-  "$TS_REPO/packages/compiler/tests/vectors"
-  "$TS_REPO/packages/compiler/__tests__/vectors"
-)
+VECTOR_SOURCE_CANDIDATES=()
+if [[ -n "$TS_REPO" ]]; then
+  VECTOR_SOURCE_CANDIDATES=(
+    "$TS_REPO/packages/compiler/vectors"
+    "$TS_REPO/packages/compiler/src/__tests__/vectors"
+    "$TS_REPO/packages/compiler/test/vectors"
+    "$TS_REPO/packages/compiler/tests/vectors"
+    "$TS_REPO/packages/compiler/__tests__/vectors"
+  )
+fi
 
 VECTOR_FILES=(
   "evaluation.json"
@@ -27,6 +29,9 @@ VECTOR_FILES=(
 find_existing_dir() {
   local dir
   for dir in "$@"; do
+    if [[ -z "$dir" ]]; then
+      continue
+    fi
     if [[ -d "$dir" ]]; then
       echo "$dir"
       return 0
@@ -35,12 +40,22 @@ find_existing_dir() {
   return 1
 }
 
-VECTOR_SOURCE="$(find_existing_dir "${VECTOR_SOURCE_CANDIDATES[@]}" || true)"
+VECTOR_SOURCE=""
+if [[ "${#VECTOR_SOURCE_CANDIDATES[@]}" -gt 0 ]]; then
+  VECTOR_SOURCE="$(find_existing_dir "${VECTOR_SOURCE_CANDIDATES[@]}" || true)"
+fi
 
 if [[ -z "$VECTOR_SOURCE" ]]; then
+  if [[ -z "$TS_REPO" ]]; then
+    echo "[check-golden-sync] TS core repo is not configured. set -PtsCoreRepo or TS_CORE_REPO."
+  fi
   echo "[check-golden-sync] vector source not found. treated as N/A for current TS baseline."
   echo "[check-golden-sync] tried candidates:"
-  printf '  - %s\n' "${VECTOR_SOURCE_CANDIDATES[@]}"
+  if [[ "${#VECTOR_SOURCE_CANDIDATES[@]}" -eq 0 ]]; then
+    echo "  - (none)"
+  else
+    printf '  - %s\n' "${VECTOR_SOURCE_CANDIDATES[@]}"
+  fi
   if [[ "$REQUIRE_SOURCE" == "1" ]]; then
     echo "[check-golden-sync] strict mode enabled (CHECK_GOLDEN_SYNC_REQUIRE_SOURCE=1): failing because source is required." >&2
     exit 3

@@ -40,9 +40,8 @@
 ```
 
 ## 함께 보면 좋은 문서
-- 패키지별 SPEC: `/workspace/manifesto-java-core/docs/spec`
-- 패키지별 FDR: `/workspace/manifesto-java-core/docs/fdr`
-- 통합 플랜: `/workspace/manifesto-java-core/docs/MASTER_COMPLETION_PLAN_2026-02-14.md`
+- 패키지별 SPEC: `docs/spec`
+- 패키지별 FDR: `docs/fdr`
 
 <!-- NEXT_DOC_START -->
 ---

@@ -4,13 +4,8 @@
 
 ## Baseline
 - 기준일: `2026-02-14`
-- TS baseline: `/workspace/manifasto-ts-core` @ `3b40070`
-- Java baseline: `/workspace/manifesto-java-core` @ `517d3ac`
-
-## Core Planning Docs
-- 마스터 완료 계획(통합 실행 문서): [MASTER_COMPLETION_PLAN_2026-02-14.md](MASTER_COMPLETION_PLAN_2026-02-14.md)
-- 전수 점검 리포트: [TS_JAVA_FULL_AUDIT_2026-02-14.md](TS_JAVA_FULL_AUDIT_2026-02-14.md)
-- 패키지별 갭 분석 + 단계별 Task: [PACKAGE_GAP_ANALYSIS_2026-02-14.md](PACKAGE_GAP_ANALYSIS_2026-02-14.md)
+- TS baseline: `manifasto-ts-core` @ `3b40070`
+- Java baseline: `manifasto4j` @ `517d3ac`
 
 ## Module Specs
 - SPEC: `docs/spec/*`
@@ -21,4 +16,5 @@
 - 학습 문서: [ko/book/index.md](ko/book/index.md)
 
 ## Note
-- `local-only-docs/`는 로컬 전용이며 Git 추적 대상이 아님.
+- 문서는 저장소 기준 상대 경로를 사용한다.
+- 작업 계획/갭 분석/로컬 경로 정보는 `local-only-docs/`에서 관리한다.

@@ -49,7 +49,7 @@ manifesto-java-core/
 - 개념: `docs/ko/book`
 - 사양: `docs/spec`
 - 설계 결정/후속: `docs/fdr`
-- 실행 계획: `docs/MASTER_COMPLETION_PLAN_2026-02-14.md`
+- 실행 계획/갭 분석: `local-only-docs/plans`, `local-only-docs/reports` (로컬 전용)
 
 <!-- NEXT_DOC_START -->
 ---
