@@ -13,7 +13,7 @@ import java.util.Set;
  * KR: DomainSchema 유사 map에서 state 필드를 읽어 Java DTO 소스 코드를 생성하는 기본 생성기입니다.
  * EN: Default generator that reads state fields from a DomainSchema-like map and emits Java DTO source code.
  */
-public final class JavaDtoCodeGenerator implements CodeGenerator {
+public final class JavaDtoCodeGenerator implements CodegenPlugin {
     private static final Set<String> JAVA_KEYWORDS = Set.of(
         "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char", "class",
         "const", "continue", "default", "do", "double", "else", "enum", "extends", "final",
@@ -27,7 +27,7 @@ public final class JavaDtoCodeGenerator implements CodeGenerator {
     public List<GeneratedArtifact> generate(CodegenRequest request) {
         Objects.requireNonNull(request, "request must not be null");
         Objects.requireNonNull(request.target(), "request.target must not be null");
-        if (!"java-dto".equalsIgnoreCase(request.target().name())) {
+        if (!supports(request.target())) {
             throw new IllegalArgumentException("Unsupported target: " + request.target().name());
         }
         if (request.basePackage() == null || request.basePackage().isBlank()) {
@@ -43,6 +43,16 @@ public final class JavaDtoCodeGenerator implements CodeGenerator {
         String content = buildStateDtoSource(packageName, fields);
 
         return List.of(new GeneratedArtifact(pathPrefix + "/StateDto.java", content));
+    }
+
+    @Override
+    public String pluginId() {
+        return "java-dto";
+    }
+
+    @Override
+    public boolean supports(CodegenTarget target) {
+        return target != null && "java-dto".equalsIgnoreCase(target.name());
     }
 
     private String buildStateDtoSource(String packageName, Map<String, Object> fields) {

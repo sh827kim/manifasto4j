@@ -12,9 +12,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -68,6 +70,76 @@ class AppTest {
         assertEquals(ActionPhase.PREPARING, handle.getUpdates().get(0).phase());
         assertEquals(ActionPhase.EXECUTING, handle.getUpdates().get(1).phase());
         assertEquals("ok", latest.get());
+    }
+
+    @Test
+    @DisplayName("session/ hook API 동작")
+    void testSessionAndHookApis() throws Exception {
+        FlowNode effectFlow = FlowNode.Seq.of(
+            FlowNode.Patch.set("status", new Lit("ok")),
+            FlowNode.Halt.of("done"),
+            FlowNode.Halt.of("done")
+        );
+        ActionSpec action = new ActionSpec.Builder("notify")
+            .flow(effectFlow)
+            .build();
+        DomainSchema schema = buildSchemaWithHash(
+            "urn:test",
+            "1.0.0",
+            new ActionSpec[] { action },
+            new FieldSpec[] { new FieldSpec("status", "string", false, "") }
+        );
+        Snapshot snapshot = Snapshot.builder()
+            .data(new HashMap<>(Map.of("status", "")))
+            .computed(new HashMap<>())
+            .system(SystemState.initial())
+            .input(new HashMap<>())
+            .meta(Snapshot.SnapshotMeta.create(0, System.currentTimeMillis(), "seed", schema.getHash()))
+            .build();
+
+        HostRuntime host = new HostRuntime();
+        InMemoryAppSnapshotStore store = new InMemoryAppSnapshotStore();
+        App app = AppFactory.createApp(schema, snapshot, host, "session-a", store);
+
+        AtomicInteger readyCount = new AtomicInteger(0);
+        AtomicInteger beforeCount = new AtomicInteger(0);
+        AtomicInteger afterCount = new AtomicInteger(0);
+        List<ActionPhase> phases = new java.util.ArrayList<>();
+        AppHook hook = new AppHook() {
+            @Override
+            public void onReady(Snapshot snapshot) {
+                readyCount.incrementAndGet();
+            }
+
+            @Override
+            public void onBeforeAct(Intent intent, Snapshot snapshot) {
+                beforeCount.incrementAndGet();
+            }
+
+            @Override
+            public void onActionUpdate(Intent intent, ActionUpdate update, Snapshot snapshot) {
+                phases.add(update.phase());
+            }
+
+            @Override
+            public void onAfterAct(Intent intent, ActionHandle handle, Snapshot snapshot) {
+                afterCount.incrementAndGet();
+            }
+        };
+        app.addHook(hook);
+
+        app.ready();
+        ActionHandle handle = app.act(new Intent("notify", Map.of(), UUID.randomUUID().toString()));
+
+        assertTrue(app.hasSessionPersistence());
+        assertEquals("session-a", app.getSessionId());
+        assertEquals(1, readyCount.get());
+        assertEquals(1, beforeCount.get());
+        assertEquals(1, afterCount.get());
+        assertEquals(ActionPhase.COMPLETED, handle.getPhase());
+        assertTrue(phases.contains(ActionPhase.PREPARING));
+        assertTrue(phases.contains(ActionPhase.EXECUTING));
+        assertTrue(phases.contains(ActionPhase.COMPLETED));
     }
 
     private DomainSchema buildSchemaWithHash(

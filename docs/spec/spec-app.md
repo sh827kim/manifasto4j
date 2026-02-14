@@ -46,7 +46,26 @@ Minimal conformance for server/CLI:
   - `PREPARATION_FAILED`
 - App 구현체는 world/non-world 경로 모두에서 최소 `PREPARING -> ... -> terminal` 전이를 기록해야 한다.
 
-## 5. Optional Features (defer)
+## 5. Session/Branch/Hook API (2026-02-14)
+
+- Session:
+  - `getSessionId()`
+  - `hasSessionPersistence()`
+- Branch:
+  - `getCurrentBranchId()`
+  - `listBranches()`
+  - `switchBranch(worldId)`
+- Hook:
+  - `addHook(AppHook)`
+  - `removeHook(AppHook)`
+  - Hook 이벤트:
+    - `onReady`
+    - `onBeforeAct`
+    - `onActionUpdate`
+    - `onAfterAct`
+    - `onBranchSwitched`
+
+## 6. Optional Features (defer)
 
 - Branch management
 - Session management

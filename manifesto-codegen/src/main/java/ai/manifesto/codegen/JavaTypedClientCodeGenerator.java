@@ -13,7 +13,7 @@ import java.util.Set;
  * KR: DomainSchema 유사 map에서 action 정보를 읽어 Java typed client 인터페이스/입력 DTO를 생성합니다.
  * EN: Generates Java typed-client interface and per-action input DTOs from a DomainSchema-like action map.
  */
-public final class JavaTypedClientCodeGenerator implements CodeGenerator {
+public final class JavaTypedClientCodeGenerator implements CodegenPlugin {
     private static final Set<String> JAVA_KEYWORDS = Set.of(
         "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char", "class",
         "const", "continue", "default", "do", "double", "else", "enum", "extends", "final",
@@ -27,7 +27,7 @@ public final class JavaTypedClientCodeGenerator implements CodeGenerator {
     public List<GeneratedArtifact> generate(CodegenRequest request) {
         Objects.requireNonNull(request, "request must not be null");
         Objects.requireNonNull(request.target(), "request.target must not be null");
-        if (!"java-typed-client".equalsIgnoreCase(request.target().name())) {
+        if (!supports(request.target())) {
             throw new IllegalArgumentException("Unsupported target: " + request.target().name());
         }
         if (request.basePackage() == null || request.basePackage().isBlank()) {
@@ -61,6 +61,16 @@ public final class JavaTypedClientCodeGenerator implements CodeGenerator {
             ));
         }
         return List.copyOf(artifacts);
+    }
+
+    @Override
+    public String pluginId() {
+        return "java-typed-client";
+    }
+
+    @Override
+    public boolean supports(CodegenTarget target) {
+        return target != null && "java-typed-client".equalsIgnoreCase(target.name());
     }
 
     private String buildClientSource(String packageName, String domainName, List<ActionDef> actions) {

@@ -64,3 +64,12 @@ Translator defines a multi-stage pipeline for converting NL input into intents/p
   - verify 이후 Intent-IR resolver/lexicon을 적용해 draft 보정
   - resolver/lexicon 진단 코드를 translator diagnostics에 병합
   - `lexiconValid` 메타 플래그를 결과 Intent IR에 반영
+
+## 9. External Policy Provider + Reload (2026-02-14)
+
+- `TranslatorPolicyProvider` 계약 확장:
+  - `snapshot()` 현재 정책 맵 조회
+  - `reload()` 정책 재로딩
+- `FileTranslatorPolicyProvider` 추가:
+  - 파일 기반 정책 로딩(`*.allowedActions`, `*.requiredContextKeys`)
+  - 런타임 재로딩 지원

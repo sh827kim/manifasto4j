@@ -50,11 +50,11 @@
 
 ## Remaining Work
 1. P2 Translator:
-   - 정책 소스 외부화(DB/Config Service) 및 hot-reload 전략
+   - 정책 소스 DB/Config Service provider 추가
 2. P2 Codegen:
-   - plugin runner 중심 구조(직접 렌더링/템플릿 엔진 전략 확정)
+   - 템플릿 엔진 전략 확정(직접 렌더링 vs 템플릿 엔진)
 3. P1 App:
-   - session/branch/hook API 계약 확장(현재는 lifecycle 최소 계약 중심)
+   - Hook/plugin 시스템의 확장 포인트(필터/우선순위/에러 격리) 고도화
 
 ## Documentation Policy
 1. Docs are organized by:

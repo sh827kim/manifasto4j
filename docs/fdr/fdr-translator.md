@@ -31,5 +31,8 @@
   - `TranslatorPipeline` + `TranslatorPipelinePlugin` 도입
   - `DefaultTranslator`를 pipeline 기반으로 전환
   - `IntentIrResolutionPlugin` 추가(resolver/lexicon bridge)
+- 추가 완료 (2026-02-14):
+  - `FileTranslatorPolicyProvider` 추가(파일 기반 정책 소스)
+  - 정책 provider `reload()`/`snapshot()` 계약 도입
 - 다음 단계:
-  - 정책 소스 외부화(DB/설정 서버) 및 hot-reload 전략 검토
+  - 정책 소스 DB/설정 서버 연동 provider 추가

@@ -28,6 +28,11 @@ public final class InMemoryTranslatorPolicyProvider implements TranslatorPolicyP
         return Optional.ofNullable(policiesByDomain.get(normalize(domainName)));
     }
 
+    @Override
+    public Map<String, TranslatorDomainPolicy> snapshot() {
+        return Map.copyOf(policiesByDomain);
+    }
+
     private String normalize(String value) {
         return value == null ? "" : value.trim().toLowerCase();
     }

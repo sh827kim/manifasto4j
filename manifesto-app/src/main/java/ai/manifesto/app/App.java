@@ -5,6 +5,7 @@ import ai.manifesto.core.schema.DomainSchema;
 import ai.manifesto.world.ManifestoWorld;
 import ai.manifesto.world.schema.WorldId;
 
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -22,6 +23,28 @@ public interface App {
     Snapshot getSnapshot();
 
     DomainSchema getSchema();
+
+    default String getSessionId() {
+        return null;
+    }
+
+    default boolean hasSessionPersistence() {
+        return false;
+    }
+
+    default WorldId getCurrentBranchId() {
+        return null;
+    }
+
+    default List<WorldId> listBranches() {
+        return List.of();
+    }
+
+    default void addHook(AppHook hook) {
+    }
+
+    default void removeHook(AppHook hook) {
+    }
 
     default ManifestoWorld getWorld() {
         return null;

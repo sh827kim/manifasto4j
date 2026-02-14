@@ -36,6 +36,7 @@ public final class DefaultApp implements App {
     private final HostRuntime host;
     private Snapshot snapshot;
     private final List<Subscription> subscriptions = new ArrayList<>();
+    private final List<AppHook> hooks = new ArrayList<>();
     private final String sessionId;
     private final AppSnapshotStore snapshotStore;
 
@@ -82,6 +83,7 @@ public final class DefaultApp implements App {
     @Override
     public void ready() {
         if (world == null) {
+            emitReadyHook();
             return;
         }
 
@@ -97,21 +99,25 @@ public final class DefaultApp implements App {
             this.snapshot = genesisSnapshot;
             persistSessionSnapshot();
         }
+        emitReadyHook();
     }
 
     @Override
     public ActionHandle act(Intent intent) throws Exception {
+        emitBeforeActHook(intent);
         List<ActionUpdate> updates = new ArrayList<>();
-        appendUpdate(updates, ActionPhase.PREPARING, "Preparing action");
+        appendUpdate(intent, updates, ActionPhase.PREPARING, "Preparing action");
 
         if (world == null) {
-            appendUpdate(updates, ActionPhase.EXECUTING, "Executing action via HostRuntime");
+            appendUpdate(intent, updates, ActionPhase.EXECUTING, "Executing action via HostRuntime");
             ComputeResult result = host.run(schema, snapshot, intent, 5);
             snapshot = result.getSnapshot();
             persistSessionSnapshot();
             notifySubscribers(snapshot);
-            appendTerminalUpdate(updates, result.getStatus(), null);
-            return new ActionHandle(result, updates);
+            appendTerminalUpdate(intent, updates, result.getStatus(), null);
+            ActionHandle handle = new ActionHandle(result, updates);
+            emitAfterActHook(intent, handle);
+            return handle;
         }
 
         if (appActor == null) {
@@ -133,19 +139,21 @@ public final class DefaultApp implements App {
         );
 
         ProposalResult proposalResult = world.submitProposal(appActor.getActorId(), intentInstance, currentWorldId, null);
-        appendUpdate(updates, ActionPhase.SUBMITTED, "Proposal submitted to world");
+        appendUpdate(intent, updates, ActionPhase.SUBMITTED, "Proposal submitted to world");
 
         if (proposalResult.getError() != null) {
-            appendUpdate(updates, ActionPhase.FAILED, "World proposal failed: " + proposalResult.getError());
-            return new ActionHandle(ComputeResult.builder()
+            appendUpdate(intent, updates, ActionPhase.FAILED, "World proposal failed: " + proposalResult.getError());
+            ActionHandle handle = new ActionHandle(ComputeResult.builder()
                     .snapshot(snapshot)
                     .trace((TraceGraph) null)
                     .status(ComputeStatus.ERROR)
                     .build(), updates);
+            emitAfterActHook(intent, handle);
+            return handle;
         }
 
         if (proposalResult.getResultWorld() != null) {
-            appendUpdate(updates, ActionPhase.EXECUTING, "Proposal approved and executed");
+            appendUpdate(intent, updates, ActionPhase.EXECUTING, "Proposal approved and executed");
             currentWorldId = proposalResult.getResultWorld().getWorldId();
             Snapshot terminalSnapshot = world.getStore().getSnapshot(currentWorldId);
             if (terminalSnapshot != null) {
@@ -158,11 +166,14 @@ public final class DefaultApp implements App {
         ProposalStatus status = proposalResult.getProposal().getStatus();
         ComputeStatus computeStatus = toComputeStatus(status);
 
-        return new ActionHandle(ComputeResult.builder()
+        List<ActionUpdate> finalized = finalizeWorldUpdates(intent, updates, status);
+        ActionHandle handle = new ActionHandle(ComputeResult.builder()
                 .snapshot(snapshot)
                 .trace((TraceGraph) null)
                 .status(computeStatus)
-                .build(), finalizeWorldUpdates(updates, status));
+                .build(), finalized);
+        emitAfterActHook(intent, handle);
+        return handle;
     }
 
     @Override
@@ -182,8 +193,45 @@ public final class DefaultApp implements App {
     }
 
     @Override
+    public String getSessionId() {
+        return sessionId;
+    }
+
+    @Override
+    public boolean hasSessionPersistence() {
+        return sessionId != null && snapshotStore != null;
+    }
+
+    @Override
     public ManifestoWorld getWorld() {
         return world;
+    }
+
+    @Override
+    public WorldId getCurrentBranchId() {
+        return currentWorldId;
+    }
+
+    @Override
+    public List<WorldId> listBranches() {
+        if (world == null) {
+            return List.of();
+        }
+        return world.getStore().listWorlds().stream()
+            .map(World::getWorldId)
+            .toList();
+    }
+
+    @Override
+    public void addHook(AppHook hook) {
+        if (hook != null) {
+            hooks.add(hook);
+        }
+    }
+
+    @Override
+    public void removeHook(AppHook hook) {
+        hooks.remove(hook);
     }
 
     @Override
@@ -200,6 +248,7 @@ public final class DefaultApp implements App {
             persistSessionSnapshot();
             notifySubscribers(snapshot);
         }
+        emitBranchSwitchedHook(worldId);
     }
 
     private Snapshot loadSessionSnapshot() {
@@ -252,36 +301,68 @@ public final class DefaultApp implements App {
 
     private record Subscription(Function<Snapshot, Object> selector, Consumer<Object> handler) {}
 
-    private List<ActionUpdate> finalizeWorldUpdates(List<ActionUpdate> updates, ProposalStatus status) {
+    private List<ActionUpdate> finalizeWorldUpdates(Intent intent, List<ActionUpdate> updates, ProposalStatus status) {
         if (status == ProposalStatus.COMPLETED || status == ProposalStatus.APPROVED) {
-            appendUpdate(updates, ActionPhase.COMPLETED, "World proposal completed");
+            appendUpdate(intent, updates, ActionPhase.COMPLETED, "World proposal completed");
             return updates;
         }
         if (status == ProposalStatus.REJECTED) {
-            appendUpdate(updates, ActionPhase.REJECTED, "World proposal rejected");
+            appendUpdate(intent, updates, ActionPhase.REJECTED, "World proposal rejected");
             return updates;
         }
         if (status == ProposalStatus.FAILED) {
-            appendUpdate(updates, ActionPhase.FAILED, "World proposal failed");
+            appendUpdate(intent, updates, ActionPhase.FAILED, "World proposal failed");
             return updates;
         }
-        appendUpdate(updates, ActionPhase.EXECUTING, "World proposal pending: " + status);
+        appendUpdate(intent, updates, ActionPhase.EXECUTING, "World proposal pending: " + status);
         return updates;
     }
 
-    private void appendTerminalUpdate(List<ActionUpdate> updates, ComputeStatus status, String message) {
+    private void appendTerminalUpdate(Intent intent, List<ActionUpdate> updates, ComputeStatus status, String message) {
         if (status == ComputeStatus.COMPLETE || status == ComputeStatus.HALTED) {
-            appendUpdate(updates, ActionPhase.COMPLETED, message == null ? "Action completed" : message);
+            appendUpdate(intent, updates, ActionPhase.COMPLETED, message == null ? "Action completed" : message);
             return;
         }
         if (status == ComputeStatus.ERROR) {
-            appendUpdate(updates, ActionPhase.FAILED, message == null ? "Action failed" : message);
+            appendUpdate(intent, updates, ActionPhase.FAILED, message == null ? "Action failed" : message);
             return;
         }
-        appendUpdate(updates, ActionPhase.EXECUTING, message == null ? "Action is still running" : message);
+        appendUpdate(intent, updates, ActionPhase.EXECUTING, message == null ? "Action is still running" : message);
     }
 
-    private void appendUpdate(List<ActionUpdate> updates, ActionPhase phase, String message) {
-        updates.add(new ActionUpdate(phase, message, System.currentTimeMillis()));
+    private void appendUpdate(Intent intent, List<ActionUpdate> updates, ActionPhase phase, String message) {
+        ActionUpdate update = new ActionUpdate(phase, message, System.currentTimeMillis());
+        updates.add(update);
+        emitActionUpdateHook(intent, update);
+    }
+
+    private void emitReadyHook() {
+        for (AppHook hook : hooks) {
+            hook.onReady(snapshot);
+        }
+    }
+
+    private void emitBeforeActHook(Intent intent) {
+        for (AppHook hook : hooks) {
+            hook.onBeforeAct(intent, snapshot);
+        }
+    }
+
+    private void emitActionUpdateHook(Intent intent, ActionUpdate update) {
+        for (AppHook hook : hooks) {
+            hook.onActionUpdate(intent, update, snapshot);
+        }
+    }
+
+    private void emitAfterActHook(Intent intent, ActionHandle handle) {
+        for (AppHook hook : hooks) {
+            hook.onAfterAct(intent, handle, snapshot);
+        }
+    }
+
+    private void emitBranchSwitchedHook(WorldId worldId) {
+        for (AppHook hook : hooks) {
+            hook.onBranchSwitched(worldId, snapshot);
+        }
     }
 }

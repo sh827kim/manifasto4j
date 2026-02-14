@@ -30,3 +30,15 @@ Codegen은 schema 입력을 받아 대상 플랫폼 코드 산출물 목록으�
 - 출력 계약:
   - `<Domain>Client.java` 인터페이스
   - `<Action>Input.java` DTO (action별 1개)
+
+## 5. Plugin Runner Architecture (2026-02-14)
+
+- `CodegenPlugin` 계약 추가:
+  - `pluginId()`
+  - `supports(target)`
+  - `generate(request)`
+- `CodegenPluginRegistry`로 plugin 등록/조회 경계 분리
+- `CodegenRunner`로 target 기반 plugin dispatch 표준화
+- 기본 runner(`CodegenRunner.withDefaults`)는 다음 plugin을 내장:
+  - `JavaDtoCodeGenerator`
+  - `JavaTypedClientCodeGenerator`

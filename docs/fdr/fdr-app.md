@@ -31,6 +31,11 @@ This supports CLI progress reporting and server logs.
 `ActionHandle` now stores explicit phase updates (`ActionUpdate`) so runtime transitions can be inspected after execution.
 This closes the gap between minimal synchronous execution and lifecycle observability requirements.
 
+### 2.4 Session/Branch/Hook Contract
+- Session identity/persistence exposure (`getSessionId`, `hasSessionPersistence`)
+- Branch query APIs (`getCurrentBranchId`, `listBranches`)
+- Hook contract (`AppHook`) for ready/act/phase/branch lifecycle integration
+
 ## 3. Deferred Areas
 
 - Branch/session management
