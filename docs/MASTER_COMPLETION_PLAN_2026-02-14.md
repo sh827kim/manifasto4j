@@ -82,9 +82,9 @@ Validation:
 - `./gradlew :manifesto-codegen:test`
 
 ### P2-A World Ingress/Query Hardening
-- [ ] A6-1 ingress context/epoch 계약 강화
-- [ ] A6-2 query filter/sort/limit 계약 강화
-- [ ] A6-3 world governance/query 회귀 테스트 보강
+- [x] A6-1 ingress context/epoch 계약 강화
+- [x] A6-2 query filter/sort/limit 계약 강화
+- [x] A6-3 world governance/query 회귀 테스트 보강
 
 Validation:
 - `./gradlew :manifesto-world:test`

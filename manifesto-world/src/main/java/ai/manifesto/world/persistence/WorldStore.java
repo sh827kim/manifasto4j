@@ -14,6 +14,7 @@ import ai.manifesto.world.schema.WorldEdge;
 import ai.manifesto.world.schema.WorldId;
 
 import java.util.List;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 
 /**
@@ -25,6 +26,20 @@ public interface WorldStore {
     World getWorld(WorldId worldId);
     boolean hasWorld(WorldId worldId);
     List<World> listWorlds();
+    default List<World> listWorlds(WorldQuery query) {
+        WorldQuery safeQuery = query == null ? WorldQuery.defaults() : query;
+        return listWorlds().stream()
+            .filter(world -> world != null)
+            .filter(world -> safeQuery.schemaHash() == null || safeQuery.schemaHash().equals(world.getSchemaHash()))
+            .filter(world -> safeQuery.createdAfterInclusive() == null || world.getCreatedAt() >= safeQuery.createdAfterInclusive())
+            .filter(world -> safeQuery.createdBeforeInclusive() == null || world.getCreatedAt() <= safeQuery.createdBeforeInclusive())
+            .sorted(safeQuery.sortCreatedAtDesc()
+                ? Comparator.comparingLong(World::getCreatedAt).reversed()
+                : Comparator.comparingLong(World::getCreatedAt))
+            .skip(safeQuery.safeOffset())
+            .limit(safeQuery.safeLimit() <= 0 ? Long.MAX_VALUE : safeQuery.safeLimit())
+            .collect(Collectors.toList());
+    }
     World getGenesis();
     StoreResult<Void> setGenesis(WorldId worldId);
 
@@ -43,6 +58,23 @@ public interface WorldStore {
     Proposal getProposal(ProposalId proposalId);
     boolean hasProposal(ProposalId proposalId);
     List<Proposal> listProposals();
+    default List<Proposal> listProposals(ProposalQuery query) {
+        ProposalQuery safeQuery = query == null ? ProposalQuery.defaults() : query;
+        return listProposals().stream()
+            .filter(proposal -> proposal != null)
+            .filter(proposal -> safeQuery.statuses() == null || safeQuery.statuses().isEmpty()
+                || safeQuery.statuses().contains(proposal.getStatus()))
+            .filter(proposal -> safeQuery.actorId() == null || safeQuery.actorId().equals(proposal.getActor().getActorId()))
+            .filter(proposal -> safeQuery.baseWorldId() == null || safeQuery.baseWorldId().equals(proposal.getBaseWorld().value()))
+            .filter(proposal -> safeQuery.submittedAfterInclusive() == null || proposal.getSubmittedAt() >= safeQuery.submittedAfterInclusive())
+            .filter(proposal -> safeQuery.submittedBeforeInclusive() == null || proposal.getSubmittedAt() <= safeQuery.submittedBeforeInclusive())
+            .sorted(safeQuery.sortSubmittedAtDesc()
+                ? Comparator.comparingLong(Proposal::getSubmittedAt).reversed()
+                : Comparator.comparingLong(Proposal::getSubmittedAt))
+            .skip(safeQuery.safeOffset())
+            .limit(safeQuery.safeLimit() <= 0 ? Long.MAX_VALUE : safeQuery.safeLimit())
+            .collect(Collectors.toList());
+    }
     List<Proposal> getEvaluatingProposals();
     default List<Proposal> listProposalsByStatus(ProposalStatus status) {
         if (status == null) {

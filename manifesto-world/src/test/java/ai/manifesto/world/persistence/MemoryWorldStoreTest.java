@@ -21,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -207,5 +208,66 @@ class MemoryWorldStoreTest {
 
         Snapshot loaded2 = store.getSnapshot(world.getWorldId());
         assertEquals(1, loaded2.getData().get("count"));
+    }
+
+    @Test
+    void listQueriesApplyFilterSortAndLimitContracts() {
+        World w1 = new World(WorldId.of("w1"), "schema-a", "s1", 1L, null, null);
+        World w2 = new World(WorldId.of("w2"), "schema-b", "s2", 2L, null, null);
+        World w3 = new World(WorldId.of("w3"), "schema-a", "s3", 3L, null, null);
+        assertTrue(store.saveWorld(w1).isSuccess());
+        assertTrue(store.saveWorld(w2).isSuccess());
+        assertTrue(store.saveWorld(w3).isSuccess());
+
+        Proposal p1 = Proposal.submitted(
+            ProposalId.of("p1"),
+            ExecutionKeys.createExecutionKey(ProposalId.of("p1"), 1),
+            new ActorRef("alice", ActorKind.HUMAN),
+            new ai.manifesto.world.schema.IntentInstance(
+                new ai.manifesto.world.schema.IntentBody("act", Map.of(), null),
+                "intent-1",
+                "intent-key-1",
+                new ai.manifesto.world.schema.IntentMeta(
+                    new ai.manifesto.world.schema.IntentOrigin(
+                        "projection",
+                        new ai.manifesto.world.schema.IntentSource("ui", "event-1"),
+                        new ActorRef("alice", ActorKind.HUMAN)
+                    )
+                )
+            ),
+            WorldId.of("w1"),
+            null,
+            0,
+            10L
+        ).withTransition(ProposalStatus.EVALUATING, null, null, null, null, null);
+        Proposal p2 = Proposal.submitted(
+            ProposalId.of("p2"),
+            ExecutionKeys.createExecutionKey(ProposalId.of("p2"), 1),
+            new ActorRef("bob", ActorKind.HUMAN),
+            p1.getIntent(),
+            WorldId.of("w2"),
+            null,
+            0,
+            20L
+        ).withTransition(ProposalStatus.APPROVED, null, null, null, null, null);
+        assertTrue(store.saveProposal(p1).isSuccess());
+        assertTrue(store.saveProposal(p2).isSuccess());
+
+        WorldQuery worldQuery = new WorldQuery("schema-a", null, null, true, 0, 1);
+        assertEquals(1, store.listWorlds(worldQuery).size());
+        assertEquals("w3", store.listWorlds(worldQuery).get(0).getWorldId().value());
+
+        ProposalQuery proposalQuery = new ProposalQuery(
+            Set.of(ProposalStatus.EVALUATING),
+            "alice",
+            "w1",
+            null,
+            null,
+            false,
+            0,
+            10
+        );
+        assertEquals(1, store.listProposals(proposalQuery).size());
+        assertEquals("p1", store.listProposals(proposalQuery).get(0).getProposalId().value());
     }
 }

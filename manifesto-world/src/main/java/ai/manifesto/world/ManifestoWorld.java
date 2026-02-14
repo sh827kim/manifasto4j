@@ -11,9 +11,12 @@ import ai.manifesto.world.events.NoopWorldEventSink;
 import ai.manifesto.world.events.WorldEvent;
 import ai.manifesto.world.events.WorldEventSink;
 import ai.manifesto.world.factories.WorldFactories;
+import ai.manifesto.world.ingress.IngressContext;
 import ai.manifesto.world.lineage.WorldLineage;
 import ai.manifesto.world.persistence.MemoryWorldStore;
+import ai.manifesto.world.persistence.ProposalQuery;
 import ai.manifesto.world.persistence.StoreResult;
+import ai.manifesto.world.persistence.WorldQuery;
 import ai.manifesto.world.persistence.WorldStore;
 import ai.manifesto.world.proposal.ProposalQueue;
 import ai.manifesto.world.proposal.TransitionUpdates;
@@ -63,7 +66,7 @@ public final class ManifestoWorld {
     private final HostExecutor executor;
     private final WorldEventSink eventSink;
     private final ExecutionKeyPolicy executionKeyPolicy;
-    private long epoch = 0L;
+    private final IngressContext ingressContext = new IngressContext();
     private WorldId genesisWorldId;
     private WorldId currentHeadWorldId;
 
@@ -137,11 +140,11 @@ public final class ManifestoWorld {
             throw new IllegalArgumentException("World not found: " + newBaseWorld.value());
         }
 
-        epoch += 1;
+        ingressContext.incrementEpoch();
         currentHeadWorldId = newBaseWorld;
         Set<String> staleProposalIds = new HashSet<>();
         for (Proposal proposal : proposalQueue.getIngressStage()) {
-            if (proposal.getEpoch() < epoch) {
+            if (ingressContext.isStale(proposal.getEpoch())) {
                 proposalQueue.remove(proposal.getProposalId());
                 store.deleteProposal(proposal.getProposalId());
                 staleProposalIds.add(proposal.getProposalId().value());
@@ -150,7 +153,7 @@ public final class ManifestoWorld {
                         Map.of(
                                 "proposalId", proposal.getProposalId().value(),
                                 "proposalEpoch", proposal.getEpoch(),
-                                "currentEpoch", epoch
+                                "currentEpoch", ingressContext.epoch()
                         )
                 );
             }
@@ -183,7 +186,7 @@ public final class ManifestoWorld {
             if (proposal.getStatus() != ProposalStatus.EVALUATING) {
                 continue;
             }
-            if (proposal.getEpoch() < epoch) {
+            if (ingressContext.isStale(proposal.getEpoch())) {
                 continue;
             }
 
@@ -230,7 +233,9 @@ public final class ManifestoWorld {
             throw new IllegalStateException("Execution key policy returned empty key");
         }
         long submittedAt = System.currentTimeMillis();
-        Proposal proposal = proposalQueue.submit(proposalId, executionKey, binding.getActor(), intent, baseWorld, trace, epoch, submittedAt);
+        Proposal proposal = proposalQueue.submit(
+                proposalId, executionKey, binding.getActor(), intent, baseWorld, trace, ingressContext.epoch(), submittedAt
+        );
         ensureSuccess(store.saveProposal(proposal));
         emitEvent("proposal:submitted", Map.of("proposalId", proposalId.value(), "epoch", proposal.getEpoch()));
 
@@ -259,7 +264,7 @@ public final class ManifestoWorld {
         if (proposal.getStatus() != ProposalStatus.EVALUATING) {
             throw new IllegalStateException("Proposal is not in evaluating status: " + proposal.getStatus());
         }
-        if (proposal.getEpoch() < epoch) {
+        if (ingressContext.isStale(proposal.getEpoch())) {
             return ProposalResult.withError(proposal, "Proposal is stale for current epoch");
         }
 
@@ -274,7 +279,7 @@ public final class ManifestoWorld {
         if (proposal.getStatus() != ProposalStatus.EVALUATING) {
             throw new IllegalStateException("Proposal is not in evaluating status: " + proposal.getStatus());
         }
-        if (proposal.getEpoch() < epoch) {
+        if (ingressContext.isStale(proposal.getEpoch())) {
             return ProposalResult.withError(proposal, "Proposal is stale for current epoch");
         }
 
@@ -602,6 +607,14 @@ public final class ManifestoWorld {
         return proposalQueue.getEvaluating();
     }
 
+    public List<World> listWorlds(WorldQuery query) {
+        return store.listWorlds(query);
+    }
+
+    public List<Proposal> listProposals(ProposalQuery query) {
+        return store.listProposals(query);
+    }
+
     public World getWorld(WorldId worldId) {
         return store.getWorld(worldId);
     }
@@ -635,7 +648,7 @@ public final class ManifestoWorld {
     }
 
     public long getEpoch() {
-        return epoch;
+        return ingressContext.epoch();
     }
 
     public ActorRef createActor(String actorId, ActorKind kind) {
@@ -645,7 +658,7 @@ public final class ManifestoWorld {
     private void emitEvent(String type, Map<String, Object> payload) {
         Map<String, Object> envelope = new LinkedHashMap<>();
         envelope.put("schemaHash", schemaHash);
-        envelope.put("epoch", epoch);
+        envelope.put("epoch", ingressContext.epoch());
         if (payload != null) {
             envelope.putAll(payload);
         }
