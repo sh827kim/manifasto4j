@@ -18,7 +18,7 @@
 | world | authority/registry/proposal/lineage/ingress/events/persistence | major governance runtime implemented | Strong Partial | 74% -> 85% |
 | compiler | lexer/parser/analyzer/generator/lowering/eval/api/renderer | broad compiler pipeline implemented | Strong Partial | 76% -> 90% |
 | intent-ir | schema/canonical/keys/lexicon/resolver/lower | schema/validator/lower + keys/lexicon/resolver advanced baseline | Partial | 62% -> 85% |
-| translator | core pipeline/plugins/strategies/invariants/helpers + adapters/targets | pipeline/plugins/policy/provider + intent-ir lower bridge baseline | Partial | 48% -> 80% |
+| translator | core pipeline/plugins/strategies/invariants/helpers + adapters/targets | core models + strategies/helpers/invariants + pipeline options baseline | Partial | 63% -> 80% |
 | codegen | plugin runner/types/path-safety/hash/header/virtual-fs/plugins | plugin runner + 2 Java plugins baseline | Partial | 58% -> 85% |
 
 ## 3. Detailed Mapping
@@ -180,21 +180,21 @@ TS shape:
 
 Java mapping:
 - module: `manifesto-translator`
-- core: interpreter/verifier/refiner + pipeline/plugins + policy providers + intent-ir lower bridge
+- core: interpreter/verifier/refiner + pipeline/plugins + policy providers + intent-ir lower bridge + strategies/helpers/invariants
 
 | Capability | TS | Java | Status |
 | --- | --- | --- | --- |
 | pipeline stages | Yes | Yes | Partial |
 | plugin hooks | Yes | Yes | Partial |
 | policy verification | Yes | Yes | Partial |
-| strategies (decompose/translate/merge) | Yes | Limited | Missing/Partial |
-| invariants/helpers | Yes | Limited | Missing |
+| strategies (decompose/translate/merge) | Yes | Yes (baseline) | Partial |
+| invariants/helpers | Yes | Yes (baseline) | Partial |
 | adapter family | Yes | interface-level only | Missing/Partial |
 | target exporters | Yes | Missing | Missing |
 
 Priority actions:
-1. strategy set 확장
-2. invariant/helper 구현
+1. strategy semantics를 TS 세부 규칙 수준으로 확장
+2. invariant/helper 진단 코드/판정 정밀화
 3. adapter/target module 분리 구현
 
 ---

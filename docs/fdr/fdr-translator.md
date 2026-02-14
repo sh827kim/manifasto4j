@@ -34,5 +34,10 @@
 - 추가 완료 (2026-02-14):
   - `FileTranslatorPolicyProvider` 추가(파일 기반 정책 소스)
   - 정책 provider `reload()`/`snapshot()` 계약 도입
+- 추가 완료 (2026-02-14, Cycle 3):
+  - translator core type(`Chunk/IntentGraph/ExecutionPlan/Diagnostics`) 도입
+  - strategies 계층(`decompose/translate/merge`) + `StrategyComposer` 도입
+  - helpers/invariants 계층 및 검증 테스트 추가
+  - pipeline options + diagnostics aggregation + plugin priority/type 규칙 도입
 - 다음 단계:
-  - 정책 소스 DB/설정 서버 연동 provider 추가
+  - adapter/target 패밀리(모듈 분리) 구현 확대

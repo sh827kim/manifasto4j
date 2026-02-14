@@ -1,6 +1,7 @@
 package ai.manifesto.translator;
 
 import ai.manifesto.intentir.DefaultIntentIrNormalizer;
+import ai.manifesto.translator.pipeline.TranslatorPipelineOptions;
 
 import java.util.List;
 import java.util.Objects;
@@ -35,11 +36,22 @@ public final class DefaultTranslator implements Translator {
         TranslatorRefiner refiner,
         List<TranslatorPipelinePlugin> plugins
     ) {
+        this(interpreter, verifier, refiner, plugins, TranslatorPipelineOptions.defaults());
+    }
+
+    public DefaultTranslator(
+        TranslatorInterpreter interpreter,
+        TranslatorVerifier verifier,
+        TranslatorRefiner refiner,
+        List<TranslatorPipelinePlugin> plugins,
+        TranslatorPipelineOptions options
+    ) {
         this.pipeline = new TranslatorPipeline(
             Objects.requireNonNull(interpreter, "interpreter must not be null"),
             Objects.requireNonNull(verifier, "verifier must not be null"),
             Objects.requireNonNull(refiner, "refiner must not be null"),
-            plugins == null ? List.of() : plugins
+            plugins == null ? List.of() : plugins,
+            options
         );
     }
 

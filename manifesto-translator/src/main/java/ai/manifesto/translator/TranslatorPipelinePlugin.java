@@ -13,6 +13,14 @@ public interface TranslatorPipelinePlugin {
         return getClass().getSimpleName();
     }
 
+    default int priority() {
+        return 0;
+    }
+
+    default TranslatorPluginType type() {
+        return TranslatorPluginType.TRANSFORMER;
+    }
+
     default void beforeInterpret(TranslationRequest request, List<String> diagnostics) {
     }
 

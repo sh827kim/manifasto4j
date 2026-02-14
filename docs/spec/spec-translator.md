@@ -74,3 +74,32 @@ Translator defines a multi-stage pipeline for converting NL input into intents/p
 - `FileTranslatorPolicyProvider` 추가:
   - 파일 기반 정책 로딩(`*.allowedActions`, `*.requiredContextKeys`)
   - 런타임 재로딩 지원
+
+## 10. Core Models + Strategies + Invariants (2026-02-14, Cycle 3)
+
+- core 모델 추가:
+  - `Span`, `Chunk`
+  - `IntentGraphNode`, `DependencyEdge`, `IntentGraph`
+  - `ExecutionStep`, `ExecutionPlan`
+  - `TranslatorDiagnostic`, `GraphValidationResult`
+- strategies 계층 추가:
+  - `DecomposeStrategy`, `TranslateStrategy`, `MergeStrategy`
+  - `SentenceWindowDecomposeStrategy`
+  - `DeterministicGraphTranslateStrategy`
+  - `ConservativeMergeStrategy`, `AggressiveMergeStrategy`
+  - `StrategyComposer`
+- helpers + invariants 추가:
+  - helpers: `TranslatorChunkValidator`, `TranslatorGraphValidator`, `ExecutionPlanBuilder`
+  - invariants: `CausalIntegrityChecker`, `CompletenessChecker`, `StatefulnessChecker`, `ReferentialIdentityChecker`, `AbstractDependencyChecker`
+
+## 11. Pipeline Options & Plugin Ordering (2026-02-14, Cycle 3)
+
+- `TranslatorPipelineOptions` 추가:
+  - diagnostics aggregation policy
+  - plugin priority sorting 옵션
+- `TranslatorDiagnosticsBag` 도입:
+  - `PRESERVE`, `DEDUP` 정책 지원
+- `TranslatorPipelinePlugin` 확장:
+  - `priority()`
+  - `type()` (`INSPECTOR`, `TRANSFORMER`)
+- `DefaultTranslator`가 options 주입 생성자를 지원하도록 확장
