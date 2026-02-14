@@ -42,7 +42,8 @@ https://docs.manifesto-ai.dev/
 
 ## Docs in this repo
 - `/workspace/manifesto-java-core/docs/INDEX.md` - spec/fdr index
-- `/workspace/manifesto-java-core/docs/PORTING_ACTION_PLAN_2026-02-11.md` - parity status and action plan
+- `/workspace/manifesto-java-core/docs/MASTER_COMPLETION_PLAN_2026-02-14.md` - master execution roadmap
+- `/workspace/manifesto-java-core/docs/TS_PARITY_PROGRESS_REPORT_2026-02-14.md` - TS shape-based progress report
 - `/workspace/manifesto-java-core/docs/ko/book/index.md` - Korean learning guide for Java developers
 - `/workspace/manifesto-java-core/docs/spec/spec-*.md`, `/workspace/manifesto-java-core/docs/fdr/fdr-*.md` - package-level references
 

@@ -7,7 +7,8 @@
 - TS 소스 기준: `/workspace/manifasto-ts-core`
 - TS 최신 확인 커밋: `3b40070`
 - 최근 비교 범위: `754d860..3b40070` (문서/ADR/SPEC 변경, 런타임 소스 변경 없음)
-- 최신 분석/액션: [PORTING_ACTION_PLAN_2026-02-11.md](PORTING_ACTION_PLAN_2026-02-11.md)
+- 마스터 실행 계획: [MASTER_COMPLETION_PLAN_2026-02-14.md](MASTER_COMPLETION_PLAN_2026-02-14.md)
+- 진행률 리포트: [TS_PARITY_PROGRESS_REPORT_2026-02-14.md](TS_PARITY_PROGRESS_REPORT_2026-02-14.md)
 
 ## 문서 분류
 1. Active parity (TS와 직접 정합 대상)

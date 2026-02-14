@@ -16,7 +16,7 @@ Manifesto는 상태 기반 애플리케이션을 위한 결정론적 도메인 �
 공식 문서:
 https://docs.manifesto-ai.dev/
 
-## 현재 상태 (2026-02-13)
+## 현재 상태 (2026-02-14)
 - TS 최신 기준 패키지는 `app/codegen/compiler/core/host/intent-ir/translator/world`입니다.
 - Java 구현 모듈은 `core/host/app/compiler/world`입니다.
 - Java 후속 포팅 대상이던 `intent-ir/translator/codegen`은 계약/스켈레톤 모듈 부트스트랩이 완료되었습니다.
@@ -29,14 +29,10 @@ https://docs.manifesto-ai.dev/
 - `manifesto-compiler` - MEL 컴파일러 + lowering
 - `manifesto-world` - world/authority/lineage 런타임
 
-## 예정 모듈
-- `manifesto-intent-ir` (bootstrap)
-- `manifesto-translator` (bootstrap, 프레임워크 비종속 인터페이스)
-- `manifesto-codegen` (bootstrap)
-
 ## 저장소 문서 위치
 - `docs/INDEX.md` (spec/fdr 인덱스)
-- `docs/PORTING_ACTION_PLAN_2026-02-11.md` (최신 갭 분석 + 액션 아이템)
+- `docs/MASTER_COMPLETION_PLAN_2026-02-14.md` (전체 완성 단계별 실행 계획)
+- `docs/TS_PARITY_PROGRESS_REPORT_2026-02-14.md` (TS 코드 형상 기준 진행률 리포트)
 - `docs/ko/book/index.md` (자바 개발자용 학습 문서)
 - `docs/spec/spec-*.md`, `docs/fdr/fdr-*.md` (패키지별 레퍼런스)
 
