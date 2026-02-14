@@ -1,0 +1,13 @@
+[
+  {
+    "name": "trace-snapshot-invariants",
+    "expected": {
+      "status": "HALTED",
+      "dataStatus": "ok",
+      "traceRunnerKickCount": 1,
+      "traceHasContinueEnqueue": true,
+      "traceHasRunnerRecheck": true,
+      "traceJobStartEqualsEnd": true
+    }
+  }
+]

@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -269,5 +270,50 @@ class MemoryWorldStoreTest {
         );
         assertEquals(1, store.listProposals(proposalQuery).size());
         assertEquals("p1", store.listProposals(proposalQuery).get(0).getProposalId().value());
+    }
+
+    @Test
+    void edgeQueryFiltersAndLimitsExpectedItems() {
+        World w1 = new World(WorldId.of("w1"), "schema-a", "s1", 1L, null, null);
+        World w2 = new World(WorldId.of("w2"), "schema-a", "s2", 2L, null, null);
+        World w3 = new World(WorldId.of("w3"), "schema-a", "s3", 3L, null, null);
+        assertTrue(store.saveWorld(w1).isSuccess());
+        assertTrue(store.saveWorld(w2).isSuccess());
+        assertTrue(store.saveWorld(w3).isSuccess());
+
+        WorldEdge e1 = new WorldEdge(EdgeId.of("e1"), w1.getWorldId(), w2.getWorldId(), ProposalId.of("p1"), DecisionId.of("d1"), 10L);
+        WorldEdge e2 = new WorldEdge(EdgeId.of("e2"), w1.getWorldId(), w3.getWorldId(), ProposalId.of("p2"), DecisionId.of("d2"), 20L);
+        assertTrue(store.saveEdge(e1).isSuccess());
+        assertTrue(store.saveEdge(e2).isSuccess());
+
+        EdgeQuery query = new EdgeQuery("w1", null, null, null, 1);
+        assertEquals(1, store.listEdges(query).size());
+        assertEquals("e1", store.listEdges(query).get(0).getEdgeId().value());
+    }
+
+    @Test
+    void observableStoreEmitsTypedAndGlobalEventsAndStats() {
+        AtomicInteger typedCount = new AtomicInteger();
+        AtomicInteger globalCount = new AtomicInteger();
+
+        Runnable offTyped = store.subscribe(StoreEventType.WORLD_SAVED, event -> typedCount.incrementAndGet());
+        Runnable offGlobal = store.subscribeAll(event -> globalCount.incrementAndGet());
+
+        World w1 = new World(WorldId.of("w1"), "schema-a", "s1", 1L, null, null);
+        assertTrue(store.saveWorld(w1).isSuccess());
+        assertTrue(store.saveBinding(new ai.manifesto.world.schema.ActorAuthorityBinding(
+            new ActorRef("alice", ActorKind.HUMAN),
+            new ai.manifesto.world.schema.AuthorityRef("auth", ai.manifesto.world.schema.AuthorityKind.AUTO),
+            new AutoApprovePolicy()
+        )).isSuccess());
+
+        offTyped.run();
+        offGlobal.run();
+
+        StoreStats stats = store.getStats();
+        assertEquals(1, typedCount.get());
+        assertTrue(globalCount.get() >= 2);
+        assertEquals(1, stats.worlds());
+        assertEquals(1, stats.bindings());
     }
 }

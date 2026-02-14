@@ -24,12 +24,18 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @DisplayName("Host Golden Tests")
 class HostGoldenTest {
     private final HostGoldenVectorHarness harness = new HostGoldenVectorHarness();
+    private static final List<String> SCENARIO_FIXTURES = List.of(
+        "golden/host/scenarios/todo-workflow.json",
+        "golden/host/scenarios/trace-snapshot.json",
+        "golden/host/scenarios/complex-effects.json",
+        "golden/host/scenarios/determinism.json"
+    );
 
     @Test
-    @DisplayName("Host 경계 동작이 골든 기대값과 일치")
+    @DisplayName("Host 골든 시나리오(deteminism/trace-snapshot/complex-effects/todo-workflow)가 기대값과 일치")
     void hostGoldenCases() throws Exception {
-        List<Map<String, Object>> vectors = harness.loadVectors("golden/host-e2e.json");
-        assertFalse(vectors.isEmpty(), "Golden vectors should not be empty");
+        List<Map<String, Object>> vectors = harness.loadVectors(SCENARIO_FIXTURES);
+        assertFalse(vectors.isEmpty(), "Golden scenario vectors should not be empty");
 
         for (Map<String, Object> vector : vectors) {
             String name = String.valueOf(vector.get("name"));
@@ -38,11 +44,12 @@ class HostGoldenTest {
             assertNotNull(expected, "Expected golden data missing for: " + name);
 
             GoldenCaseResult result = switch (name) {
-                case "effect-applied-with-host-slot" -> runEffectAppliedCase();
-                case "missing-handler-pending" -> runMissingHandlerCase();
-                case "effect-failure-recorded-in-host-state" -> runEffectFailureRecordedCase();
-                case "trace-invariants-minimal" -> runTraceInvariantCase();
-                case "trace-invariants-chained-reinjection" -> runTraceInvariantChainedCase();
+                case "todo-workflow-effect-applied" -> runEffectAppliedCase();
+                case "todo-workflow-missing-handler" -> runMissingHandlerCase();
+                case "todo-workflow-effect-failure" -> runEffectFailureRecordedCase();
+                case "trace-snapshot-invariants" -> runTraceInvariantCase();
+                case "complex-effects-chained-reinjection" -> runTraceInvariantChainedCase();
+                case "determinism-repeatable" -> runDeterminismCase();
                 default -> throw new IllegalArgumentException("Unknown host golden case: " + name);
             };
 
@@ -164,6 +171,23 @@ class HostGoldenTest {
         return new GoldenCaseResult(result, events);
     }
 
+    private GoldenCaseResult runDeterminismCase() throws Exception {
+        DomainSchema schema = createNotifySchema("urn:test:host:golden:determinism");
+        Snapshot leftSnapshot = createSnapshot(schema);
+        Snapshot rightSnapshot = createSnapshot(schema);
+
+        List<HostRuntimeTraceEvent> leftEvents = new java.util.ArrayList<>();
+        List<HostRuntimeTraceEvent> rightEvents = new java.util.ArrayList<>();
+        HostRuntime host = new HostRuntime()
+            .register("host.notify", params -> EffectResult.of(List.of(Patch.set("status", "ok"))));
+
+        Intent leftIntent = new Intent("notify", Map.of(), "intent-host-golden-determinism");
+        Intent rightIntent = new Intent("notify", Map.of(), "intent-host-golden-determinism");
+        ComputeResult left = host.run(schema, leftSnapshot, leftIntent, HostRuntimeOptions.builder().traceSink(leftEvents::add).build());
+        ComputeResult right = host.run(schema, rightSnapshot, rightIntent, HostRuntimeOptions.builder().traceSink(rightEvents::add).build());
+        return new GoldenCaseResult(left, leftEvents, right, rightEvents);
+    }
+
     private DomainSchema createNotifySchema(String schemaId) {
         FlowNode flow = FlowNode.If.of(
             new Eq(new Get("status"), new Lit("ok")),
@@ -281,6 +305,22 @@ class HostGoldenTest {
         if (expected.containsKey("step3Done")) {
             out.put("step3Done", result.getSnapshot().getData().get("step3"));
         }
+        if (expected.containsKey("determinismStatusEqual")) {
+            out.put("determinismStatusEqual", run.secondResult() != null
+                && result.getStatus() == run.secondResult().getStatus());
+        }
+        if (expected.containsKey("determinismDataEqual")) {
+            Object left = result.getSnapshot().getData();
+            Object right = run.secondResult() == null ? null : run.secondResult().getSnapshot().getData();
+            out.put("determinismDataEqual", left != null && left.equals(right));
+        }
+        if (expected.containsKey("determinismTraceTypesEqual")) {
+            List<String> leftTypes = run.traceEvents().stream().map(HostRuntimeTraceEvent::type).toList();
+            List<String> rightTypes = run.secondTraceEvents() == null
+                ? List.of()
+                : run.secondTraceEvents().stream().map(HostRuntimeTraceEvent::type).toList();
+            out.put("determinismTraceTypesEqual", leftTypes.equals(rightTypes));
+        }
         return out;
     }
 
@@ -303,6 +343,14 @@ class HostGoldenTest {
         return active == 0;
     }
 
-    private record GoldenCaseResult(ComputeResult result, List<HostRuntimeTraceEvent> traceEvents) {
+    private record GoldenCaseResult(
+        ComputeResult result,
+        List<HostRuntimeTraceEvent> traceEvents,
+        ComputeResult secondResult,
+        List<HostRuntimeTraceEvent> secondTraceEvents
+    ) {
+        private GoldenCaseResult(ComputeResult result, List<HostRuntimeTraceEvent> traceEvents) {
+            this(result, traceEvents, null, null);
+        }
     }
 }

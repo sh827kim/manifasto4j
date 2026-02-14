@@ -14,7 +14,9 @@ import ai.manifesto.world.factories.WorldFactories;
 import ai.manifesto.world.ingress.IngressContext;
 import ai.manifesto.world.lineage.WorldLineage;
 import ai.manifesto.world.persistence.MemoryWorldStore;
+import ai.manifesto.world.persistence.EdgeQuery;
 import ai.manifesto.world.persistence.ProposalQuery;
+import ai.manifesto.world.persistence.StoreStats;
 import ai.manifesto.world.persistence.StoreResult;
 import ai.manifesto.world.persistence.WorldQuery;
 import ai.manifesto.world.persistence.WorldStore;
@@ -37,6 +39,7 @@ import ai.manifesto.world.schema.ProposalId;
 import ai.manifesto.world.schema.ProposalStatus;
 import ai.manifesto.world.schema.ProposalTrace;
 import ai.manifesto.world.schema.World;
+import ai.manifesto.world.schema.WorldEdge;
 import ai.manifesto.world.schema.WorldId;
 import ai.manifesto.world.types.ExecutionKeys;
 import ai.manifesto.world.types.ExecutionKeyPolicy;
@@ -613,6 +616,14 @@ public final class ManifestoWorld {
 
     public List<Proposal> listProposals(ProposalQuery query) {
         return store.listProposals(query);
+    }
+
+    public List<WorldEdge> listEdges(EdgeQuery query) {
+        return store.listEdges(query);
+    }
+
+    public StoreStats getStoreStats() {
+        return store.getStats();
     }
 
     public World getWorld(WorldId worldId) {

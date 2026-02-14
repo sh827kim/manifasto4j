@@ -20,12 +20,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * KR: MemoryWorldStore는 world/snapshot/proposal/decision 데이터를 메모리에 저장하는 WorldStore 구현입니다.
  * EN: MemoryWorldStore is a WorldStore implementation that persists world, snapshot, proposal, and decision data in memory.
  */
-public final class MemoryWorldStore implements WorldStore {
+public final class MemoryWorldStore implements ObservableWorldStore {
     private final Map<String, World> worlds = new LinkedHashMap<>();
     private final Map<String, Snapshot> snapshots = new HashMap<>();
     private final Map<String, WorldEdge> edges = new LinkedHashMap<>();
@@ -35,6 +37,8 @@ public final class MemoryWorldStore implements WorldStore {
     private final Map<String, ActorAuthorityBinding> bindings = new LinkedHashMap<>();
 
     private WorldId genesisId;
+    private final Map<StoreEventType, Set<StoreEventListener>> typedListeners = new HashMap<>();
+    private final Set<StoreEventListener> globalListeners = new CopyOnWriteArraySet<>();
 
     @Override
     public StoreResult<World> saveWorld(World world) {
@@ -42,6 +46,7 @@ public final class MemoryWorldStore implements WorldStore {
             return StoreResult.failure("World already exists: " + world.getWorldId().value());
         }
         worlds.put(world.getWorldId().value(), world);
+        emit(StoreEventType.WORLD_SAVED, world);
         return StoreResult.success(world);
     }
 
@@ -74,6 +79,7 @@ public final class MemoryWorldStore implements WorldStore {
             return StoreResult.failure("World does not exist: " + worldId.value());
         }
         genesisId = worldId;
+        emit(StoreEventType.GENESIS_SET, worldId);
         return StoreResult.success();
     }
 
@@ -104,6 +110,7 @@ public final class MemoryWorldStore implements WorldStore {
             return StoreResult.failure("Target world does not exist: " + edge.getToWorld().value());
         }
         edges.put(edgeId, edge);
+        emit(StoreEventType.EDGE_SAVED, edge);
         return StoreResult.success(edge);
     }
 
@@ -144,6 +151,7 @@ public final class MemoryWorldStore implements WorldStore {
             return StoreResult.failure("Proposal already exists: " + proposal.getProposalId().value());
         }
         proposals.put(proposal.getProposalId().value(), proposal);
+        emit(StoreEventType.PROPOSAL_SAVED, proposal);
         return StoreResult.success(proposal);
     }
 
@@ -164,6 +172,7 @@ public final class MemoryWorldStore implements WorldStore {
                 resolved.getCompletedAt()
         );
         proposals.put(proposalId.value(), updated);
+        emit(StoreEventType.PROPOSAL_UPDATED, updated);
         return StoreResult.success(updated);
     }
 
@@ -172,6 +181,7 @@ public final class MemoryWorldStore implements WorldStore {
         if (proposals.remove(proposalId.value()) == null) {
             return StoreResult.failure("Proposal not found: " + proposalId.value());
         }
+        emit(StoreEventType.PROPOSAL_DELETED, proposalId);
         return StoreResult.success();
     }
 
@@ -216,6 +226,7 @@ public final class MemoryWorldStore implements WorldStore {
 
         decisions.put(id, decisionRecord);
         decisionByProposal.put(proposalId, id);
+        emit(StoreEventType.DECISION_SAVED, decisionRecord);
         return StoreResult.success(decisionRecord);
     }
 
@@ -239,6 +250,7 @@ public final class MemoryWorldStore implements WorldStore {
     public StoreResult<ActorAuthorityBinding> saveBinding(ActorAuthorityBinding binding) {
         Objects.requireNonNull(binding, "binding is required");
         bindings.put(binding.getActor().getActorId(), binding);
+        emit(StoreEventType.BINDING_SAVED, binding);
         return StoreResult.success(binding);
     }
 
@@ -252,7 +264,40 @@ public final class MemoryWorldStore implements WorldStore {
         if (bindings.remove(actorId) == null) {
             return StoreResult.failure("Binding not found: " + actorId);
         }
+        emit(StoreEventType.BINDING_REMOVED, actorId);
         return StoreResult.success();
+    }
+
+    @Override
+    public StoreStats getStats() {
+        return new StoreStats(
+            worlds.size(),
+            edges.size(),
+            proposals.size(),
+            decisions.size(),
+            bindings.size(),
+            snapshots.size()
+        );
+    }
+
+    @Override
+    public Runnable subscribe(StoreEventType type, StoreEventListener listener) {
+        Objects.requireNonNull(type, "type is required");
+        Objects.requireNonNull(listener, "listener is required");
+        typedListeners.computeIfAbsent(type, ignored -> new CopyOnWriteArraySet<>()).add(listener);
+        return () -> {
+            Set<StoreEventListener> listeners = typedListeners.get(type);
+            if (listeners != null) {
+                listeners.remove(listener);
+            }
+        };
+    }
+
+    @Override
+    public Runnable subscribeAll(StoreEventListener listener) {
+        Objects.requireNonNull(listener, "listener is required");
+        globalListeners.add(listener);
+        return () -> globalListeners.remove(listener);
     }
 
     @Override
@@ -270,5 +315,18 @@ public final class MemoryWorldStore implements WorldStore {
         decisionByProposal.clear();
         bindings.clear();
         genesisId = null;
+    }
+
+    private void emit(StoreEventType type, Object payload) {
+        StoreEvent event = new StoreEvent(type, System.currentTimeMillis(), payload);
+        Set<StoreEventListener> scoped = typedListeners.get(type);
+        if (scoped != null) {
+            for (StoreEventListener listener : scoped) {
+                listener.onEvent(event);
+            }
+        }
+        for (StoreEventListener listener : globalListeners) {
+            listener.onEvent(event);
+        }
     }
 }

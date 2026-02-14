@@ -1,0 +1,11 @@
+[
+  {
+    "name": "determinism-repeatable",
+    "expected": {
+      "status": "HALTED",
+      "determinismStatusEqual": true,
+      "determinismDataEqual": true,
+      "determinismTraceTypesEqual": true
+    }
+  }
+]

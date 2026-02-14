@@ -41,3 +41,8 @@ Translator evaluation path forbids $system.* to prevent bypassing system lifecyc
   - effect executor(retry/timeout/error 분류) 도입
   - effect trace 이벤트(attempt/retry/success/failure) 확장
   - host runtime 테스트에 context/trace 회귀 케이스 추가
+
+- Host golden 시나리오 표준화 완료(2026-02-14, TASK-A4):
+  - 시나리오 파일 분리(deteminism/trace-snapshot/complex-effects/todo-workflow)
+  - 공통 loader/assertion harness(`HostGoldenVectorHarness`) 다중 fixture 지원
+  - 단일 테스트 진입점(`HostGoldenTest`)으로 시나리오 검증 경로 통합

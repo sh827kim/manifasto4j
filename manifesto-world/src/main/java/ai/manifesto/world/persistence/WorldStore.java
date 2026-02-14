@@ -51,6 +51,17 @@ public interface WorldStore {
     WorldEdge getParentEdge(WorldId worldId);
     List<WorldEdge> getChildEdges(WorldId worldId);
     List<WorldEdge> listEdges();
+    default List<WorldEdge> listEdges(EdgeQuery query) {
+        EdgeQuery safeQuery = query == null ? EdgeQuery.defaults() : query;
+        return listEdges().stream()
+            .filter(edge -> edge != null)
+            .filter(edge -> safeQuery.fromWorldId() == null || safeQuery.fromWorldId().equals(edge.getFromWorld().value()))
+            .filter(edge -> safeQuery.toWorldId() == null || safeQuery.toWorldId().equals(edge.getToWorld().value()))
+            .filter(edge -> safeQuery.proposalId() == null || safeQuery.proposalId().equals(edge.getProposalId().value()))
+            .filter(edge -> safeQuery.decisionId() == null || safeQuery.decisionId().equals(edge.getDecisionId().value()))
+            .limit(safeQuery.safeLimit() <= 0 ? Long.MAX_VALUE : safeQuery.safeLimit())
+            .collect(Collectors.toList());
+    }
 
     StoreResult<Proposal> saveProposal(Proposal proposal);
     StoreResult<Proposal> updateProposal(ProposalId proposalId, TransitionUpdates updates, ProposalStatus nextStatus);
@@ -94,6 +105,16 @@ public interface WorldStore {
     ActorAuthorityBinding getBinding(String actorId);
     StoreResult<Void> removeBinding(String actorId);
     List<ActorAuthorityBinding> listBindings();
+    default StoreStats getStats() {
+        return new StoreStats(
+            listWorlds().size(),
+            listEdges().size(),
+            listProposals().size(),
+            listProposals().size() == 0 ? 0 : listProposals().stream().map(Proposal::getDecisionId).filter(java.util.Objects::nonNull).collect(Collectors.toSet()).size(),
+            listBindings().size(),
+            listWorlds().stream().map(World::getWorldId).map(this::getSnapshot).filter(java.util.Objects::nonNull).toList().size()
+        );
+    }
 
     void clear();
 }

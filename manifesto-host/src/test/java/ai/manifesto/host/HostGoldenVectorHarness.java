@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -22,6 +23,14 @@ final class HostGoldenVectorHarness {
         InputStream input = getClass().getClassLoader().getResourceAsStream(resourcePath);
         assertNotNull(input, "Golden resource not found: " + resourcePath);
         return mapper.readValue(input, new TypeReference<List<Map<String, Object>>>() {});
+    }
+
+    List<Map<String, Object>> loadVectors(List<String> resourcePaths) throws Exception {
+        List<Map<String, Object>> merged = new ArrayList<>();
+        for (String resourcePath : resourcePaths) {
+            merged.addAll(loadVectors(resourcePath));
+        }
+        return List.copyOf(merged);
     }
 
     void assertJsonEquals(Map<String, Object> expected, Map<String, Object> actual, String message) throws Exception {

@@ -22,3 +22,9 @@
 - 다음 단계:
   - ingress/epoch 시나리오를 골든 벡터로 확장
   - authority 전이 edge-case를 fixture 기반으로 강화
+
+- 구현 완료 (2026-02-14, TASK-B1):
+  - `EdgeQuery` 기반 edge filter/limit query 계약 추가
+  - `ObservableWorldStore` + store event 타입/리스너 계약 추가
+  - `StoreStats` 계약 및 `MemoryWorldStore` 통계 구현 추가
+  - persistence query/event/stats 회귀 테스트 보강

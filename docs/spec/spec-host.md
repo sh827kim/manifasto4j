@@ -81,3 +81,13 @@ Key rules:
 - host 에러 payload 확장:
   - 기존 `HOST_EFFECT_FAILED` 유지
   - 세부 필드(`effectErrorCode`, `effectAttempts`, `effectRetryable`) 추가
+
+## 8. Golden Scenario Standardization (2026-02-14, TASK-A4)
+
+- host golden fixture를 시나리오 파일 단위로 표준화:
+  - `manifesto-host/src/test/resources/golden/host/scenarios/todo-workflow.json`
+  - `manifesto-host/src/test/resources/golden/host/scenarios/trace-snapshot.json`
+  - `manifesto-host/src/test/resources/golden/host/scenarios/complex-effects.json`
+  - `manifesto-host/src/test/resources/golden/host/scenarios/determinism.json`
+- `HostGoldenVectorHarness`는 다중 fixture 로딩 + JSON equality assertion 규약을 통일한다.
+- `HostGoldenTest`는 위 4개 시나리오를 단일 실행 경로로 검증한다.

@@ -1,0 +1,27 @@
+[
+  {
+    "name": "todo-workflow-effect-applied",
+    "expected": {
+      "status": "HALTED",
+      "dataStatus": "ok",
+      "hostCurrentIntentId": "intent-host-golden-1"
+    }
+  },
+  {
+    "name": "todo-workflow-missing-handler",
+    "expected": {
+      "status": "PENDING",
+      "dataStatus": "",
+      "hasRequirements": true
+    }
+  },
+  {
+    "name": "todo-workflow-effect-failure",
+    "expected": {
+      "status": "ERROR",
+      "dataStatus": "",
+      "hostLastErrorCode": "HOST_EFFECT_FAILED",
+      "hostErrorsCount": 1
+    }
+  }
+]

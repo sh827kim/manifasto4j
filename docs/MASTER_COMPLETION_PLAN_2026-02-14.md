@@ -158,8 +158,8 @@ Validation:
 - `./gradlew :manifesto-host:test`
 
 #### `TASK-A4` Host Golden Scenario Standardization
-- [ ] determinism/trace-snapshot/complex-effects/todo-workflow 시나리오를 golden fixture로 정규화
-- [ ] golden loader/assertion 규약 통일
+- [x] determinism/trace-snapshot/complex-effects/todo-workflow 시나리오를 golden fixture로 정규화
+- [x] golden loader/assertion 규약 통일
 
 Validation:
 - `./gradlew :manifesto-host:test`
@@ -167,9 +167,9 @@ Validation:
 ### 9.3 Stage B (P1)
 
 #### `TASK-B1` World Persistence Parity
-- [ ] `EdgeQuery` 필터 계약 추가
-- [ ] observable store event subscription 계약 추가
-- [ ] stats 조회 계약 추가
+- [x] `EdgeQuery` 필터 계약 추가
+- [x] observable store event subscription 계약 추가
+- [x] stats 조회 계약 추가
 
 Validation:
 - `./gradlew :manifesto-world:test`
