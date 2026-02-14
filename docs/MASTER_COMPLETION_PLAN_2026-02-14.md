@@ -144,8 +144,8 @@ Validation:
 - `./gradlew :manifesto-app:test`
 
 #### `TASK-A2` App Regression Expansion
-- [ ] lifecycle/action/session/branch/policy/memory/resume-recovery 시나리오를 TS 테스트 기준으로 매핑
-- [ ] Java app 테스트 밀도를 TS 핵심 시나리오 기준으로 확장
+- [x] lifecycle/action/session/branch/policy/memory/resume-recovery 시나리오를 TS 테스트 기준으로 매핑
+- [x] Java app 테스트 밀도를 TS 핵심 시나리오 기준으로 확장
 
 Validation:
 - `./gradlew :manifesto-app:test`
