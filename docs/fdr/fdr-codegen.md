@@ -26,6 +26,9 @@
   - `CodegenRunner.generateDetailed()` + `CodegenRunResult` 도입
   - plugin 옵션 계약(`CodegenPluginOptions`, `CodegenExecutionOptions`) 도입
   - utility/runner 통합 테스트(path safety/hash/vfs/integration) 증설
+- 추가 완료 (2026-02-14, TASK-B4):
+  - multi-plugin sequential mode PoC(`CodegenRunner.generateComposite`) 추가
+  - ordered target 실행 결과를 단일 VFS에서 합성하는 경계 구현
+  - composite 실행 통합 테스트 추가
 - 다음 단계:
-  - plugin별 옵션 실제 반영 범위 확대(현재는 계약/검증 중심)
   - snapshot/golden 테스트를 target별 fixture 기반으로 확장

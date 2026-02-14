@@ -66,12 +66,89 @@ public final class CodegenRunner implements CodeGenerator {
         ));
 
         VirtualFileSystem vfs = new VirtualFileSystem();
+        applyPluginOutput(request, safeOptions, effectivePluginOptions, diagnostics, header, vfs, plugin);
+
+        List<GeneratedArtifact> files = vfs.getFiles().stream()
+            .map(file -> new GeneratedArtifact(file.path(), file.content()))
+            .toList();
+
+        return new CodegenRunResult(
+            files,
+            List.copyOf(diagnostics),
+            schemaHash,
+            effectivePluginOptions
+        );
+    }
+
+    public CodegenRunResult generateComposite(
+        CodegenRequest request,
+        CodegenExecutionOptions options,
+        List<CodegenTarget> orderedTargets
+    ) {
+        Objects.requireNonNull(request, "request must not be null");
+        Objects.requireNonNull(orderedTargets, "orderedTargets must not be null");
+        CodegenExecutionOptions safeOptions = options == null ? CodegenExecutionOptions.defaults() : options;
+        CodegenPluginOptions effectivePluginOptions = safeOptions.pluginOptions() == null
+            ? CodegenPluginOptions.defaults()
+            : safeOptions.pluginOptions();
+
+        List<CodegenDiagnostic> diagnostics = new ArrayList<>();
+        diagnostics.addAll(validatePluginIds());
+        diagnostics.addAll(effectivePluginOptions.validate());
+
+        String schemaHash = StableHash.stableHash(request.schema());
+        String header = HeaderGenerator.generateHeader(new HeaderOptions(
+            safeOptions.sourceId(),
+            schemaHash,
+            safeOptions.stamp()
+        ));
+        VirtualFileSystem vfs = new VirtualFileSystem();
+
+        for (CodegenTarget target : orderedTargets) {
+            if (target == null) {
+                diagnostics.add(CodegenDiagnostic.error("runner", "Composite target must not be null"));
+                continue;
+            }
+            CodegenPlugin plugin = registry.resolve(target).orElse(null);
+            if (plugin == null) {
+                diagnostics.add(CodegenDiagnostic.error("runner", "No codegen plugin found for target: " + target.name()));
+                continue;
+            }
+            CodegenRequest perTargetRequest = new CodegenRequest(
+                request.schema(),
+                request.basePackage(),
+                target
+            );
+            applyPluginOutput(perTargetRequest, safeOptions, effectivePluginOptions, diagnostics, header, vfs, plugin);
+        }
+
+        List<GeneratedArtifact> files = vfs.getFiles().stream()
+            .map(file -> new GeneratedArtifact(file.path(), file.content()))
+            .toList();
+
+        return new CodegenRunResult(
+            files,
+            List.copyOf(diagnostics),
+            schemaHash,
+            effectivePluginOptions
+        );
+    }
+
+    private void applyPluginOutput(
+        CodegenRequest request,
+        CodegenExecutionOptions safeOptions,
+        CodegenPluginOptions effectivePluginOptions,
+        List<CodegenDiagnostic> diagnostics,
+        String header,
+        VirtualFileSystem vfs,
+        CodegenPlugin plugin
+    ) {
         List<GeneratedArtifact> generated;
         try {
             generated = plugin.generate(request, effectivePluginOptions);
         } catch (RuntimeException error) {
             diagnostics.add(CodegenDiagnostic.error(plugin.pluginId(), "Plugin threw: " + error.getMessage()));
-            return new CodegenRunResult(List.of(), List.copyOf(diagnostics), schemaHash, effectivePluginOptions);
+            return;
         }
 
         for (GeneratedArtifact artifact : generated) {
@@ -94,17 +171,6 @@ public final class CodegenRunner implements CodeGenerator {
                 diagnostics.add(collision);
             }
         }
-
-        List<GeneratedArtifact> files = vfs.getFiles().stream()
-            .map(file -> new GeneratedArtifact(file.path(), file.content()))
-            .toList();
-
-        return new CodegenRunResult(
-            files,
-            List.copyOf(diagnostics),
-            schemaHash,
-            effectivePluginOptions
-        );
     }
 
     private List<CodegenDiagnostic> validatePluginIds() {

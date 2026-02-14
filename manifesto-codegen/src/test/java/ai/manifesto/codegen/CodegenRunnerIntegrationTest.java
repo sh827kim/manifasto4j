@@ -179,4 +179,38 @@ class CodegenRunnerIntegrationTest {
         assertFalse(compactSource.contains("Objects.requireNonNull("));
         assertFalse(compactSource.contains("/**"));
     }
+
+    @Test
+    void generateCompositeRunsPluginsSequentially() {
+        CodegenRunner runner = CodegenRunner.withDefaults();
+        CodegenRequest request = new CodegenRequest(
+            Map.of(
+                "id", "urn:todo",
+                "state", Map.of("fields", Map.of("status", Map.of("type", "string", "required", false))),
+                "actions", Map.of(
+                    "create-task", Map.of(
+                        "input", Map.of(
+                            "fields", Map.of("title", Map.of("type", "string", "required", true))
+                        )
+                    )
+                )
+            ),
+            "ai.manifesto.generated",
+            new CodegenTarget("java-dto", "1.0")
+        );
+
+        CodegenRunResult result = runner.generateComposite(
+            request,
+            new CodegenExecutionOptions("source://composite", false, false, CodegenPluginOptions.defaults()),
+            List.of(
+                new CodegenTarget("java-dto", "1.0"),
+                new CodegenTarget("java-typed-client", "1.0")
+            )
+        );
+
+        assertFalse(result.hasErrors());
+        assertTrue(result.files().stream().anyMatch(f -> f.relativePath().endsWith("StateDto.java")));
+        assertTrue(result.files().stream().anyMatch(f -> f.relativePath().endsWith("TodoClient.java")));
+        assertTrue(result.files().stream().anyMatch(f -> f.relativePath().endsWith("CreateTaskInput.java")));
+    }
 }

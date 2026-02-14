@@ -75,3 +75,14 @@ Codegen은 schema 입력을 받아 대상 플랫폼 코드 산출물 목록으�
 - `CodegenExecutionOptions` 추가:
   - `sourceId`, `stamp`, `prependGeneratedHeader`, `pluginOptions`
 - 옵션 누락/불량 입력은 diagnostics error로 수집
+
+## 9. Multi-Plugin Sequential Mode (2026-02-14, TASK-B4)
+
+- TS runner model과의 정렬을 위해 Java runner에 `generateComposite(...)`를 추가했다.
+- 계약:
+  - 입력으로 ordered target 목록을 받아 plugin을 순차 실행
+  - 공통 `VirtualFileSystem`에 patch를 합성하고 collision/path-safety 규칙을 동일 적용
+  - `CodegenRunResult`로 통합 files/diagnostics를 반환
+- PoC 검증:
+  - `CodegenRunnerIntegrationTest.generateCompositeRunsPluginsSequentially`
+  - `java-dto` + `java-typed-client` 순차 실행 결과를 단일 산출물 집합으로 검증

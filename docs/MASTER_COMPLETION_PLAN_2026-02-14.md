@@ -189,8 +189,8 @@ Validation:
 - `./gradlew :manifesto-translator:test`
 
 #### `TASK-B4` Codegen Multi-Plugin Mode Decision
-- [ ] Java codegen에 TS형 sequential multi-plugin mode 도입 여부 결정 문서화
-- [ ] 채택 시 PoC, 미채택 시 근거와 대체전략 명시
+- [x] Java codegen에 TS형 sequential multi-plugin mode 도입 여부 결정 문서화
+- [x] 채택 시 PoC, 미채택 시 근거와 대체전략 명시
 
 Validation:
 - `./gradlew :manifesto-codegen:test`
