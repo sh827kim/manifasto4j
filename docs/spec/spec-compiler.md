@@ -23,7 +23,13 @@ Compiler specifies lowering MEL into core IR and diagnostics.
 - Host uses compiler for Translator/MEL patch evaluation
 - Compiler outputs Core IR compatible with core.apply()
 
-## 4. Runtime Evaluation Parity (TS Baseline)
+## 4. Loader & Renderer Coverage (Cycle 7)
+
+- `MelSourceLoader`를 통해 파일/클래스패스 MEL 로딩을 지원한다.
+- `CompilerFacade` 연동 유틸리티(`compileFromFile`, `compileFromClasspathOrThrow`)를 제공한다.
+- renderer는 malformed patch op, unknown op, newline/indent 옵션 경계 케이스를 회귀 테스트로 검증한다.
+
+## 5. Runtime Evaluation Parity (TS Baseline)
 
 - `RuntimePatchEvaluator`는 TS `evaluateExpr`와 연산 집합을 동치로 유지해야 한다.
 - 필수 지원 연산: `substring`, `field`, `keys`, `values`, `entries`.

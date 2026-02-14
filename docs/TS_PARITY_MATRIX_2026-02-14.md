@@ -13,10 +13,10 @@
 | Module | TS Surface Signal | Java Surface Signal | Status | Progress Target |
 | --- | --- | --- | --- | --- |
 | app | `runtime/hooks/execution/storage` + broad types | lifecycle/session/branch/hook/system/memory baseline | Partial | 48% -> 80% |
-| core | pure compute/apply/validate/explain + expr/evaluator | broad expr/evaluator/schema/runtime utils implemented | Strong Partial | 82% -> 90% |
+| core | pure compute/apply/validate/explain + expr/evaluator | broad expr/evaluator/schema/runtime utils implemented | Strong Partial | 84% -> 90% |
 | host | mailbox/runner/job/context/effects/errors | runtime+job+runner+trace + context-provider/effect-executor boundary implemented | Strong Partial | 76% -> 86% |
 | world | authority/registry/proposal/lineage/ingress/events/persistence | major governance runtime + event query/persistence filter contract implemented | Strong Partial | 80% -> 88% |
-| compiler | lexer/parser/analyzer/generator/lowering/eval/api/renderer | broad compiler pipeline implemented | Strong Partial | 76% -> 90% |
+| compiler | lexer/parser/analyzer/generator/lowering/eval/api/renderer | broad compiler pipeline implemented | Strong Partial | 79% -> 90% |
 | intent-ir | schema/canonical/keys/lexicon/resolver/lower | schema/validator/lower + keys/lexicon/resolver advanced baseline | Partial | 62% -> 85% |
 | translator | core pipeline/plugins/strategies/invariants/helpers + adapters/targets | core models + strategies/helpers/invariants + adapter SPI + target exporters + export orchestration | Strong Partial | 78% -> 88% |
 | codegen | plugin runner/types/path-safety/hash/header/virtual-fs/plugins | plugin runner + 2 Java plugins + runtime utilities(path/hash/header/vfs) + detailed run contract | Strong Partial | 80% -> 90% |
@@ -244,7 +244,7 @@ Priority actions:
 - `Partial`: 핵심 축 일부 구현, 확장 필요
 - `Missing`: 대응 구조/기능 부재
 
-## 6. Immediate Execution Focus (Post Cycle 6)
-1. Compiler/Core 잔여 갭 제거(Phase 7) 착수
-2. Release readiness(Phase 8): 통합 골든/문서 동기화
-3. App 테스트 표면 확장(잔여 high gap)
+## 6. Immediate Execution Focus (Post Cycle 7)
+1. `checkGoldenSync` N/A 정책 문서화 및 TS vector 재도입 대비 복구 절차 정의
+2. App/Host 고갭 테스트 표면 확장 (TS test shape 대비)
+3. Intent-IR/Translator/Codegen 잔여 계약 테스트 강화

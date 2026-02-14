@@ -11,6 +11,10 @@
   - 진행률 리포트: `TS_PARITY_PROGRESS_REPORT_2026-02-14.md`
   - 모듈 spec/fdr: `docs/spec/*`, `docs/fdr/*`
 
+실행 상태(2026-02-14):
+- Cycle 1~7 코드/테스트 작업 완료
+- 잔여 Blocker: `checkGoldenSync`가 TS compiler vector 경로 변경으로 실패
+
 ## 3. 전체 완료 정의 (Global DoD)
 1. TS 패키지 `app/core/host/world/compiler/intent-ir/translator/codegen`의 공개 계약이 Java에서 대응된다.
 2. 모듈별 핵심 시나리오 회귀 테스트가 존재한다.

@@ -25,3 +25,6 @@
 - [x] `at(record, string)` 경로 조회 동작 보강
 - [x] runtime patch skip reason 계약 정렬(`false|null|non-boolean`)
 - [x] compiler vectors/unit test에 parity case 추가
+- [x] `MelSourceLoader`(file/classpath) + `CompilerFacade` 연계 API 추가
+- [x] renderer edge-case 회귀 테스트 추가(unknown/malformed/newline/indent)
+- [ ] TS 최신 구조 기준 `checkGoldenSync` vector 경로 재정의

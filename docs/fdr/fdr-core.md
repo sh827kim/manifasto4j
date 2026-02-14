@@ -48,3 +48,8 @@ Schema hash uses canonical JSON + SHA-256 via `ValidationUtils.computeSchemaHash
 - Some runtime behaviors (host integration) are not modeled in Java core.
 - Document alignment should be re-validated after major updates.
 
+## 5. Cycle 7 Notes (2026-02-14)
+
+- Explain 회귀 테스트를 추가하여 `computed/system/input/data` 경로와 computed 정의 미존재 fallback을 검증했다.
+- Validate golden 벡터에 `V-004`(unknown call reference) 케이스를 추가했다.
+- system 경로 explain 정확도를 위해 `PathUtils`에 Java 객체(getter/field) 경로 조회를 추가했다.

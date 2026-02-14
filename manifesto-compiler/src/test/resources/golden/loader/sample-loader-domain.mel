@@ -1,0 +1,3 @@
+schema urn:test.loader.classpath 1.0.0
+field status string default="idle"
+action ship halt

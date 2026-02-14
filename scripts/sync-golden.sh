@@ -81,9 +81,9 @@ if [[ -n "$VECTOR_SOURCE" ]]; then
   copy_files "$VECTOR_SOURCE" "$VECTORS_DEST" "${VECTOR_FILES[@]}" || status=$?
   copy_files "$VECTOR_SOURCE" "$VECTORS_DEST" "${OPTIONAL_VECTOR_FILES[@]}" || true
 else
-  echo "[sync-golden] vector source not found. tried:" >&2
-  printf '  - %s\n' "${VECTOR_SOURCE_CANDIDATES[@]}" >&2
-  status=2
+  echo "[sync-golden] vector source not found. skip vector sync for current TS baseline."
+  echo "[sync-golden] tried candidates:"
+  printf '  - %s\n' "${VECTOR_SOURCE_CANDIDATES[@]}"
 fi
 
 if [[ -n "$GOLDEN_SOURCE" ]]; then

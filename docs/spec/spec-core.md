@@ -92,9 +92,9 @@ Evaluation uses `EvalContext` with `$item/$index/$array` for collection contexts
 - `TraceRecorder` is a helper for consistent trace node creation
 - `TraceReplay` (Java) validates structural integrity of a TraceGraph
 - `Explain` can produce trace for a specific path (data/computed/input/system)
+- `PathUtils`는 map/list뿐 아니라 Java 객체 getter/field 경로 조회를 지원한다.
 
 ## 9. Known Gaps (relative to TS spec)
 
 - Only core Java spec is summarized here
 - Full SPEC/FDRs for other packages are not ported yet
-

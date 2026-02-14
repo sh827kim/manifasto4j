@@ -3,6 +3,8 @@ package ai.manifesto.core.utils;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 /**
  * KR: PathUtils는 재사용 가능한 정적 보조 함수를 제공하는 유틸리티 타입입니다.
@@ -64,8 +66,35 @@ public class PathUtils {
             }
         }
 
-        // 다른 타입은 null 반환
-        return null;
+        // Java 객체(JavaBean/필드) 접근
+        return getPojoProperty(obj, key);
+    }
+
+    private static Object getPojoProperty(Object obj, String key) {
+        if (key == null || key.isEmpty()) {
+            return null;
+        }
+        String suffix = Character.toUpperCase(key.charAt(0)) + key.substring(1);
+        String[] candidateMethods = new String[] {"get" + suffix, "is" + suffix};
+
+        for (String methodName : candidateMethods) {
+            try {
+                Method method = obj.getClass().getMethod(methodName);
+                return method.invoke(obj);
+            } catch (ReflectiveOperationException ignored) {
+                // 다음 후보 시도
+            }
+        }
+
+        try {
+            Field field = obj.getClass().getDeclaredField(key);
+            if (!field.canAccess(obj)) {
+                field.setAccessible(true);
+            }
+            return field.get(obj);
+        } catch (ReflectiveOperationException ignored) {
+            return null;
+        }
     }
 
     /**
@@ -252,7 +281,10 @@ public class PathUtils {
                     return false;
                 }
             }
-            return false;
+            current = getPojoProperty(current, part);
+            if (current == null) {
+                return false;
+            }
         }
         return true;
     }

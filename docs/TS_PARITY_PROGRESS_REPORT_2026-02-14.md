@@ -21,17 +21,17 @@
 
 | Module | Progress | Assessment |
 | --- | ---: | --- |
-| core | 82% | 계산 엔진/표현식/적용 경계는 강함. TS 대비 고수준 정합 양호. |
+| core | 84% | 계산 엔진/표현식/적용 경계는 강함. explain/validate edge-case 회귀 벡터까지 확장됨. |
 | host | 76% | context-provider/effect-executor/error-boundary + effect trace 이벤트까지 반영. app/session 연동이 다음 과제. |
 | world | 80% | proposal/authority/lineage/persistence + event-query/persistence filter 계약 보강. ingress edge-case 골든 확장이 다음 과제. |
-| compiler | 76% | lexer/parser/analyzer/lowering/evaluation 핵심 축 반영. TS compiler의 API/CLI/loader 주변 기능은 추가 여지. |
+| compiler | 79% | lexer/parser/analyzer/lowering/evaluation 핵심 축 반영. loader API 및 renderer edge-case 회귀가 추가됨. |
 | app | 48% | ActionResult/AppStatus, session/branch alias, hook priority/filter/error mode, system/memory facade baseline 반영. |
 | intent-ir | 62% | schema validator + lower layer + key/lexicon/resolver 고도화 반영. lower 통합 범위 확장이 다음 과제. |
 | translator | 78% | core + adapter SPI + target exporters(json/manifesto/openapi) + translate/export 통합 경로 반영. exporter 회귀 고도화가 핵심 과제. |
 | codegen | 80% | java-dto/java-typed-client + plugin runner + path-safety/stable-hash/header/virtual-fs + detailed run contract 반영. plugin 옵션 실반영 확대가 다음 과제. |
 
 ## 3. Overall Progress
-- Weighted by TS module source shape: **약 72% 완료**
+- Weighted by TS module source shape: **약 73% 완료**
 - 의미:
   - `core/host/world/compiler`는 실사용 가능한 포팅 기반 확보
   - `app/intent-ir/translator/codegen`은 구조는 올라왔으나 TS 전체 형상 대비 확장 단계
@@ -54,17 +54,17 @@
 - 잔여 과제는 plugin ecosystem 확장(ts/zod 등)과 옵션 실반영 범위 확대.
 
 ## 5. Recommended Next Sequence
-1. Compiler/Core (P2)
-- loader/renderer edge-case와 explain/validate parity vector 보강
+1. Golden Sync 정책 정리 (P1)
+- TS compiler vector 부재 baseline(N/A) 정책 문서화 및 재도입 시 경로 복구 절차 정의
 
-2. Release Readiness (P2)
-- 전체 골든/통합 테스트 + 문서 동기화 + 최종 parity 리포트 정리
+2. App/Host 테스트 확장 (P1)
+- runtime/session/branch/hook/system 및 host effect/runner 계약 테스트 표면 확대
 
-3. App (P2)
-- runtime/session/branch/hook/system 테스트 표면 확대
+3. Intent-IR/Translator 계약 보강 (P2)
+- lower/schema 확장 및 translator 연동/diagnostics 회귀 강화
 
-4. Intent-IR (P2)
-- lower/schema 계약 확장, key/lexicon/resolver와 translator 연동 테스트 강화
+4. Codegen plugin 옵션 실반영 검증 (P2)
+- 옵션 계약을 실제 생성 결과에 반영하고 snapshot 회귀 강화
 
 ## 6. Confidence
 - Confidence: **Medium**

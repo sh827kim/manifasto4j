@@ -39,6 +39,7 @@ class GoldenValidateTest {
 
             Validate.ValidationResult result = switch (name) {
                 case "v002-computed-cycle" -> Validate.validateSchema(createComputedCycleSchema());
+                case "v004-unknown-call-reference" -> Validate.validateSchema(createUnknownCallReferenceSchema());
                 case "v005-call-graph-cycle" -> Validate.validateSchema(createCallGraphCycleSchema());
                 case "v008-schema-hash-mismatch" -> Validate.validateSchema(createSchemaHashMismatchSchema());
                 default -> throw new IllegalArgumentException("Unknown validate golden case: " + name);
@@ -83,6 +84,23 @@ class GoldenValidateTest {
             List.of(FieldSpec.required("name", "string")),
             List.of(computed),
             List.of(actionA, actionB)
+        );
+    }
+
+    private DomainSchema createUnknownCallReferenceSchema() {
+        ActionSpec actionA = new ActionSpec.Builder("actionA")
+            .flow(FlowNode.Call.of("missingAction"))
+            .build();
+        ComputedFieldDef computed = new ComputedFieldDef.Builder("computed.name", new Get("name"))
+            .addDependency("name")
+            .build();
+
+        return buildSchemaWithHash(
+            "urn:test-schema",
+            "1.0.0",
+            List.of(FieldSpec.required("name", "string")),
+            List.of(computed),
+            List.of(actionA)
         );
     }
 
