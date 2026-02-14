@@ -15,6 +15,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class IntentIrSchemaAndLowerTest {
 
@@ -89,5 +90,17 @@ class IntentIrSchemaAndLowerTest {
         assertTrue(lowered.diagnostics().stream().anyMatch(code -> code.startsWith("LRW001")));
         assertTrue(lowered.meta().containsKey("loweredAt"));
         assertEquals(lowered.diagnostics().size(), lowered.meta().get("lowerDiagnosticsCount"));
+    }
+
+    @Test
+    void lowererRejectsBlankDomainOrActionViaNormalizer() {
+        DefaultIntentIrLowerer lowerer = new DefaultIntentIrLowerer();
+        assertThrows(IllegalArgumentException.class, () -> lowerer.lower(new IntentIrDocument(
+            "1.0.0",
+            " ",
+            " ",
+            Map.of(),
+            Map.of()
+        )));
     }
 }

@@ -69,3 +69,17 @@ Intent-IR defines a normalized representation for intents between translation an
   - `focusAction` 우선
   - `discourseActions` fallback
   - actionHint 충돌 진단(`RSV007`)
+
+## 9. B2 Edge-Case Parity Mapping (2026-02-14)
+
+TS `intent-ir` 테스트 축(`schema/canonical/keys/resolver/lexicon/lower`) 대비 Java 회귀 매핑:
+
+- lexicon:
+  - selectional restriction 위반(`LXC009`)
+  - role type 누락 시 selectional 검사 불가(`LXC008`)
+- resolver:
+  - focus/discourse/actionHint 우선순위 복구
+  - 단서 부재 시 unresolved 진단(`RSV003`, `RSV010`)
+- lower:
+  - unresolved action(`unknown`) lowering warning(`LRW001`)
+  - blank 필드는 normalizer 단계에서 즉시 거절(예외)

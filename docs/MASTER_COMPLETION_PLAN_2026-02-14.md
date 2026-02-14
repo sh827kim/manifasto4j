@@ -175,8 +175,8 @@ Validation:
 - `./gradlew :manifesto-world:test`
 
 #### `TASK-B2` Intent-IR Edge-Case Regression
-- [ ] resolver/lexicon/lower TS 회귀 케이스 매핑 문서화
-- [ ] Java intent-ir edge-case 테스트 벡터 확장
+- [x] resolver/lexicon/lower TS 회귀 케이스 매핑 문서화
+- [x] Java intent-ir edge-case 테스트 벡터 확장
 
 Validation:
 - `./gradlew :manifesto-intent-ir:test`

@@ -131,6 +131,33 @@ class IntentIrLexiconResolverTest {
     }
 
     @Test
+    void lexiconReportsSelectionalCheckWhenRoleTypeIsMissing() {
+        DefaultIntentIrLexicon lexicon = new DefaultIntentIrLexicon(
+            Map.of(
+                "todo",
+                new IntentIrLexiconPolicy(
+                    Set.of("assign"),
+                    Set.of("roles"),
+                    Set.of(),
+                    Map.of("assign", Set.of("agent")),
+                    Map.of("agent", Set.of("human"))
+                )
+            ),
+            true
+        );
+
+        IntentIrLexiconCheckResult result = lexicon.check(new IntentIrDocument(
+            "1.0.0",
+            "todo",
+            "assign",
+            Map.of("roles", Map.of("agent", Map.of())),
+            Map.of()
+        ));
+        assertFalse(result.valid());
+        assertTrue(result.diagnostics().stream().anyMatch(code -> code.startsWith("LXC008")));
+    }
+
+    @Test
     void resolverCanRecoverDomainFromFocusAndDiscourse() {
         DefaultIntentIrResolver resolver = new DefaultIntentIrResolver(
             Map.of("todo", Set.of("add"), "calendar", Set.of("create"))
@@ -157,5 +184,23 @@ class IntentIrLexiconResolverTest {
         assertEquals("calendar", discourse.document().domain());
         assertEquals("create", discourse.document().action());
         assertTrue(discourse.diagnostics().stream().anyMatch(code -> code.startsWith("RSV009")));
+    }
+
+    @Test
+    void resolverReportsUnresolvedDomainAndActionWhenNoSignals() {
+        DefaultIntentIrResolver resolver = new DefaultIntentIrResolver(
+            Map.of("todo", Set.of("add"))
+        );
+
+        IntentIrResolveResult result = resolver.resolve(new IntentIrDocument(
+            "1.0.0",
+            "unknown",
+            "unknown",
+            Map.of(),
+            Map.of()
+        ));
+
+        assertTrue(result.diagnostics().stream().anyMatch(code -> code.startsWith("RSV003")));
+        assertTrue(result.diagnostics().stream().anyMatch(code -> code.startsWith("RSV010")));
     }
 }

@@ -29,5 +29,10 @@
   - `IntentIrLowerer`/`DefaultIntentIrLowerer`/`IntentIrLowerResult` 추가
   - lexicon 정책 확장(`requiredInputKeys`, `requiredMetaKeys`)
   - resolver discourse/focus 우선순위 규칙 추가
+- 구현 완료 (2026-02-14, TASK-B2):
+  - TS 회귀 축 기준 edge-case 매핑 문서화(spec-intent-ir §9)
+  - lexicon selectional role-type 누락(`LXC008`) 회귀 케이스 추가
+  - resolver unresolved 진단(`RSV003`, `RSV010`) 회귀 케이스 추가
+  - lower blank 입력 거절(normalizer 예외) 회귀 케이스 추가
 - 다음 단계:
   - lower 결과를 app/world 경계와 연결하는 통합 회귀 확대
