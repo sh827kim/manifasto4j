@@ -151,8 +151,8 @@ Validation:
 - `./gradlew :manifesto-app:test`
 
 #### `TASK-A3` Host Compliance Suite Expansion
-- [ ] mailbox/job/runner/ordering/liveness/handler/context 축으로 compliance 테스트 추가
-- [ ] host-owned namespace 및 effect reinjection/fulfill 경계 검증 강화
+- [x] mailbox/job/runner/ordering/liveness/handler/context 축으로 compliance 테스트 추가
+- [x] host-owned namespace 및 effect reinjection/fulfill 경계 검증 강화
 
 Validation:
 - `./gradlew :manifesto-host:test`
