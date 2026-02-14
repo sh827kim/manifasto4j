@@ -33,6 +33,7 @@ https://docs.manifesto-ai.dev/
 - `docs/INDEX.md` (spec/fdr 인덱스)
 - `docs/MASTER_COMPLETION_PLAN_2026-02-14.md` (전체 완성 단계별 실행 계획)
 - `docs/TS_PARITY_PROGRESS_REPORT_2026-02-14.md` (TS 코드 형상 기준 진행률 리포트)
+- `docs/TS_PARITY_MATRIX_2026-02-14.md` (TS 대비 기능 정합 매트릭스)
 - `docs/ko/book/index.md` (자바 개발자용 학습 문서)
 - `docs/spec/spec-*.md`, `docs/fdr/fdr-*.md` (패키지별 레퍼런스)
 

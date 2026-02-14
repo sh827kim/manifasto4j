@@ -16,6 +16,9 @@ import java.util.function.Function;
 public interface App {
     void ready() throws Exception;
 
+    default void dispose() {
+    }
+
     ActionHandle act(Intent intent) throws Exception;
 
     void subscribe(Function<Snapshot, Object> selector, Consumer<Object> handler);
@@ -24,12 +27,24 @@ public interface App {
 
     DomainSchema getSchema();
 
+    default AppStatus getStatus() {
+        return AppStatus.CREATED;
+    }
+
     default String getSessionId() {
         return null;
     }
 
     default boolean hasSessionPersistence() {
         return false;
+    }
+
+    default AppSession createSession(String actorId) {
+        return new DefaultAppSession(this, actorId, java.util.Map.of());
+    }
+
+    default AppSession createSession(String actorId, java.util.Map<String, Object> context) {
+        return new DefaultAppSession(this, actorId, context);
     }
 
     default WorldId getCurrentBranchId() {
@@ -40,6 +55,22 @@ public interface App {
         return List.of();
     }
 
+    default String getCurrentBranchName() {
+        return null;
+    }
+
+    default List<String> listBranchNames() {
+        return List.of();
+    }
+
+    default void createBranch(String branchName, WorldId worldId) {
+        throw new UnsupportedOperationException("Branch aliasing is not enabled for this app");
+    }
+
+    default void switchBranch(String branchName) {
+        throw new UnsupportedOperationException("Branch aliasing is not enabled for this app");
+    }
+
     default void addHook(AppHook hook) {
     }
 
@@ -48,6 +79,14 @@ public interface App {
 
     default ManifestoWorld getWorld() {
         return null;
+    }
+
+    default SystemFacade getSystemFacade() {
+        return new DefaultSystemFacade(this);
+    }
+
+    default MemoryFacade getMemoryFacade() {
+        return new DisabledMemoryFacade();
     }
 
     default void switchBranch(WorldId worldId) {

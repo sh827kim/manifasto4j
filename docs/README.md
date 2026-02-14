@@ -9,6 +9,7 @@
 - 최근 비교 범위: `754d860..3b40070` (문서/ADR/SPEC 변경, 런타임 소스 변경 없음)
 - 마스터 실행 계획: [MASTER_COMPLETION_PLAN_2026-02-14.md](MASTER_COMPLETION_PLAN_2026-02-14.md)
 - 진행률 리포트: [TS_PARITY_PROGRESS_REPORT_2026-02-14.md](TS_PARITY_PROGRESS_REPORT_2026-02-14.md)
+- 정합 매트릭스: [TS_PARITY_MATRIX_2026-02-14.md](TS_PARITY_MATRIX_2026-02-14.md)
 
 ## 문서 분류
 1. Active parity (TS와 직접 정합 대상)

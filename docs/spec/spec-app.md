@@ -21,8 +21,8 @@ App is a facade over Core/Host/World/Store. Java App should provide:
 
 Minimal conformance for server/CLI:
 
-- Single runtime (domain runtime only)
-- Basic ActionHandle: status/result/trace
+- Domain/System runtime kind 분리(`RuntimeKind`)
+- ActionHandle: status/result/trace + updates + await/timeout/cancel
 - Services map for effect execution
 - Optional external store integration (disabled by default)
 
@@ -51,13 +51,19 @@ Minimal conformance for server/CLI:
 - Session:
   - `getSessionId()`
   - `hasSessionPersistence()`
+  - `createSession(actorId, context)`
 - Branch:
   - `getCurrentBranchId()`
   - `listBranches()`
+  - `createBranch(name, worldId)`
+  - `switchBranch(name)`
   - `switchBranch(worldId)`
 - Hook:
   - `addHook(AppHook)`
   - `removeHook(AppHook)`
+  - 우선순위(`priority`)
+  - 이벤트 필터(`supports(eventType)`)
+  - 에러 정책(`CONTINUE`, `FAIL_FAST`)
   - Hook 이벤트:
     - `onReady`
     - `onBeforeAct`
@@ -65,9 +71,12 @@ Minimal conformance for server/CLI:
     - `onAfterAct`
     - `onBranchSwitched`
 
-## 6. Optional Features (defer)
+## 6. Facades (2026-02-14)
 
-- Branch management
-- Session management
-- Hook/plugin system
-- System actions catalog
+- `SystemFacade`: `system.*` 액션 실행 경계
+- `MemoryFacade`: `ingest/recall` 경계
+
+## 7. Optional Features (defer)
+
+- Hook plugin chain 고도화(필터 조합/재시도 정책)
+- Memory provider pluggability

@@ -33,11 +33,29 @@ This closes the gap between minimal synchronous execution and lifecycle observab
 
 ### 2.4 Session/Branch/Hook Contract
 - Session identity/persistence exposure (`getSessionId`, `hasSessionPersistence`)
-- Branch query APIs (`getCurrentBranchId`, `listBranches`)
+- Session execution API (`AppSession`, actor/context binding)
+- Branch query/control APIs (`getCurrentBranchId`, `listBranches`, alias branch switching)
 - Hook contract (`AppHook`) for ready/act/phase/branch lifecycle integration
+  - priority ordering
+  - event filtering
+  - error isolation policy (`CONTINUE`, `FAIL_FAST`)
+
+### 2.5 Action Result + RuntimeKind
+- Action result family added:
+  - `CompletedActionResult`
+  - `FailedActionResult`
+  - `RejectedActionResult`
+  - `PreparationFailedActionResult`
+- Runtime kind separation:
+  - `DOMAIN`
+  - `SYSTEM`
+
+### 2.6 Facades
+- `SystemFacade` for `system.*` action dispatch
+- `MemoryFacade` with disabled/in-memory baseline implementations
 
 ## 3. Deferred Areas
 
-- Branch/session management
-- Plugins/hooks
+- Hook chain composability/retry policy
+- Memory provider pluggability
 - Full system action catalog

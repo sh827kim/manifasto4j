@@ -77,9 +77,12 @@ class AppWorldIntegrationTest {
         assertEquals(first.getResult().getSnapshot().getMeta().getSchemaHash(), app.getSnapshot().getMeta().getSchemaHash());
         assertTrue(app.getCurrentBranchId() != null);
         assertTrue(app.listBranches().size() >= 1);
+        assertEquals("main", app.getCurrentBranchName());
+        app.createBranch("genesis", world.getStore().getGenesis().getWorldId());
+        assertTrue(app.listBranchNames().contains("genesis"));
 
         WorldId genesisId = world.getStore().getGenesis().getWorldId();
-        app.switchBranch(genesisId);
+        app.switchBranch("genesis");
         assertEquals("", app.getSnapshot().getData().get("status"));
         assertEquals(genesisId, app.getCurrentBranchId());
     }

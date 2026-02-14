@@ -22,7 +22,10 @@ import ai.manifesto.world.schema.WorldId;
 import ai.manifesto.world.types.IntentKeys;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -37,12 +40,18 @@ public final class DefaultApp implements App {
     private Snapshot snapshot;
     private final List<Subscription> subscriptions = new ArrayList<>();
     private final List<AppHook> hooks = new ArrayList<>();
+    private final Map<String, WorldId> branchAliases = new LinkedHashMap<>();
     private final String sessionId;
     private final AppSnapshotStore snapshotStore;
 
     private final ManifestoWorld world;
     private final ActorRef appActor;
+    private final SystemFacade systemFacade;
+    private final MemoryFacade memoryFacade;
+
+    private AppStatus status = AppStatus.CREATED;
     private WorldId currentWorldId;
+    private String currentBranchName = "main";
 
     public DefaultApp(DomainSchema schema, Snapshot initialSnapshot, HostRuntime host) {
         this(schema, initialSnapshot, host, null, null, null, null);
@@ -74,6 +83,9 @@ public final class DefaultApp implements App {
         this.appActor = appActor;
         this.sessionId = sessionId;
         this.snapshotStore = snapshotStore;
+        this.systemFacade = new DefaultSystemFacade(this);
+        this.memoryFacade = new InMemoryMemoryFacade();
+
         Snapshot restored = loadSessionSnapshot();
         if (restored != null) {
             this.snapshot = restored;
@@ -82,7 +94,9 @@ public final class DefaultApp implements App {
 
     @Override
     public void ready() {
+        ensureNotDisposed();
         if (world == null) {
+            status = AppStatus.READY;
             emitReadyHook();
             return;
         }
@@ -93,68 +107,112 @@ public final class DefaultApp implements App {
             genesis = world.createGenesis(genesisSnapshot);
         }
         this.currentWorldId = genesis.getWorldId();
+        branchAliases.putIfAbsent("main", currentWorldId);
 
         Snapshot genesisSnapshot = world.getStore().getSnapshot(genesis.getWorldId());
         if (genesisSnapshot != null) {
             this.snapshot = genesisSnapshot;
             persistSessionSnapshot();
         }
+        status = AppStatus.READY;
         emitReadyHook();
     }
 
     @Override
+    public void dispose() {
+        if (status == AppStatus.DISPOSED) {
+            return;
+        }
+        status = AppStatus.DISPOSING;
+        hooks.clear();
+        subscriptions.clear();
+        status = AppStatus.DISPOSED;
+    }
+
+    @Override
     public ActionHandle act(Intent intent) throws Exception {
+        ensureReady();
+        ensureNotDisposed();
+        Objects.requireNonNull(intent, "intent is required");
+
+        RuntimeKind runtimeKind = intent.getType() != null && intent.getType().startsWith("system.")
+            ? RuntimeKind.SYSTEM
+            : RuntimeKind.DOMAIN;
+        ActionHandle handle = ActionHandle.start(runtimeKind);
+
         emitBeforeActHook(intent);
-        List<ActionUpdate> updates = new ArrayList<>();
-        appendUpdate(intent, updates, ActionPhase.PREPARING, "Preparing action");
+        appendUpdate(intent, handle, ActionPhase.PREPARING, "Preparing action");
 
         if (world == null) {
-            appendUpdate(intent, updates, ActionPhase.EXECUTING, "Executing action via HostRuntime");
+            appendUpdate(intent, handle, ActionPhase.EXECUTING, "Executing action via HostRuntime");
             ComputeResult result = host.run(schema, snapshot, intent, 5);
             snapshot = result.getSnapshot();
             persistSessionSnapshot();
             notifySubscribers(snapshot);
-            appendTerminalUpdate(intent, updates, result.getStatus(), null);
-            ActionHandle handle = new ActionHandle(result, updates);
+            appendTerminalUpdate(intent, handle, result.getStatus(), null);
+            ActionResult actionResult = toActionResult(result.getStatus(), runtimeKind, null, null);
+            handle.complete(result, actionResult);
             emitAfterActHook(intent, handle);
             return handle;
         }
 
         if (appActor == null) {
-            throw new IllegalStateException("World-enabled app requires appActor");
+            ActionResult failure = new PreparationFailedActionResult("world_actor_missing", runtimeKind);
+            ComputeResult result = ComputeResult.builder()
+                .snapshot(snapshot)
+                .trace((TraceGraph) null)
+                .status(ComputeStatus.ERROR)
+                .build();
+            appendUpdate(intent, handle, ActionPhase.PREPARATION_FAILED, "World-enabled app requires appActor");
+            handle.complete(result, failure);
+            emitAfterActHook(intent, handle);
+            return handle;
         }
         if (currentWorldId == null) {
-            throw new IllegalStateException("App is not ready. Call ready() before act().");
+            ActionResult failure = new PreparationFailedActionResult("app_not_ready", runtimeKind);
+            ComputeResult result = ComputeResult.builder()
+                .snapshot(snapshot)
+                .trace((TraceGraph) null)
+                .status(ComputeStatus.ERROR)
+                .build();
+            appendUpdate(intent, handle, ActionPhase.PREPARATION_FAILED, "App is not ready. Call ready() before act().");
+            handle.complete(result, failure);
+            emitAfterActHook(intent, handle);
+            return handle;
         }
 
+        IntentBody body = new IntentBody(intent.getType(), intent.getInput(), null);
         IntentInstance intentInstance = new IntentInstance(
-                new IntentBody(intent.getType(), intent.getInput(), null),
-                intent.getIntentId(),
-                IntentKeys.computeIntentKey(world.getSchemaHash(), new IntentBody(intent.getType(), intent.getInput(), null)),
-                new IntentMeta(new IntentOrigin(
-                        "app:default",
-                        new IntentSource("app", "event-" + intent.getIntentId()),
-                        appActor
-                ))
+            body,
+            intent.getIntentId(),
+            IntentKeys.computeIntentKey(world.getSchemaHash(), body),
+            new IntentMeta(new IntentOrigin(
+                "app:default",
+                new IntentSource("app", "event-" + intent.getIntentId()),
+                appActor
+            ))
         );
 
         ProposalResult proposalResult = world.submitProposal(appActor.getActorId(), intentInstance, currentWorldId, null);
-        appendUpdate(intent, updates, ActionPhase.SUBMITTED, "Proposal submitted to world");
+        appendUpdate(intent, handle, ActionPhase.SUBMITTED, "Proposal submitted to world");
 
         if (proposalResult.getError() != null) {
-            appendUpdate(intent, updates, ActionPhase.FAILED, "World proposal failed: " + proposalResult.getError());
-            ActionHandle handle = new ActionHandle(ComputeResult.builder()
-                    .snapshot(snapshot)
-                    .trace((TraceGraph) null)
-                    .status(ComputeStatus.ERROR)
-                    .build(), updates);
+            appendUpdate(intent, handle, ActionPhase.FAILED, "World proposal failed: " + proposalResult.getError());
+            ComputeResult errorResult = ComputeResult.builder()
+                .snapshot(snapshot)
+                .trace((TraceGraph) null)
+                .status(ComputeStatus.ERROR)
+                .build();
+            ActionResult actionResult = new FailedActionResult(proposalResult.getError(), worldIdValue(currentWorldId), runtimeKind);
+            handle.complete(errorResult, actionResult);
             emitAfterActHook(intent, handle);
             return handle;
         }
 
         if (proposalResult.getResultWorld() != null) {
-            appendUpdate(intent, updates, ActionPhase.EXECUTING, "Proposal approved and executed");
+            appendUpdate(intent, handle, ActionPhase.EXECUTING, "Proposal approved and executed");
             currentWorldId = proposalResult.getResultWorld().getWorldId();
+            branchAliases.put(currentBranchName, currentWorldId);
             Snapshot terminalSnapshot = world.getStore().getSnapshot(currentWorldId);
             if (terminalSnapshot != null) {
                 snapshot = terminalSnapshot;
@@ -163,15 +221,22 @@ public final class DefaultApp implements App {
             }
         }
 
-        ProposalStatus status = proposalResult.getProposal().getStatus();
-        ComputeStatus computeStatus = toComputeStatus(status);
+        ProposalStatus proposalStatus = proposalResult.getProposal().getStatus();
+        appendWorldTerminalUpdate(intent, handle, proposalStatus);
 
-        List<ActionUpdate> finalized = finalizeWorldUpdates(intent, updates, status);
-        ActionHandle handle = new ActionHandle(ComputeResult.builder()
-                .snapshot(snapshot)
-                .trace((TraceGraph) null)
-                .status(computeStatus)
-                .build(), finalized);
+        ComputeStatus computeStatus = toComputeStatus(proposalStatus);
+        ComputeResult result = ComputeResult.builder()
+            .snapshot(snapshot)
+            .trace((TraceGraph) null)
+            .status(computeStatus)
+            .build();
+        ActionResult actionResult = toActionResult(
+            computeStatus,
+            runtimeKind,
+            worldIdValue(currentWorldId),
+            proposalResult.getError()
+        );
+        handle.complete(result, actionResult);
         emitAfterActHook(intent, handle);
         return handle;
     }
@@ -190,6 +255,11 @@ public final class DefaultApp implements App {
     @Override
     public Snapshot getSnapshot() {
         return snapshot;
+    }
+
+    @Override
+    public AppStatus getStatus() {
+        return status;
     }
 
     @Override
@@ -213,6 +283,11 @@ public final class DefaultApp implements App {
     }
 
     @Override
+    public String getCurrentBranchName() {
+        return currentBranchName;
+    }
+
+    @Override
     public List<WorldId> listBranches() {
         if (world == null) {
             return List.of();
@@ -220,6 +295,21 @@ public final class DefaultApp implements App {
         return world.getStore().listWorlds().stream()
             .map(World::getWorldId)
             .toList();
+    }
+
+    @Override
+    public List<String> listBranchNames() {
+        return List.copyOf(branchAliases.keySet());
+    }
+
+    @Override
+    public void createBranch(String branchName, WorldId worldId) {
+        Objects.requireNonNull(branchName, "branchName is required");
+        Objects.requireNonNull(worldId, "worldId is required");
+        if (branchName.isBlank()) {
+            throw new IllegalArgumentException("branchName must not be blank");
+        }
+        branchAliases.put(branchName.trim(), worldId);
     }
 
     @Override
@@ -251,6 +341,27 @@ public final class DefaultApp implements App {
         emitBranchSwitchedHook(worldId);
     }
 
+    @Override
+    public void switchBranch(String branchName) {
+        Objects.requireNonNull(branchName, "branchName is required");
+        WorldId worldId = branchAliases.get(branchName);
+        if (worldId == null) {
+            throw new IllegalArgumentException("Unknown branch alias: " + branchName);
+        }
+        currentBranchName = branchName;
+        switchBranch(worldId);
+    }
+
+    @Override
+    public SystemFacade getSystemFacade() {
+        return systemFacade;
+    }
+
+    @Override
+    public MemoryFacade getMemoryFacade() {
+        return memoryFacade;
+    }
+
     private Snapshot loadSessionSnapshot() {
         if (sessionId == null || snapshotStore == null) {
             return null;
@@ -266,22 +377,31 @@ public final class DefaultApp implements App {
     }
 
     private ComputeStatus toComputeStatus(ProposalStatus status) {
-        if (status == ProposalStatus.EVALUATING) {
+        if (status == ProposalStatus.EVALUATING || status == ProposalStatus.EXECUTING) {
             return ComputeStatus.PENDING;
         }
         if (status == ProposalStatus.REJECTED || status == ProposalStatus.FAILED) {
             return ComputeStatus.ERROR;
         }
-        if (status == ProposalStatus.COMPLETED) {
-            return ComputeStatus.COMPLETE;
-        }
-        if (status == ProposalStatus.EXECUTING) {
-            return ComputeStatus.PENDING;
-        }
-        if (status == ProposalStatus.APPROVED) {
+        if (status == ProposalStatus.COMPLETED || status == ProposalStatus.APPROVED) {
             return ComputeStatus.COMPLETE;
         }
         return ComputeStatus.PENDING;
+    }
+
+    private ActionResult toActionResult(
+        ComputeStatus computeStatus,
+        RuntimeKind runtimeKind,
+        String worldId,
+        String error
+    ) {
+        if (computeStatus == ComputeStatus.COMPLETE || computeStatus == ComputeStatus.HALTED) {
+            return new CompletedActionResult(worldId, runtimeKind);
+        }
+        if (computeStatus == ComputeStatus.ERROR) {
+            return new FailedActionResult(error == null ? "failed" : error, worldId, runtimeKind);
+        }
+        return new PreparationFailedActionResult("pending", runtimeKind);
     }
 
     private void notifySubscribers(Snapshot snapshot) {
@@ -299,70 +419,104 @@ public final class DefaultApp implements App {
         return baseSnapshot;
     }
 
-    private record Subscription(Function<Snapshot, Object> selector, Consumer<Object> handler) {}
-
-    private List<ActionUpdate> finalizeWorldUpdates(Intent intent, List<ActionUpdate> updates, ProposalStatus status) {
+    private void appendWorldTerminalUpdate(Intent intent, ActionHandle handle, ProposalStatus status) {
         if (status == ProposalStatus.COMPLETED || status == ProposalStatus.APPROVED) {
-            appendUpdate(intent, updates, ActionPhase.COMPLETED, "World proposal completed");
-            return updates;
+            appendUpdate(intent, handle, ActionPhase.COMPLETED, "World proposal completed");
+            return;
         }
         if (status == ProposalStatus.REJECTED) {
-            appendUpdate(intent, updates, ActionPhase.REJECTED, "World proposal rejected");
-            return updates;
+            appendUpdate(intent, handle, ActionPhase.REJECTED, "World proposal rejected");
+            return;
         }
         if (status == ProposalStatus.FAILED) {
-            appendUpdate(intent, updates, ActionPhase.FAILED, "World proposal failed");
-            return updates;
+            appendUpdate(intent, handle, ActionPhase.FAILED, "World proposal failed");
+            return;
         }
-        appendUpdate(intent, updates, ActionPhase.EXECUTING, "World proposal pending: " + status);
-        return updates;
+        appendUpdate(intent, handle, ActionPhase.EXECUTING, "World proposal pending: " + status);
     }
 
-    private void appendTerminalUpdate(Intent intent, List<ActionUpdate> updates, ComputeStatus status, String message) {
+    private void appendTerminalUpdate(Intent intent, ActionHandle handle, ComputeStatus status, String message) {
         if (status == ComputeStatus.COMPLETE || status == ComputeStatus.HALTED) {
-            appendUpdate(intent, updates, ActionPhase.COMPLETED, message == null ? "Action completed" : message);
+            appendUpdate(intent, handle, ActionPhase.COMPLETED, message == null ? "Action completed" : message);
             return;
         }
         if (status == ComputeStatus.ERROR) {
-            appendUpdate(intent, updates, ActionPhase.FAILED, message == null ? "Action failed" : message);
+            appendUpdate(intent, handle, ActionPhase.FAILED, message == null ? "Action failed" : message);
             return;
         }
-        appendUpdate(intent, updates, ActionPhase.EXECUTING, message == null ? "Action is still running" : message);
+        appendUpdate(intent, handle, ActionPhase.EXECUTING, message == null ? "Action is still running" : message);
     }
 
-    private void appendUpdate(Intent intent, List<ActionUpdate> updates, ActionPhase phase, String message) {
+    private void appendUpdate(Intent intent, ActionHandle handle, ActionPhase phase, String message) {
         ActionUpdate update = new ActionUpdate(phase, message, System.currentTimeMillis());
-        updates.add(update);
+        handle.recordUpdate(update);
         emitActionUpdateHook(intent, update);
     }
 
+    private List<AppHook> sortedHooks() {
+        List<AppHook> ordered = new ArrayList<>(hooks);
+        ordered.sort(Comparator.comparingInt(AppHook::priority).reversed());
+        return ordered;
+    }
+
+    private void runHook(AppHookEventType type, Runnable invoker, AppHook hook) {
+        if (!hook.supports(type)) {
+            return;
+        }
+        try {
+            invoker.run();
+        } catch (RuntimeException e) {
+            if (hook.errorMode() == AppHookErrorMode.FAIL_FAST) {
+                throw e;
+            }
+        }
+    }
+
     private void emitReadyHook() {
-        for (AppHook hook : hooks) {
-            hook.onReady(snapshot);
+        for (AppHook hook : sortedHooks()) {
+            runHook(AppHookEventType.READY, () -> hook.onReady(snapshot), hook);
         }
     }
 
     private void emitBeforeActHook(Intent intent) {
-        for (AppHook hook : hooks) {
-            hook.onBeforeAct(intent, snapshot);
+        for (AppHook hook : sortedHooks()) {
+            runHook(AppHookEventType.BEFORE_ACT, () -> hook.onBeforeAct(intent, snapshot), hook);
         }
     }
 
     private void emitActionUpdateHook(Intent intent, ActionUpdate update) {
-        for (AppHook hook : hooks) {
-            hook.onActionUpdate(intent, update, snapshot);
+        for (AppHook hook : sortedHooks()) {
+            runHook(AppHookEventType.ACTION_UPDATE, () -> hook.onActionUpdate(intent, update, snapshot), hook);
         }
     }
 
     private void emitAfterActHook(Intent intent, ActionHandle handle) {
-        for (AppHook hook : hooks) {
-            hook.onAfterAct(intent, handle, snapshot);
+        for (AppHook hook : sortedHooks()) {
+            runHook(AppHookEventType.AFTER_ACT, () -> hook.onAfterAct(intent, handle, snapshot), hook);
         }
     }
 
     private void emitBranchSwitchedHook(WorldId worldId) {
-        for (AppHook hook : hooks) {
-            hook.onBranchSwitched(worldId, snapshot);
+        for (AppHook hook : sortedHooks()) {
+            runHook(AppHookEventType.BRANCH_SWITCHED, () -> hook.onBranchSwitched(worldId, snapshot), hook);
         }
     }
+
+    private void ensureReady() {
+        if (status == AppStatus.CREATED) {
+            throw new IllegalStateException("App is not ready. Call ready() before act().");
+        }
+    }
+
+    private void ensureNotDisposed() {
+        if (status == AppStatus.DISPOSING || status == AppStatus.DISPOSED) {
+            throw new IllegalStateException("App is disposed");
+        }
+    }
+
+    private String worldIdValue(WorldId worldId) {
+        return worldId == null ? null : worldId.value();
+    }
+
+    private record Subscription(Function<Snapshot, Object> selector, Consumer<Object> handler) {}
 }

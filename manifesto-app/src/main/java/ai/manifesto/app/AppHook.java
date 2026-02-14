@@ -9,6 +9,18 @@ import ai.manifesto.world.schema.WorldId;
  * EN: Hook contract for observing app lifecycle, action execution, and branch switch events.
  */
 public interface AppHook {
+    default int priority() {
+        return 0;
+    }
+
+    default boolean supports(AppHookEventType eventType) {
+        return true;
+    }
+
+    default AppHookErrorMode errorMode() {
+        return AppHookErrorMode.CONTINUE;
+    }
+
     default void onReady(Snapshot snapshot) {
     }
 
