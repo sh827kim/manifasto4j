@@ -206,8 +206,8 @@ Validation:
 - `./gradlew checkGoldenSync`
 
 #### `TASK-C2` Cross-Module Integration Regression
-- [ ] core/app/host/world 통합 회귀 시나리오 정리
-- [ ] 교차 모듈 회귀 테스트 안정화
+- [x] core/app/host/world 통합 회귀 시나리오 정리
+- [x] 교차 모듈 회귀 테스트 안정화
 
 Validation:
 - `./gradlew test`

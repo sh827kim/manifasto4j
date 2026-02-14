@@ -59,3 +59,11 @@ This closes the gap between minimal synchronous execution and lifecycle observab
 - Hook chain composability/retry policy
 - Memory provider pluggability
 - Full system action catalog
+
+## 4. Cross-Module Integration Regression (2026-02-14, TASK-C2)
+
+- `manifesto-app`에 core/host/world 연계 회귀 테스트를 추가했다:
+  - 승인 경로에서 `App -> World -> Host -> Core` 종단 상태 전이 검증
+  - branch 전환 후 snapshot 복원 및 재실행 독립성 검증
+  - app policy 거절 시 world proposal 제출 전 차단 검증
+- 관련 테스트: `CrossModuleIntegrationRegressionTest`
