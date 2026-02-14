@@ -211,3 +211,96 @@ Validation:
 
 Validation:
 - `./gradlew test`
+
+## 10. Next Cycle Plan (Post-C2 Rebaseline, 2026-02-14)
+
+### 10.1 Baseline
+- TS baseline: `/workspace/manifasto-ts-core` @ `3b40070`
+- Java baseline: `/workspace/manifesto-java-core` @ `a5f951b`
+- 상세 갭 근거: `docs/PACKAGE_GAP_ANALYSIS_2026-02-14.md`
+
+### 10.2 Priority Execution Order
+1. `TASK-D1` App SDK surface parity expansion
+2. `TASK-D2` App memory/provider/context-freezing parity
+3. `TASK-D3` App spec-compliance regression density
+4. `TASK-E1` Host job-stage parity + trace-replay regression
+5. `TASK-E2` Codegen materialized output parity (flush/artifacts)
+6. `TASK-E3` Intent-IR canonical utility parity
+7. `TASK-F1` Compiler parse/tokens API + CLI entry extension
+8. `TASK-F2` World persistence error/batch contract tightening
+
+### 10.3 Stage D (P0)
+
+#### `TASK-D1` App SDK Surface Expansion
+- [ ] TS `App` 인터페이스 대비 Java `App` 공개 계약 gap map 확정
+- [ ] world-query/head/action-handle lookup/session surface를 Java API에 단계 반영
+- [ ] 호환성: 기존 `AppFactory`/`DefaultApp` 사용 코드 회귀 없음 보장
+
+Validation:
+- `./gradlew :manifesto-app:test`
+
+#### `TASK-D2` App Memory Context Parity
+- [ ] memory provider/verifier 수준의 pluggable 계약 추가
+- [ ] context freezing/recall 실패 표식(contract-only 우선) 반영
+- [ ] memory 관련 오류/진단 타입 정리
+
+Validation:
+- `./gradlew :manifesto-app:test`
+
+#### `TASK-D3` App Compliance Regression Expansion
+- [ ] TS app test 축 기준 회귀 매트릭스 작성
+- [ ] policy/subscription/publish-boundary/timing 카테고리 Java 회귀 추가
+- [ ] cross-module(app-host-world-core) 회귀 시나리오 2건 이상 추가
+
+Validation:
+- `./gradlew :manifesto-app:test`
+- `./gradlew test`
+
+### 10.4 Stage E (P1)
+
+#### `TASK-E1` Host Event-Loop Parity Hardening
+- [ ] `ApplyPatches` 단계 분리 여부를 TS 모델 기준으로 결정하고 반영
+- [ ] execution trace replay 성격의 회귀 축 추가
+- [ ] job ordering/liveness invariant 테스트 보강
+
+Validation:
+- `./gradlew :manifesto-host:test`
+
+#### `TASK-E2` Codegen Output Materialization
+- [ ] outDir flush/clean/write 경계 API(또는 runner 옵션) 추가
+- [ ] plugin artifacts 누적 결과 계약 추가
+- [ ] filesystem integration test 추가
+
+Validation:
+- `./gradlew :manifesto-codegen:test`
+
+#### `TASK-E3` Intent-IR Canonical Utility Parity
+- [ ] strict/semantic canonical API를 TS 축과 대응되게 정리
+- [ ] sim key distance/utility API 보강
+- [ ] lexicon/resolver helper 공개면 정비 + 회귀 확장
+
+Validation:
+- `./gradlew :manifesto-intent-ir:test`
+
+### 10.5 Stage F (P2)
+
+#### `TASK-F1` Compiler API Surface Extension
+- [ ] parse/tokens/check API 노출 경계(서비스/CLI) 확장
+- [ ] CLI subcommand 확장(`parse`, `tokens`) 또는 동등 기능 제공
+- [ ] 컴파일러 API/CLI 문서 및 회귀 테스트 갱신
+
+Validation:
+- `./gradlew :manifesto-compiler:test`
+
+#### `TASK-F2` World Persistence Contract Tightening
+- [ ] world error taxonomy 정비 (`WorldErrorCode` 대응 범위 정의)
+- [ ] persistence batch result/utility 계약 도입 여부 결정 및 반영
+- [ ] query/event/store-stats 회귀 보강
+
+Validation:
+- `./gradlew :manifesto-world:test`
+
+### 10.6 Next Cycle Completion Gate
+- [ ] `./gradlew test`
+- [ ] `./gradlew checkGoldenSync`
+- [ ] 문서 동기화(`docs/MASTER_COMPLETION_PLAN_2026-02-14.md`, `docs/PACKAGE_GAP_ANALYSIS_2026-02-14.md`, `docs/spec/*`, `docs/fdr/*`)
