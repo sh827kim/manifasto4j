@@ -1,71 +1,74 @@
-**02. 핵심 개념 지도 (Java 개발자 버전)**
-이 장은 Manifesto의 핵심 개념을 “한 줄 요약 + Java 개발자 포인트”로 정리합니다.
+# 02. 핵심 개념 (Java 입문자 버전)
 
-**Snapshot**
-- 한 시점의 전체 상태 사진입니다.
-- 시스템은 Snapshot 밖의 정보를 절대 보지 않습니다.
-- Java 포인트: 불변 객체(immutable value)로 관리하는 것이 안전합니다.
+아래 개념은 모든 모듈에서 반복해서 등장합니다. 먼저 용어를 확실히 잡으면 코드 이해 속도가 크게 빨라집니다.
 
-**Intent**
-- “이렇게 바꾸고 싶다”는 요청입니다.
-- 명령이 아니라 제안이며 승인 여부는 World가 결정합니다.
-- Java 포인트: `Intent`는 입력 전용 DTO로 설계하는 것이 일반적입니다.
+## 핵심 용어 사전
 
-**Flow**
-- 계산을 코드가 아닌 데이터 구조로 표현한 선언형 로직입니다.
-- 항상 종료되며 무한 루프가 없습니다.
-- Java 포인트: 순수 함수처럼 작동해야 하며, 내부에서 상태를 저장하지 않습니다.
+| 개념 | 쉬운 설명 | Java 코드에서 자주 보이는 타입 |
+| --- | --- | --- |
+| `DomainSchema` | "이 시스템의 규칙서" | `DomainSchema`, `ActionSpec`, `FieldSpec` |
+| `Snapshot` | "현재 상태 전체 사진" | `Snapshot` |
+| `Intent` | "사용자/시스템의 요청" | `Intent` |
+| `Flow` | "요청 처리 절차를 표현한 로직 트리" | `FlowNode` |
+| `Expr` | "값 계산 식" | `ExprNode` 계열 |
+| `Patch` | "상태 변경 명령(set/unset/merge)" | `Patch`, `PatchOp` |
+| `Requirement` | "Host가 실행해야 할 외부 작업 티켓" | `Requirement` |
+| `Effect` | "외부 세계 작업 선언" | `FlowNode.Effect`, `EffectHandler` |
+| `Trace` | "왜 이 결과가 나왔는지 기록" | `TraceNode`, `TraceGraph` |
+| `World` | "승인/거절/라인리지 거버넌스" | `ManifestoWorld`, authority/schema 모델 |
 
-**Effect**
-- 외부 세계에 해야 할 일을 선언합니다.
-- Core는 Effect를 실행하지 않습니다. Host가 실행합니다.
-- Java 포인트: 실행 인터페이스를 분리해 테스트가 가능하도록 설계합니다.
+## Snapshot 중심 사고
+이 프로젝트는 "메서드가 객체 상태를 직접 바꾸는 방식"이 아니라, 아래 방식으로 동작합니다.
+1. 현재 `Snapshot`을 읽는다.
+2. `Intent`를 계산한다.
+3. `Patch` 목록을 만든다.
+4. `Patch`를 적용해 새 `Snapshot`을 만든다.
 
-**World**
-- 거버넌스 레이어입니다. 승인, 거절, 기록을 담당합니다.
-- Java 포인트: 정책(Authority)을 전략 패턴이나 규칙 엔진으로 구성할 수 있습니다.
+이 방식의 장점:
+- 변경 이력을 설명하기 쉽다.
+- 테스트 재현성이 높다.
+- 롤백/시뮬레이션에 유리하다.
 
-**Core**
-- 순수 계산기입니다. I/O는 금지됩니다.
-- 핵심 기능: `compute`, `apply`, `validate`, `explain`
-- Java 포인트: 예외보다 “결과 객체”로 오류를 표현하는 것이 안정적입니다.
+## Core와 Host 분리
+- `Core`는 계산 엔진: 입력 -> 결과를 순수 계산
+- `Host`는 실행 엔진: Effect를 실제로 실행(API/DB/메시지)
 
-**Host**
-- 실행기입니다. Effect를 실제로 처리합니다.
-- Java 포인트: 트랜잭션 경계와 재시도를 명확히 분리하세요.
+이 분리가 중요한 이유:
+- 계산 로직은 테스트가 쉬워진다.
+- 외부 장애(API 실패, 네트워크 타임아웃)가 계산 규칙을 오염시키지 않는다.
 
-**Schema**
-- 도메인의 의미를 정의하는 설계도입니다.
-- Java 포인트: 스키마는 “도메인 규칙의 단일 근원”이 됩니다.
+## World의 역할
+`World`는 "실행 전에 승인할지"를 결정하는 레이어입니다.
+- 누가 요청했는지(`Actor`)
+- 어떤 권한 규칙인지(`AuthorityPolicy`)
+- 최종 승인/거절 결정(`FinalDecision`)
 
-**Patch**
-- Snapshot을 바꾸는 유일한 방법입니다.
-- `set`, `unset`, `merge`만 존재합니다.
-- Java 포인트: Patch는 변경 로그이므로 이벤트 스토어와도 잘 맞습니다.
+즉, "실행 가능성"과 "계산 가능성"을 분리합니다.
 
-**Requirement**
-- Effect 실행을 위해 Host가 처리해야 하는 작업 티켓입니다.
-- Java 포인트: 비동기 실행 큐, 메시지 브로커와 연결하기 좋습니다.
+## Intent-IR / Translator / Codegen의 의미
+- `Intent-IR`: 자연어 의도를 구조화한 중간 표현
+- `Translator`: 자연어 -> Intent-IR/실행 그래프
+- `Codegen`: 스키마 기반 코드 생성(DTO/client)
 
-**Trace**
-- 계산의 설명 로그입니다.
-- Java 포인트: 감사(Audit)와 디버깅에 매우 유용합니다.
+LLM을 붙일 때도 결국 목적은 같습니다.
+- 자연어를 구조화한다.
+- 구조화된 결과를 검증한다.
+- 검증된 결과만 실행한다.
 
-**Adapter/Projection (선택 확장)**
-- UI/API/Agent 이벤트를 Intent로 변환하는 계층입니다.
-- Java 포인트: REST/GraphQL 컨트롤러 또는 별도 어댑터 모듈이 이 역할을 맡을 수 있습니다.
+## 신입 개발자가 자주 헷갈리는 지점
+- `Patch`와 `Effect` 차이:
+  - `Patch`: 상태를 바꾸는 명령
+  - `Effect`: 외부 작업 요청
+- `compute`와 `apply` 차이:
+  - `compute`: 전체 흐름 계산
+  - `apply`: 이미 계산된 patch 적용
+- `Error`와 `Diagnostic` 차이:
+  - `Error`: 실패 결과
+  - `Diagnostic`: 경고/오류 진단 정보
 
-**Java 포팅 보강 메모 (2026-02-08 기준)**  
-- `HostContext`는 시간/랜덤 등 결정론 입력을 제공해야 하며, Core 내부 직접 시간 사용 제거가 1차 완료되었습니다.  
-- Host는 `data.$host` 네임스페이스를 사용해 실행 컨텍스트를 기록하도록 정렬 중입니다.
+<!-- NEXT_DOC_START -->
+---
 
-**개념 간 관계 요약**
-1. Intent는 World로 들어갑니다.
-2. World가 승인하면 Host가 실행합니다.
-3. Core는 Flow를 해석해 Patch와 Effect를 선언합니다.
-4. Host가 Effect를 처리하고 Snapshot을 갱신합니다.
-
-**체크포인트 질문**
-1. Flow가 실행 상태를 들고 있지 않다는 말은 무엇을 의미하나요.
-2. Effect 결과가 “값 반환”이 아니라 Patch인 이유는 무엇인가요.
-3. Snapshot 밖의 정보가 없다는 것은 어떤 장점을 주나요.
+## 다음 문서
+- [03. 핵심 개념 연관관계와 전체 실행 흐름](./03-sequence.md)
+<!-- NEXT_DOC_END -->

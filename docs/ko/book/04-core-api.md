@@ -1,57 +1,43 @@
-**04. Core API 개념 가이드 (Java)**
-이 장은 Core의 역할을 **Java 개발자가 이해하기 쉬운 형태로** 정리한 개념 가이드입니다. 실제 클래스/메서드 명은 모듈 구현에 따라 다를 수 있습니다.
+# 04. 모듈별 역할 요약 (아키텍처 지도)
 
-**Core의 책임**
-- Intent를 계산하여 다음 Snapshot을 산출
-- Patch를 적용하여 Snapshot을 갱신
-- 스키마 검증과 값의 근거 설명 제공
+이 장은 "각 모듈이 무엇을 담당하는지"를 빠르게 파악하기 위한 요약입니다.
 
-**핵심 API (개념적 인터페이스 예시)**
-아래는 이해를 돕기 위한 **개념 예시**입니다.
+## 모듈 역할 한눈에 보기
 
-```java
-public interface Core {
-    ComputeResult compute(Schema schema, Snapshot snapshot, Intent intent, Context context);
-    ApplyResult apply(Schema schema, Snapshot snapshot, List<Patch> patches, Context context);
-    ValidationResult validate(Schema schema);
-    ExplainResult explain(Schema schema, Snapshot snapshot, String path);
-}
-```
+| 모듈 | 한 줄 역할 | 주 입력 | 주 출력 |
+| --- | --- | --- | --- |
+| `manifesto-core` | 순수 계산 엔진 | schema, snapshot, intent | compute/apply 결과, trace |
+| `manifesto-host` | compute-effect 실행 루프 | compute 결과(requirements) | effect 반영 snapshot |
+| `manifesto-app` | 상위 런타임 API/조립 계층 | action 요청, runtime 설정 | ActionHandle, session/branch 상태 |
+| `manifesto-world` | 승인/거절/라인리지 거버넌스 | proposal, actor, policy | decision, lineage, event |
+| `manifesto-compiler` | MEL 파싱/검증/로워링 | MEL 텍스트 | DomainSchema/patch IR |
+| `manifesto-intent-ir` | 자연어 의도 중간표현 정규화 | translator draft | canonical IR + keys + diagnostics |
+| `manifesto-translator` | 자연어 -> 구조화 의도 파이프라인 | NL 입력, 정책, adapter | TranslationResult, exporter 결과 |
+| `manifesto-codegen` | schema 기반 코드 생성 | CodegenRequest | GeneratedArtifact 목록 |
 
-**기본 사용 흐름**
-1. Core 인스턴스를 생성합니다.
-2. 스키마와 Snapshot, Intent를 준비합니다.
-3. `compute` 결과로 Patch와 Requirement를 받습니다.
-4. Host가 Effect를 실행하면 Patch를 반영하고 다시 계산합니다.
+## 모듈 간 협업 관점
+- 실행 경로(Production Runtime): `app -> world -> host -> core`
+- 개발/도구 경로(Authoring Tooling): `compiler`, `intent-ir`, `translator`, `codegen`
+- `core`는 "비즈니스 의미"의 기준점입니다.
 
-**compute 결과가 의미하는 것**
-- `snapshot`: 계산 결과 Snapshot
-- `requirements`: Host가 실행해야 하는 Effect 목록
-- `trace`: 계산 과정의 설명 로그
+## 신입 개발자에게 추천하는 코드 읽기 순서
+1. `manifesto-core`: 상태 전이 원리 이해
+2. `manifesto-host`: effect 루프 이해
+3. `manifesto-app`: 실제 사용 API 이해
+4. `manifesto-world`: 승인 정책/기록 이해
+5. `manifesto-compiler`: MEL에서 schema로 내려오는 과정
+6. `manifesto-intent-ir` + `manifesto-translator`: LLM 연동 파이프라인
+7. `manifesto-codegen`: 개발 생산성 자동화
 
-**apply는 언제 쓰나요**
-- Effect 실행 결과 Patch를 Snapshot에 적용할 때 사용합니다.
-- apply는 computed 값을 다시 계산해 새 Snapshot을 만듭니다.
+## 코드 리뷰 시 반드시 확인할 질문
+- 이 변경이 `core` 결정성을 깨지 않는가?
+- effect 실행 책임이 `host` 경계를 넘지 않는가?
+- world 승인/기록 없이 실행되는 우회 경로가 없는가?
+- diagnostic/trace로 운영 추적이 가능한가?
 
-**validate는 무엇을 검증하나요**
-- 스키마가 Manifesto 규칙을 만족하는지 확인합니다.
-- 실제 서비스에 적용하기 전에 스키마 안정성을 체크합니다.
+<!-- NEXT_DOC_START -->
+---
 
-**explain의 활용**
-- 특정 값이 왜 그렇게 되었는지 근거를 제공합니다.
-- 디버깅과 감사(Audit)에 유리합니다.
-
-**Java 구현 시 주의사항**
-- Core 안에서 I/O는 금지됩니다.
-- Core 안에서 `System.currentTimeMillis()` 같은 벽시계 접근은 허용되지 않습니다.
-- 계산 도중 예외를 던지지 않고 “값으로 표현된 오류”를 반환하는 쪽이 안전합니다.
-
-**현재 구현 보강 메모 (2026-02-08 기준)**  
-- Java Core에는 `validateSnapshot` 계열 보조 API가 추가되어 있습니다.  
-- Core 내부 직접 시스템 시간 사용 제거가 1차 완료되어 결정성 리스크가 낮아졌습니다.  
-- validation golden 테스트(`V-002`, `V-005`, `V-008`)가 추가되어 규칙 회귀를 고정합니다.
-
-**체크포인트 질문**
-1. compute와 apply의 역할 차이는 무엇인가요.
-2. Core가 Effect를 직접 실행하면 어떤 문제가 생기나요.
-3. explain은 어떤 상황에서 특히 유용할까요.
+## 다음 문서
+- [05. 코드베이스 읽는 순서와 실무 온보딩 가이드](./05-packages.md)
+<!-- NEXT_DOC_END -->

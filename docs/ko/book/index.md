@@ -1,33 +1,52 @@
-**Manifesto Java 포팅 학습서 (초안)**
-이 문서는 TypeScript 기반 Manifesto의 핵심 개념을 **Java 개발자 관점**에서 이해하기 쉽게 정리한 학습서입니다. "계산(Core)과 실행(Host)을 분리한다"는 큰 원칙을 유지한 채, JVM 생태계에서 어떻게 설계/구현/운영하면 좋은지에 초점을 맞춥니다.
+# Manifesto Java 학습서 (신입 Java 개발자용)
 
-**목표 독자**
-- TypeScript Manifesto를 Java로 포팅하거나 유지보수하려는 개발자
-- 결정적 계산, 거버넌스, 감사 추적을 JVM 환경에서 구현하려는 팀
-- Manifesto의 스키마/Flow/Effect 모델을 빠르게 이해하려는 사람
+이 학습서는 `manifesto-java-core`를 처음 보는 개발자가 **프로젝트의 목적, 구조, 핵심 개념, 모듈별 코드 위치**를 빠르게 이해하도록 만든 교육 문서입니다.
 
-**읽는 순서**
-1. [01. Manifesto 한눈에 보기 (Java 관점)](./01-overview.md)
-2. [02. 핵심 개념 지도 (Java 개발자 버전)](./02-core-concepts.md)
-3. [03. Intent부터 Snapshot까지: 전체 실행 흐름](./03-sequence.md)
-4. [04. Core API 개념 가이드 (Java)](./04-core-api.md)
-5. [05. 모듈 및 폴더 구성 가이드](./05-packages.md)
-6. [06. MEL 문법 입문 (포팅 관점)](./06-mel.md)
-7. [07. LLM 통합 시 기대 효과](./07-llm-integration.md)
+## 이 문서의 목표
+- 이 프로젝트가 왜 존재하는지 설명할 수 있다.
+- `core/host/app/world/compiler/intent-ir/translator/codegen` 각 모듈의 역할을 구분할 수 있다.
+- 핵심 개념(`Intent`, `Snapshot`, `Patch`, `Effect`, `Trace`)이 어떻게 연결되는지 이해할 수 있다.
+- 실제 코드에서 어디를 먼저 읽어야 하는지 알 수 있다.
 
-**Java 포팅 관점의 핵심 키워드**
-- 불변(Immutable) 모델링과 순수 함수 기반 계산
-- I/O 금지 영역(Core)과 I/O 허용 영역(Host)의 분리
-- `Snapshot -> Patch -> Snapshot` 반복 구조
-- 승인/거절/감사를 위한 World 레이어
+## 권장 학습 순서
+1. [01. 프로젝트 의미와 핵심 가치](./01-overview.md)
+2. [02. 핵심 개념 (Java 입문자 버전)](./02-core-concepts.md)
+3. [03. 핵심 개념 연관관계와 전체 실행 흐름](./03-sequence.md)
+4. [04. 모듈별 역할 요약 (아키텍처 지도)](./04-core-api.md)
+5. [05. 코드베이스 읽는 순서와 실무 온보딩 가이드](./05-packages.md)
+6. [06. MEL 입문과 컴파일러 관점](./06-mel.md)
+7. [07. 이 프로젝트로 할 수 있는 일 (LLM 활용 포함)](./07-llm-integration.md)
+8. [08. 모듈 상세: manifesto-core](./08-module-core.md)
+9. [09. 모듈 상세: manifesto-host](./09-module-host.md)
+10. [10. 모듈 상세: manifesto-app](./10-module-app.md)
+11. [11. 모듈 상세: manifesto-world](./11-module-world.md)
+12. [12. 모듈 상세: manifesto-compiler](./12-module-compiler.md)
+13. [13. 모듈 상세: manifesto-intent-ir](./13-module-intent-ir.md)
+14. [14. 모듈 상세: manifesto-translator](./14-module-translator.md)
+15. [15. 모듈 상세: manifesto-codegen](./15-module-codegen.md)
 
-**현재 구현 범위 요약 (2026-02-11 기준)**
-- `core`: 계산/검증/설명/트레이스 정합 + 결정성 1차 정리 완료
-- `compiler`: MEL 파이프라인 구축 + `onceIntent` 반영 + golden 케이스 확장
-- `host`: 최소 실행기 기반 경계 하드닝 + `$host` 1차 반영 + host golden 추가
-- `app`: `ready/act/subscribe` 최소 API + world 통합 경로 + READY-8 반영
-- `world`: 승인/거절/라인리지/authority/실행 경로 구현 + world golden 추가
-- `intent-ir`, `translator`, `codegen`: TS 최신 기준 신규 포팅 대상
+## 현재 코드 기준 범위 (2026-02-14)
+- TS baseline 패키지: `app`, `codegen`, `compiler`, `core`, `host`, `intent-ir`, `translator`, `world`
+- Java 모듈도 동일한 8개 모듈을 모두 보유
+- 현재 다음 중점 작업은 `TASK-C2`(cross-module integration regression) 단계
 
-**참고**
-- 이 문서는 개념 중심입니다. 실제 클래스/메서드 명은 모듈 구현에 따라 다를 수 있습니다.
+## 학습 전 준비
+- Java 17 문법(클래스/인터페이스/record/컬렉션)
+- Gradle 기본 실행법
+- 최소 실행 명령:
+
+```bash
+./gradlew test
+```
+
+## 함께 보면 좋은 문서
+- 패키지별 SPEC: `/workspace/manifesto-java-core/docs/spec`
+- 패키지별 FDR: `/workspace/manifesto-java-core/docs/fdr`
+- 통합 플랜: `/workspace/manifesto-java-core/docs/MASTER_COMPLETION_PLAN_2026-02-14.md`
+
+<!-- NEXT_DOC_START -->
+---
+
+## 다음 문서
+- [01. 프로젝트 의미와 핵심 가치](./01-overview.md)
+<!-- NEXT_DOC_END -->

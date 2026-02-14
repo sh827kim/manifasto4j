@@ -1,64 +1,86 @@
-**03. Intent부터 Snapshot까지: 전체 실행 흐름**
-이 장은 "Intent가 제출된 뒤 Snapshot이 바뀌기까지"의 흐름을 한 눈에 보여줍니다.
+# 03. 핵심 개념 연관관계와 전체 실행 흐름
 
-**핵심 원칙**
-- Core는 계산만 합니다.
-- Host는 실행만 합니다.
-- World는 승인과 기록만 합니다.
-- 모든 정보는 Snapshot으로만 흐릅니다.
+이 장은 "개념들 사이 관계"를 먼저 이해시키는 데 목적이 있습니다.
 
-**시퀀스 다이어그램**
+## 1) 개념 연관관계 (정적 구조)
 
 ```mermaid
-flowchart TD
-  Actor[Actor]
-  Adapter[Adapter]
-  World[World]
-  Authority[Authority]
-  Host[Host]
-  Core[Core]
-  Effect[EffectHandler]
-  Snapshot[Snapshot]
-
-  Actor --> Adapter
-  Adapter --> World
-  World --> Authority
-  Authority --> World
-  World --> Host
-  Host --> Core
-  Core --> Host
-  Host --> Effect
-  Effect --> Host
-  Host --> Snapshot
-  Snapshot --> Adapter
+graph TD
+  Schema["DomainSchema"] --> Flow["FlowNode"]
+  Schema --> Expr["ExprNode"]
+  Intent["Intent"] --> Core["Core.compute"]
+  Snapshot["Snapshot"] --> Core
+  Core --> Patch["Patch[]"]
+  Core --> Requirement["Requirement[]"]
+  Patch --> Apply["Core.apply"]
+  Apply --> NextSnapshot["Next Snapshot"]
+  Requirement --> Host["HostRuntime"]
+  Host --> EffectResult["Effect Result Patch"]
+  EffectResult --> Apply
+  Core --> Trace["TraceGraph"]
 ```
 
-**단계별 설명**
-1. 사용자가 UI/API 이벤트를 발생시키면 Adapter가 Intent로 변환합니다.
-2. World가 Actor의 권한과 정책을 평가합니다.
-3. 승인된 Intent만 Host로 전달됩니다.
-4. Host는 Core에 계산을 요청합니다.
-5. Core는 Patch와 Requirement를 반환합니다.
-6. Requirement가 있다면 Host가 Effect를 실행합니다.
-7. Effect 결과 Patch를 반영한 뒤 Core를 다시 호출합니다.
-8. 최종 Snapshot이 갱신되고 UI는 새 상태를 받습니다.
+해석:
+- `Schema`가 계산 규칙(Flow/Expr)을 정의합니다.
+- `Core.compute`는 `Intent + Snapshot + Schema`를 받아 `Patch/Requirement/Trace`를 만듭니다.
+- `Requirement`가 있으면 Host가 외부 실행 후 patch를 돌려줍니다.
+- 최종적으로 `apply`를 통해 새 snapshot이 만들어집니다.
 
-**자주 헷갈리는 포인트**
-- Flow는 실행 상태를 저장하지 않습니다. 항상 처음부터 계산하고 Snapshot으로 완료 여부를 판단합니다.
-- Effect는 Core가 실행하지 않습니다. Core는 선언만 합니다.
-- 실패도 값입니다. 에러는 Patch로 Snapshot에 기록됩니다.
+## 2) 런타임 실행 순서 (동적 흐름)
 
-**현재 Java 구현 흐름에서의 차이 (2026-02-11 기준)**  
-- Host는 동기 실행이지만, `mailbox/runner/job` 경계를 분리한 1차 구조를 도입했습니다.  
-- 다만 TS Host의 비동기 event-loop/HCTS 전면 동치 수준(재주입/trace contract 전체)은 후속 단계입니다.  
-- Host 상태는 `$host` 네임스페이스 경로로 관리되며, Core `Apply`는 플랫폼 namespace(`$mel` 포함) patch 경계를 지원합니다.
+```mermaid
+sequenceDiagram
+  participant U as User/Agent
+  participant A as App
+  participant W as World
+  participant H as Host
+  participant C as Core
+  participant E as EffectHandler
 
-**Java 개발 팁**
-- Core는 **테스트 가능한 순수 모듈**로 분리하세요.
-- Host는 I/O, 트랜잭션, 재시도, 메시징을 책임집니다.
-- World 정책은 전략(Policy) 객체로 분리해 교체 가능하게 설계하세요.
+  U->>A: action 요청
+  A->>W: proposal 제출/승인 요청
+  W-->>A: 승인 또는 거절
+  A->>H: 승인된 intent 실행
+  H->>C: compute(schema, snapshot, intent)
+  C-->>H: patch + requirements + trace
+  alt requirements 존재
+    H->>E: effect 실행
+    E-->>H: effect 결과(patch)
+    H->>C: apply/재compute
+    C-->>H: 최종 결과
+  end
+  H-->>A: action 결과
+  A-->>U: 완료/실패 응답
+```
 
-**체크포인트 질문**
-1. 승인되지 않은 Intent는 어디에서 차단되나요.
-2. Effect가 필요한 순간에 Core는 왜 "멈추는"가요.
-3. Host가 다시 Core를 호출하는 이유는 무엇인가요.
+## 3) 모듈 의존 관계
+
+```mermaid
+graph LR
+  Compiler["manifesto-compiler"] --> Core["manifesto-core"]
+  IntentIr["manifesto-intent-ir"] --> Translator["manifesto-translator"]
+  Translator --> Host["manifesto-host"]
+  Core --> Host
+  World["manifesto-world"] --> App["manifesto-app"]
+  Host --> App
+  Core --> App
+  Codegen["manifesto-codegen"] -.schema 기반 생성.- Core
+  Translator -.의도 변환.- App
+```
+
+핵심 포인트:
+- 실행 중심 경로는 `app -> world -> host -> core`입니다.
+- 개발 생산성 경로는 `compiler`, `intent-ir`, `translator`, `codegen`입니다.
+- `core`가 계산의 기준점이며 다른 모듈이 이를 둘러싸는 구조입니다.
+
+## 4) 신입 개발자 체크리스트
+- `Core`가 DB/API를 직접 호출하면 설계 위반입니다.
+- `Host`가 Snapshot을 임의로 수정하면 설계 위반입니다.
+- `World` 승인 없이 실행하면 거버넌스가 깨집니다.
+
+<!-- NEXT_DOC_START -->
+---
+
+## 다음 문서
+- [04. 모듈별 역할 요약 (아키텍처 지도)](./04-core-api.md)
+<!-- NEXT_DOC_END -->

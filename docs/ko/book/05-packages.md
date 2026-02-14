@@ -1,59 +1,59 @@
-**05. 모듈 및 폴더 구성 가이드 (TS 최신 기준 반영)**
-이 장은 현재 TS 기준 패키지와 Java 포팅 상태를 함께 보여줍니다.
+# 05. 코드베이스 읽는 순서와 실무 온보딩 가이드
 
-**최상위 폴더 구조**
-- `docs/`: 공식 문서
-- `manifesto-*`: Java 모듈
-- `scripts/`: 동기화/검증 스크립트
-- `build/`, `gradle/`: 빌드 설정/산출물
+## 1) 레포 루트 구조
 
-**TS 최신 패키지 기준 (2026-02-14)**
-- `app`, `codegen`, `compiler`, `core`, `host`, `intent-ir`, `translator`, `world`
+```text
+manifesto-java-core/
+├─ manifesto-core/
+├─ manifesto-host/
+├─ manifesto-app/
+├─ manifesto-world/
+├─ manifesto-compiler/
+├─ manifesto-intent-ir/
+├─ manifesto-translator/
+├─ manifesto-codegen/
+├─ docs/
+└─ scripts/
+```
 
-**Java 현재 구현 모듈**
-- `manifesto-core`
-- `manifesto-host`
-- `manifesto-app`
-- `manifesto-compiler`
-- `manifesto-world`
-- `manifesto-intent-ir`
-- `manifesto-translator`
-- `manifesto-codegen`
+## 2) 첫 1주 온보딩 플랜 (신입 기준)
+1. `./gradlew test`로 전체 테스트를 1회 실행한다.
+2. `manifesto-core`의 `Compute`, `Apply`, `FlowEvaluator`를 읽는다.
+3. `manifesto-host`의 `HostRuntime`, `HostRunner`를 읽는다.
+4. `manifesto-app`의 `App`, `DefaultApp`, `ActionHandle`을 읽는다.
+5. `manifesto-world`의 `ManifestoWorld`, `AuthorityEvaluator`를 읽는다.
 
-**Java 후속 구현 예정 모듈 작업**
-- `manifesto-intent-ir`: key derivation/lexicon/resolver 고도화 이후 host/app 연동 확대
-- `manifesto-translator`: policy source 외부화 + hot-reload
-- `manifesto-codegen`: plugin runner 표준화
+## 3) 디버깅 시작점
+- 계산 로직 이상: `manifesto-core`
+- effect 실행 이상: `manifesto-host`
+- API 사용 흐름 이상: `manifesto-app`
+- 승인/거절 이상: `manifesto-world`
+- MEL 입력 문제: `manifesto-compiler`
+- 자연어 해석 문제: `manifesto-intent-ir`, `manifesto-translator`
+- 생성 코드 품질 문제: `manifesto-codegen`
 
-**모듈 역할 요약**
-- `core`: 순수 계산 엔진
-- `host`: effect 실행 런타임
-- `app`: 파사드 및 런타임 조립
-- `compiler`: MEL 파이프라인/로워링
-- `world`: 거버넌스/라인리지/승인
-- `intent-ir`: 자연어 의도 중간표현 + 정규화/키 파생/resolver/lexicon
-- `translator`: NL -> IR/Intent 파이프라인 + plugin 확장 구조
-- `codegen`: Schema 기반 코드 생성 계약 + Java 타깃 생성기
+## 4) 테스트 실행 팁
 
-**현재 구현 상태 요약 (2026-02-14 기준)**
-- `manifesto-core`: 결정성 정렬 및 hash/validation 기반 유지
-- `manifesto-host`: retry/timeout + 오류 기록 경로 보강
-- `manifesto-app`: world 연계 + session snapshot store 1차 구현
-- `manifesto-compiler`: strict/runtime evaluator TS parity 1차 완료
-- `manifesto-world`: 승인/거절/lineage 경로 + edge 테스트 확장
-- `manifesto-host`: HCTS trace/reinjection/liveness invariant 테스트 보강 완료
-- `manifesto-intent-ir`: bootstrap 계약 추가
-- `manifesto-intent-ir`: canonical serialization/hash 경계 1차 구현 완료
-- `manifesto-intent-ir`: strict/semantic/sim key derivation + lexicon/resolver 구현 완료
-- `manifesto-translator`: interpret/verify/refine 파이프라인 1차 구현 완료
-- `manifesto-translator`: adapter capability contract + verifier 정책 점수화 구현 완료
-- `manifesto-translator`: 도메인 정책 룰셋 주입/검증(TRV101/TRV102) 1차 구현 완료
-- `manifesto-translator`: pipeline/plugin 구조 + Intent-IR resolution plugin 구현 완료
-- `manifesto-codegen`: `java-dto` 첫 타깃(StateDto 생성) 1차 구현 완료
-- `manifesto-codegen`: `java-typed-client` 타깃(Domain Client + Action Input DTO) 1차 구현 완료
-- 후속 핵심: translator policy externalization / codegen plugin runner / app session-hook 확장
+```bash
+./gradlew :manifesto-core:test
+./gradlew :manifesto-host:test
+./gradlew :manifesto-app:test
+./gradlew :manifesto-world:test
+./gradlew :manifesto-compiler:test
+./gradlew :manifesto-intent-ir:test
+./gradlew :manifesto-translator:test
+./gradlew :manifesto-codegen:test
+```
 
-**체크포인트 질문**
-1. TS 최신 패키지 중 Java에 아직 없는 것은 무엇인가요.
-2. 현재 구현 모듈과 예정 모듈은 어떻게 구분되나요.
-3. 다음 사이클의 우선 과제(P1/P2)는 무엇인가요.
+## 5) 문서 읽기 순서
+- 개념: `docs/ko/book`
+- 사양: `docs/spec`
+- 설계 결정/후속: `docs/fdr`
+- 실행 계획: `docs/MASTER_COMPLETION_PLAN_2026-02-14.md`
+
+<!-- NEXT_DOC_START -->
+---
+
+## 다음 문서
+- [06. MEL 입문과 컴파일러 관점](./06-mel.md)
+<!-- NEXT_DOC_END -->
