@@ -48,11 +48,11 @@ Validation:
 - `./gradlew :manifesto-app:test`
 
 ### P0-B Host Compliance Hardening
-- [ ] A2-1 HostError taxonomy 정식화
-- [ ] A2-2 mailbox/runner/job ordering/liveness compliance 테스트 추가
-- [ ] A2-3 effect retry/timeout/failure/trace invariant 테스트 추가
-- [ ] A2-4 host-owned namespace consistency 테스트 추가
-- [ ] A2-5 host golden/vector harness 표준화 (fixture/loader/assertion 규약 통일)
+- [x] A2-1 HostError taxonomy 정식화
+- [x] A2-2 mailbox/runner/job ordering/liveness compliance 테스트 추가
+- [x] A2-3 effect retry/timeout/failure/trace invariant 테스트 추가
+- [x] A2-4 host-owned namespace consistency 테스트 추가
+- [x] A2-5 host golden/vector harness 표준화 (fixture/loader/assertion 규약 통일)
 
 Validation:
 - `./gradlew :manifesto-host:test`

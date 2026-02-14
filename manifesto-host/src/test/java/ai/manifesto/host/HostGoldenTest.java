@@ -9,14 +9,10 @@ import ai.manifesto.core.flow.FlowNode;
 import ai.manifesto.core.schema.ActionSpec;
 import ai.manifesto.core.schema.DomainSchema;
 import ai.manifesto.core.schema.FieldSpec;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import ai.manifesto.host.runtime.HostRuntimeTraceEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,12 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @DisplayName("Host Golden Tests")
 class HostGoldenTest {
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final HostGoldenVectorHarness harness = new HostGoldenVectorHarness();
 
     @Test
     @DisplayName("Host 경계 동작이 골든 기대값과 일치")
     void hostGoldenCases() throws Exception {
-        List<Map<String, Object>> vectors = loadVectors("golden/host-e2e.json");
+        List<Map<String, Object>> vectors = harness.loadVectors("golden/host-e2e.json");
         assertFalse(vectors.isEmpty(), "Golden vectors should not be empty");
 
         for (Map<String, Object> vector : vectors) {
@@ -51,7 +47,7 @@ class HostGoldenTest {
             };
 
             Map<String, Object> actual = normalize(result, expected);
-            assertJsonEquals(expected, actual, "Golden mismatch: " + name);
+            harness.assertJsonEquals(expected, actual, "Golden mismatch: " + name);
         }
     }
 
@@ -308,22 +304,5 @@ class HostGoldenTest {
     }
 
     private record GoldenCaseResult(ComputeResult result, List<HostRuntimeTraceEvent> traceEvents) {
-    }
-
-    private List<Map<String, Object>> loadVectors(String resourcePath) throws Exception {
-        try (InputStream input = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
-            if (input == null) {
-                throw new IllegalArgumentException("Missing resource: " + resourcePath);
-            }
-            return mapper.readValue(input, new TypeReference<>() {});
-        }
-    }
-
-    private void assertJsonEquals(Object expected, Object actual, String message) throws Exception {
-        JsonNode expectedNode = mapper.valueToTree(expected);
-        JsonNode actualNode = mapper.valueToTree(actual);
-        if (!expectedNode.equals(actualNode)) {
-            throw new AssertionError(message + "\nExpected: " + expectedNode + "\nActual: " + actualNode);
-        }
     }
 }
