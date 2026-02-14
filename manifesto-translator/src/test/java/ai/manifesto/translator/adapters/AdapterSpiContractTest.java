@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -78,5 +79,14 @@ class AdapterSpiContractTest {
         assertEquals(LlmFinishReason.STOP, claudeResponse.finishReason());
         assertNotNull(claudeResponse.usage());
         assertEquals(8, claudeResponse.usage().totalTokens());
+    }
+
+    @Test
+    void providerCatalogIncludesAllSupportedAdapters() {
+        Map<String, ProviderAdapterBinding> catalog = ProviderBindings.all();
+        assertEquals(Set.of("openai", "ollama", "claude"), catalog.keySet());
+        assertEquals("openai", catalog.get("openai").profile().providerId());
+        assertEquals("ollama", catalog.get("ollama").profile().providerId());
+        assertEquals("claude", catalog.get("claude").profile().providerId());
     }
 }

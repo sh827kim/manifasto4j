@@ -129,3 +129,18 @@ Translator defines a multi-stage pipeline for converting NL input into intents/p
   - adapter contract test
   - target exporter test(json/manifesto/openapi)
   - multi-target integration test
+
+## 14. B3 Conformance Matrix + Adapter Boundary (2026-02-14)
+
+TS conformance suite 축과 Java 대응:
+
+| TS 축 | Java 대응 테스트 |
+| --- | --- |
+| plugin conformance (`plg`) | `TranslatorConformancePluginsTest` |
+| graph/export invariants (`g-inv`, `e-inv`) | `TargetExportersTest`, `DefaultTranslatorExportIntegrationTest` |
+| adapter round-trip (`adapter`) | `TranslatorAdapterCapabilityValidatorTest` |
+| provider binding contract | `AdapterSpiContractTest` |
+
+adapter SPI 경계 보강:
+- `ProviderBindings.all()` 카탈로그 추가로 지원 provider 집합(openai/ollama/claude)을 단일 계약으로 노출
+- provider payload mapping/response normalization은 SPI 계층에서만 처리하고, 코어는 네트워크 SDK에 의존하지 않는다.

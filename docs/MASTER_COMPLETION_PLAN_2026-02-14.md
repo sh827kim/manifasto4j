@@ -182,8 +182,8 @@ Validation:
 - `./gradlew :manifesto-intent-ir:test`
 
 #### `TASK-B3` Translator Conformance and Adapter Boundary
-- [ ] TS conformance suite 항목별 Java 대응 매트릭스 작성
-- [ ] adapter SPI/transport 경계 보강(프레임워크 비종속 유지)
+- [x] TS conformance suite 항목별 Java 대응 매트릭스 작성
+- [x] adapter SPI/transport 경계 보강(프레임워크 비종속 유지)
 
 Validation:
 - `./gradlew :manifesto-translator:test`

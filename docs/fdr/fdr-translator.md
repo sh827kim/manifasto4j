@@ -48,3 +48,8 @@
 - 다음 단계:
   - translator exporter의 snapshot 회귀 케이스 확대
   - adapter 실연동 모듈을 코어 외부 프로젝트로 분리하고 capability contract test로 연계
+
+- 추가 완료 (2026-02-14, TASK-B3):
+  - TS conformance 축 ↔ Java 테스트 매트릭스 정리(`spec-translator` §14)
+  - provider 카탈로그 계약(`ProviderBindings.all`) 추가
+  - SPI 경계(provider-neutral mapping/normalization) 회귀 테스트 보강
