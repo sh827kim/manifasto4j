@@ -35,3 +35,14 @@ Compiler specifies lowering MEL into core IR and diagnostics.
 - 필수 지원 연산: `substring`, `field`, `keys`, `values`, `entries`.
 - `at` 연산은 `at(array, number)`와 `at(record, string)` 모두 지원해야 한다.
 - runtime patch condition skip reason은 `false | null | non-boolean` 계약을 따른다.
+
+## 6. Auxiliary Surface (Cycle 8 / P2-B)
+
+- `CompilerCliSupport`를 추가해 CLI 인자 계약을 표준화한다.
+  - 입력 소스: `--source` 또는 `--classpath` (상호배타)
+  - 포맷팅 옵션: `--format-only`, `--indent`, `--newline`
+- formatter는 parser + `MelRenderer`를 사용해 deterministic MEL 재출력을 제공한다.
+- `check-golden-sync.sh`는 기본적으로 source 부재 시 N/A(성공) 처리하되,
+  `CHECK_GOLDEN_SYNC_REQUIRE_SOURCE=1` strict 모드에서는 실패한다.
+- `recover-golden-sync.sh`는 `sync-golden.sh` + strict `check-golden-sync.sh`를 연속 실행해
+  TS vector 재도입 시 동기화 복구 절차를 자동화한다.

@@ -90,9 +90,9 @@ Validation:
 - `./gradlew :manifesto-world:test`
 
 ### P2-B Compiler Auxiliary Surface
-- [ ] A7-1 cli/formatter 지원 범위 재정의 및 보강
-- [ ] A7-2 checkGoldenSync N/A 정책 문서화 고도화
-- [ ] A7-3 TS vector 재도입 시 sync 복구 절차 자동화
+- [x] A7-1 cli/formatter 지원 범위 재정의 및 보강
+- [x] A7-2 checkGoldenSync N/A 정책 문서화 고도화
+- [x] A7-3 TS vector 재도입 시 sync 복구 절차 자동화
 
 Validation:
 - `./gradlew :manifesto-compiler:test`

@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TS_REPO_DEFAULT="/workspace/manifasto-ts-core"
 TS_REPO="${1:-$TS_REPO_DEFAULT}"
+REQUIRE_SOURCE="${CHECK_GOLDEN_SYNC_REQUIRE_SOURCE:-0}"
 
 VECTOR_DEST="$ROOT_DIR/manifesto-compiler/src/test/resources/vectors"
 
@@ -40,6 +41,10 @@ if [[ -z "$VECTOR_SOURCE" ]]; then
   echo "[check-golden-sync] vector source not found. treated as N/A for current TS baseline."
   echo "[check-golden-sync] tried candidates:"
   printf '  - %s\n' "${VECTOR_SOURCE_CANDIDATES[@]}"
+  if [[ "$REQUIRE_SOURCE" == "1" ]]; then
+    echo "[check-golden-sync] strict mode enabled (CHECK_GOLDEN_SYNC_REQUIRE_SOURCE=1): failing because source is required." >&2
+    exit 3
+  fi
   exit 0
 fi
 

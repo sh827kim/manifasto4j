@@ -27,4 +27,6 @@
 - [x] compiler vectors/unit test에 parity case 추가
 - [x] `MelSourceLoader`(file/classpath) + `CompilerFacade` 연계 API 추가
 - [x] renderer edge-case 회귀 테스트 추가(unknown/malformed/newline/indent)
-- [ ] TS 최신 구조 기준 `checkGoldenSync` vector 경로 재정의
+- [x] CLI 보조 계약(`CompilerCliSupport`) 및 formatter 옵션 추가
+- [x] `checkGoldenSync` strict 모드(`CHECK_GOLDEN_SYNC_REQUIRE_SOURCE=1`) 추가
+- [x] TS vector 재도입 복구 스크립트(`scripts/recover-golden-sync.sh`) 추가
