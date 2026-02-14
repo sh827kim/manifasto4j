@@ -1,6 +1,7 @@
 package ai.manifesto.intentir;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -11,10 +12,27 @@ import java.util.Set;
  * EN: Default Lexicon implementation that validates Intent IR using domain-to-allowed-actions dictionaries.
  */
 public final class DefaultIntentIrLexicon implements IntentIrLexicon {
-    private final Map<String, Set<String>> allowedActionsByDomain;
+    private final Map<String, IntentIrLexiconPolicy> policiesByDomain;
 
     public DefaultIntentIrLexicon(Map<String, Set<String>> allowedActionsByDomain) {
-        this.allowedActionsByDomain = Objects.requireNonNull(allowedActionsByDomain, "allowedActionsByDomain must not be null");
+        Objects.requireNonNull(allowedActionsByDomain, "allowedActionsByDomain must not be null");
+        Map<String, IntentIrLexiconPolicy> policies = new LinkedHashMap<>();
+        for (Map.Entry<String, Set<String>> entry : allowedActionsByDomain.entrySet()) {
+            policies.put(
+                normalize(entry.getKey()),
+                new IntentIrLexiconPolicy(entry.getValue(), Set.of(), Set.of())
+            );
+        }
+        this.policiesByDomain = Map.copyOf(policies);
+    }
+
+    public DefaultIntentIrLexicon(Map<String, IntentIrLexiconPolicy> policiesByDomain, boolean directPolicies) {
+        Objects.requireNonNull(policiesByDomain, "policiesByDomain must not be null");
+        Map<String, IntentIrLexiconPolicy> policies = new LinkedHashMap<>();
+        for (Map.Entry<String, IntentIrLexiconPolicy> entry : policiesByDomain.entrySet()) {
+            policies.put(normalize(entry.getKey()), entry.getValue());
+        }
+        this.policiesByDomain = Map.copyOf(policies);
     }
 
     @Override
@@ -32,11 +50,30 @@ public final class DefaultIntentIrLexicon implements IntentIrLexicon {
         }
 
         if (!domain.isBlank()) {
-            Set<String> allowedActions = allowedActionsByDomain.get(domain);
-            if (allowedActions == null) {
+            IntentIrLexiconPolicy policy = policiesByDomain.get(normalize(domain));
+            if (policy == null) {
                 diagnostics.add("LXC003: domain is not registered in lexicon");
-            } else if (!action.isBlank() && !allowedActions.contains(action)) {
-                diagnostics.add("LXC004: action is not allowed for domain");
+            } else {
+                Set<String> allowedActions = policy.allowedActions() == null ? Set.of() : policy.allowedActions();
+                if (!action.isBlank() && !allowedActions.isEmpty() && !allowedActions.contains(action)) {
+                    diagnostics.add("LXC004: action is not allowed for domain");
+                }
+
+                Set<String> requiredInput = policy.requiredInputKeys() == null ? Set.of() : policy.requiredInputKeys();
+                Map<String, Object> input = document.input() == null ? Map.of() : document.input();
+                for (String inputKey : requiredInput) {
+                    if (!input.containsKey(inputKey)) {
+                        diagnostics.add("LXC005: required input key is missing: " + inputKey);
+                    }
+                }
+
+                Set<String> requiredMeta = policy.requiredMetaKeys() == null ? Set.of() : policy.requiredMetaKeys();
+                Map<String, Object> meta = document.meta() == null ? Map.of() : document.meta();
+                for (String metaKey : requiredMeta) {
+                    if (!meta.containsKey(metaKey)) {
+                        diagnostics.add("LXC006: required meta key is missing: " + metaKey);
+                    }
+                }
             }
         }
 
@@ -45,5 +82,9 @@ public final class DefaultIntentIrLexicon implements IntentIrLexicon {
 
     private String safe(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.trim().toLowerCase();
     }
 }

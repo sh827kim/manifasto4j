@@ -17,8 +17,8 @@
 | host | mailbox/runner/job/context/effects/errors | runtime+job+runner+trace contract implemented | Partial | 68% -> 85% |
 | world | authority/registry/proposal/lineage/ingress/events/persistence | major governance runtime implemented | Strong Partial | 74% -> 85% |
 | compiler | lexer/parser/analyzer/generator/lowering/eval/api/renderer | broad compiler pipeline implemented | Strong Partial | 76% -> 90% |
-| intent-ir | schema/canonical/keys/lexicon/resolver/lower | canonical/hash/keys/lexicon/resolver baseline | Partial | 46% -> 85% |
-| translator | core pipeline/plugins/strategies/invariants/helpers + adapters/targets | pipeline/plugins/policy/provider baseline | Partial | 42% -> 80% |
+| intent-ir | schema/canonical/keys/lexicon/resolver/lower | schema/validator/lower + keys/lexicon/resolver advanced baseline | Partial | 62% -> 85% |
+| translator | core pipeline/plugins/strategies/invariants/helpers + adapters/targets | pipeline/plugins/policy/provider + intent-ir lower bridge baseline | Partial | 48% -> 80% |
 | codegen | plugin runner/types/path-safety/hash/header/virtual-fs/plugins | plugin runner + 2 Java plugins baseline | Partial | 58% -> 85% |
 
 ## 3. Detailed Mapping
@@ -153,7 +153,7 @@ TS shape:
 
 Java mapping:
 - module: `manifesto-intent-ir`
-- `IntentIrDocument`, normalizer, canonicalizer, hashing, key deriver, lexicon/resolver baseline
+- `IntentIrDocument`, normalizer, canonicalizer, hashing, key deriver, lexicon/resolver, schema validator, lowerer
 
 | Capability | TS | Java | Status |
 | --- | --- | --- | --- |
@@ -162,13 +162,13 @@ Java mapping:
 | keys (strict/semantic/sim) | Yes | Yes | Partial |
 | lexicon | Yes | Basic | Partial |
 | resolver | Yes | Basic | Partial |
-| lower | Yes | Missing | Missing |
-| full schema model | Yes | Minimal document | Missing |
+| lower | Yes | Yes (baseline) | Partial |
+| full schema model | Yes | head/term/predicate/event/resolved baseline | Partial |
 
 Priority actions:
-1. schema model 확장
-2. lower pipeline 구현
-3. lexicon/resolver feature-level 강화
+1. schema feature model(role/theta/selectional restriction) 확장
+2. lower 결과를 host/app/world 경계와 통합
+3. lexicon/resolver discourse 정책 고도화
 
 ---
 
@@ -180,7 +180,7 @@ TS shape:
 
 Java mapping:
 - module: `manifesto-translator`
-- core: interpreter/verifier/refiner + pipeline/plugins + policy providers
+- core: interpreter/verifier/refiner + pipeline/plugins + policy providers + intent-ir lower bridge
 
 | Capability | TS | Java | Status |
 | --- | --- | --- | --- |

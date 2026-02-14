@@ -41,3 +41,31 @@ Intent-IR defines a normalized representation for intents between translation an
 - `IntentIrResolver` / `DefaultIntentIrResolver` 추가:
   - `unknown` action 보정(`meta.actionHint` 우선, lexicon fallback)
   - 진단 코드(`RSV001~RSV004`) 반환
+
+## 6. Schema Layer + Validator (2026-02-14)
+
+- `schema` 패키지 도입:
+  - `IntentIrHead`, `IntentIrTerm`, `IntentIrPredicate`, `IntentIrEvent`, `ResolvedIntentIr`
+- `IntentIrSchemaValidator` 추가:
+  - document 구조 검증 (`IRS001~IRS005`)
+  - resolved 구조 검증 (`IRS101~IRS105`)
+
+## 7. Lower Layer (2026-02-14)
+
+- `IntentIrLowerer` / `DefaultIntentIrLowerer` 추가
+- `IntentIrLowerResult` 추가
+- lower 결과는 실행 경계용 action/input/meta payload를 제공하고 diagnostics를 포함한다.
+
+## 8. Lexicon/Resolver Advanced Rules (2026-02-14)
+
+- `IntentIrLexiconPolicy` 추가:
+  - `allowedActions`
+  - `requiredInputKeys`
+  - `requiredMetaKeys`
+- lexicon 진단 확장:
+  - `LXC005` required input key missing
+  - `LXC006` required meta key missing
+- resolver 규칙 확장:
+  - `focusAction` 우선
+  - `discourseActions` fallback
+  - actionHint 충돌 진단(`RSV007`)

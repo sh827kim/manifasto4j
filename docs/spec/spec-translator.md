@@ -64,6 +64,7 @@ Translator defines a multi-stage pipeline for converting NL input into intents/p
   - verify 이후 Intent-IR resolver/lexicon을 적용해 draft 보정
   - resolver/lexicon 진단 코드를 translator diagnostics에 병합
   - `lexiconValid` 메타 플래그를 결과 Intent IR에 반영
+  - optional `IntentIrLowerer`를 주입하면 lower 결과(input/meta/action)를 translator draft에 반영
 
 ## 9. External Policy Provider + Reload (2026-02-14)
 

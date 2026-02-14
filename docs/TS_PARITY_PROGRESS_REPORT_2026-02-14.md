@@ -26,12 +26,12 @@
 | world | 74% | proposal/authority/lineage/persistence 축은 비교적 탄탄. TS world의 세부 ingress/이벤트 조합 확장 여지 존재. |
 | compiler | 76% | lexer/parser/analyzer/lowering/evaluation 핵심 축 반영. TS compiler의 API/CLI/loader 주변 기능은 추가 여지. |
 | app | 48% | ActionResult/AppStatus, session/branch alias, hook priority/filter/error mode, system/memory facade baseline 반영. |
-| intent-ir | 46% | canonical/hash + key derivation + lexicon/resolver 최소 코어 추가. TS의 schema/lower/keys 전체 스펙 폭 대비는 중간 이하. |
-| translator | 42% | interpret-verify-refine + pipeline/plugin + policy provider/reload 반영. TS의 strategy/invariants/helpers + adapter/target family 대비 격차 큼. |
+| intent-ir | 62% | schema validator + lower layer + key/lexicon/resolver 고도화 반영. lower 통합 범위 확장이 다음 과제. |
+| translator | 48% | pipeline/plugin + policy provider/reload + intent-ir lower bridge 반영. strategy/invariants/helpers 확장이 핵심 과제. |
 | codegen | 58% | java-dto/java-typed-client + plugin runner 구조 도입. TS codegen의 virtual-fs/path-safety/plugin ecosystem 대비 미완. |
 
 ## 3. Overall Progress
-- Weighted by TS module source shape: **약 59% 완료**
+- Weighted by TS module source shape: **약 62% 완료**
 - 의미:
   - `core/host/world/compiler`는 실사용 가능한 포팅 기반 확보
   - `app/intent-ir/translator/codegen`은 구조는 올라왔으나 TS 전체 형상 대비 확장 단계
@@ -46,7 +46,7 @@
 
 3. Intent-IR
 - TS는 `schema`, `keys`, `lexicon`, `resolver`, `lower`가 완결된 패키지 구조.
-- Java는 lower/schema 스펙 전체 구현보다 key/lexicon/resolver 최소 코어 중심.
+- Java는 schema/lower baseline은 반영했으나 feature-level 모델 확장이 필요.
 
 4. Codegen
 - TS는 plugin ecosystem + virtual-fs + path-safety + stable-hash를 포함.

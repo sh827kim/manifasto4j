@@ -1,6 +1,7 @@
 package ai.manifesto.translator;
 
 import ai.manifesto.intentir.DefaultIntentIrLexicon;
+import ai.manifesto.intentir.DefaultIntentIrLowerer;
 import ai.manifesto.intentir.DefaultIntentIrResolver;
 import ai.manifesto.intentir.IntentIrDocument;
 import org.junit.jupiter.api.Test;
@@ -108,5 +109,35 @@ class TranslatorPipelineTest {
         assertEquals("createTask", result.intentIr().action());
         assertTrue(result.diagnostics().stream().anyMatch(code -> code.startsWith("RSV002")));
         assertTrue(Boolean.TRUE.equals(result.intentIr().meta().get("lexiconValid")));
+    }
+
+    @Test
+    void intentIrResolutionPluginCanApplyLowerer() {
+        var resolver = new DefaultIntentIrResolver(
+            Map.of("todo", Set.of("createTask"))
+        );
+        var lexicon = new DefaultIntentIrLexicon(
+            Map.of("todo", Set.of("createTask"))
+        );
+        var lowerer = new DefaultIntentIrLowerer();
+        IntentIrResolutionPlugin resolutionPlugin = new IntentIrResolutionPlugin(resolver, lexicon, lowerer);
+
+        DefaultTranslator translator = new DefaultTranslator(
+            new RuleBasedInterpreter(),
+            new DefaultTranslatorVerifier(),
+            new DefaultTranslatorRefiner(new ai.manifesto.intentir.DefaultIntentIrNormalizer()),
+            List.of(resolutionPlugin)
+        );
+
+        TranslationResult result = translator.translate(new TranslationRequest(
+            "todo",
+            "createTask",
+            List.of(new TranslatorMessage("assistant", "no user message", Map.of())),
+            Map.of()
+        ));
+
+        assertEquals("createTask", result.intentIr().action());
+        assertTrue(result.intentIr().input().containsKey("_intentIr.domain"));
+        assertTrue(Boolean.TRUE.equals(result.intentIr().meta().get("lowered")));
     }
 }

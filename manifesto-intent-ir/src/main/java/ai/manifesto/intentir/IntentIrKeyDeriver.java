@@ -35,18 +35,19 @@ public final class IntentIrKeyDeriver {
     }
 
     public String deriveStrictKey(IntentIrDocument source) {
-        String canonical = canonicalizer.toCanonicalJson(source);
+        IntentIrDocument normalized = normalizeForKey(source);
+        String canonical = canonicalizer.toCanonicalJson(normalized);
         return HashUtils.sha256("strict:" + canonical);
     }
 
     public String deriveSemanticKey(IntentIrDocument source) {
-        IntentIrDocument semantic = toSemanticProjection(source);
+        IntentIrDocument semantic = toSemanticProjection(normalizeForKey(source));
         String canonical = canonicalizer.toCanonicalJson(semantic);
         return HashUtils.sha256("semantic:" + canonical);
     }
 
     public String deriveSimKey(IntentIrDocument source) {
-        String content = buildSimContent(source);
+        String content = buildSimContent(normalizeForKey(source));
         long fingerprint = simHash64(content);
         return Long.toUnsignedString(fingerprint, 16);
     }
@@ -57,10 +58,13 @@ public final class IntentIrKeyDeriver {
         return Long.bitCount(left ^ right);
     }
 
+    public boolean isNearDuplicate(String leftSimKeyHex, String rightSimKeyHex, int maxDistance) {
+        return simDistance(leftSimKeyHex, rightSimKeyHex) <= maxDistance;
+    }
+
     private IntentIrDocument toSemanticProjection(IntentIrDocument source) {
         Objects.requireNonNull(source, "source must not be null");
-        DefaultIntentIrNormalizer normalizer = new DefaultIntentIrNormalizer();
-        IntentIrDocument normalized = normalizer.normalize(source);
+        IntentIrDocument normalized = source;
 
         Map<String, Object> filteredMeta = new LinkedHashMap<>();
         for (Map.Entry<String, Object> entry : normalized.meta().entrySet()) {
@@ -78,7 +82,7 @@ public final class IntentIrKeyDeriver {
     }
 
     private String buildSimContent(IntentIrDocument source) {
-        IntentIrDocument normalized = new DefaultIntentIrNormalizer().normalize(source);
+        IntentIrDocument normalized = source;
         List<String> tokens = new ArrayList<>();
         tokens.add(normalized.domain().toLowerCase(Locale.ROOT));
         tokens.add(normalized.action().toLowerCase(Locale.ROOT));
@@ -156,5 +160,10 @@ public final class IntentIrKeyDeriver {
             hash *= 0x100000001b3L;
         }
         return hash;
+    }
+
+    private IntentIrDocument normalizeForKey(IntentIrDocument source) {
+        Objects.requireNonNull(source, "source must not be null");
+        return new DefaultIntentIrNormalizer().normalize(source);
     }
 }

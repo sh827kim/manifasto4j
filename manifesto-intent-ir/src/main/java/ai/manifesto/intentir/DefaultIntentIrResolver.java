@@ -1,6 +1,7 @@
 package ai.manifesto.intentir;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,11 +35,32 @@ public final class DefaultIntentIrResolver implements IntentIrResolver {
         String action = normalized.action();
 
         if ("unknown".equalsIgnoreCase(action) || action.isBlank()) {
+            String focused = extractFocusedAction(normalized.meta());
+            if (focused != null && isAllowed(domain, focused)) {
+                action = focused;
+                diagnostics.add("RSV005: action resolved from meta.focusAction");
+            }
+        }
+
+        if ("unknown".equalsIgnoreCase(action) || action.isBlank()) {
+            String discourse = extractDiscourseAction(normalized.meta(), domain);
+            if (discourse != null) {
+                action = discourse;
+                diagnostics.add("RSV006: action resolved from discourse history");
+            }
+        }
+
+        if ("unknown".equalsIgnoreCase(action) || action.isBlank()) {
             String hinted = extractActionHint(normalized.meta());
             if (hinted != null && isAllowed(domain, hinted)) {
                 action = hinted;
                 diagnostics.add("RSV001: action resolved from meta.actionHint");
             }
+        }
+
+        String hinted = extractActionHint(normalized.meta());
+        if (hinted != null && !hinted.isBlank() && action != null && !action.isBlank() && !action.equals(hinted)) {
+            diagnostics.add("RSV007: actionHint conflict, resolved using higher-priority signal");
         }
 
         if ("unknown".equalsIgnoreCase(action) || action.isBlank()) {
@@ -83,5 +105,37 @@ public final class DefaultIntentIrResolver implements IntentIrResolver {
         }
         String text = String.valueOf(actionHint).trim();
         return text.isBlank() ? null : text;
+    }
+
+    private String extractFocusedAction(Map<String, Object> meta) {
+        if (meta == null) {
+            return null;
+        }
+        Object focus = meta.get("focusAction");
+        if (focus == null) {
+            return null;
+        }
+        String text = String.valueOf(focus).trim();
+        return text.isBlank() ? null : text;
+    }
+
+    private String extractDiscourseAction(Map<String, Object> meta, String domain) {
+        if (meta == null) {
+            return null;
+        }
+        Object history = meta.get("discourseActions");
+        if (!(history instanceof Collection<?> items)) {
+            return null;
+        }
+        for (Object item : items) {
+            if (item == null) {
+                continue;
+            }
+            String candidate = String.valueOf(item).trim();
+            if (!candidate.isBlank() && isAllowed(domain, candidate)) {
+                return candidate;
+            }
+        }
+        return null;
     }
 }

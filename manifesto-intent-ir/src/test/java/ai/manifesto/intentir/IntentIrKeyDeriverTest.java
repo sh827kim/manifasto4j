@@ -74,5 +74,6 @@ class IntentIrKeyDeriverTest {
         String rightKey = deriver.deriveSimKey(right);
         int distance = deriver.simDistance(leftKey, rightKey);
         assertTrue(distance >= 0 && distance <= 64);
+        assertTrue(deriver.isNearDuplicate(leftKey, rightKey, 20));
     }
 }
