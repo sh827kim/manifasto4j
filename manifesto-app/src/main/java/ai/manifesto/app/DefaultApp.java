@@ -377,7 +377,7 @@ public final class DefaultApp implements App {
     @Override
     public void switchBranch(WorldId worldId) {
         if (world == null) {
-            throw new UnsupportedOperationException("World integration is not enabled for this app");
+            throw new WorldIntegrationDisabledException();
         }
         world.switchBranch(worldId);
         this.currentWorldId = worldId;
@@ -397,7 +397,7 @@ public final class DefaultApp implements App {
         Objects.requireNonNull(branchName, "branchName is required");
         WorldId worldId = branchAliases.get(branchName);
         if (worldId == null) {
-            throw new IllegalArgumentException("Unknown branch alias: " + branchName);
+            throw new BranchNotFoundException(branchName);
         }
         currentBranchName = branchName;
         switchBranch(worldId);
@@ -588,13 +588,13 @@ public final class DefaultApp implements App {
 
     private void ensureReady() {
         if (status == AppStatus.CREATED) {
-            throw new IllegalStateException("App is not ready. Call ready() before act().");
+            throw new AppNotReadyException();
         }
     }
 
     private void ensureNotDisposed() {
         if (status == AppStatus.DISPOSING || status == AppStatus.DISPOSED) {
-            throw new IllegalStateException("App is disposed");
+            throw new AppDisposedException();
         }
     }
 

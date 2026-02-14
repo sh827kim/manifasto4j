@@ -80,3 +80,18 @@ Minimal conformance for server/CLI:
 
 - Hook plugin chain 고도화(필터 조합/재시도 정책)
 - Memory provider pluggability
+
+## 8. A1 Contract Parity Map (2026-02-14)
+
+TS app 공개 계약(`packages/app/src/index.ts`) 대비 Java app(`manifesto-app`) 기준의 A1 범위 매핑:
+
+| TS 계약군 | Java 대응 | 상태 |
+| --- | --- | --- |
+| Hookable/AppRef/HookContext | `Hookable`, `AppRef`, `AppRefImpl`, `HookContext` | 반영 |
+| App 조립 옵션 | `AppConfig`, `AppFactory.createApp(AppConfig)` | 반영 |
+| 실행 옵션 계약 | `ActOptions`, `SubscribeOptions`, `SessionOptions`, `ForkOptions`, `EnqueueOptions` | 반영 |
+| lifecycle/branch 에러 타입 | `AppNotReadyException`, `AppDisposedException`, `BranchNotFoundException`, `WorldIntegrationDisabledException` | 반영 |
+
+비고:
+- 본 사이클에서는 **계약 타입 정식화(contract-first)**를 우선 적용했다.
+- 세부 동작(예: 옵션 기반 실행 분기)은 후속 Task(A2 이상)에서 테스트와 함께 단계적으로 확장한다.

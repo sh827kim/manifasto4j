@@ -21,6 +21,21 @@ import java.util.Objects;
 public final class AppFactory {
     private AppFactory() {}
 
+    public static App createApp(AppConfig config) {
+        Objects.requireNonNull(config, "config is required");
+        return new DefaultApp(
+            Objects.requireNonNull(config.schema(), "schema is required"),
+            Objects.requireNonNull(config.initialSnapshot(), "initialSnapshot is required"),
+            Objects.requireNonNull(config.hostRuntime(), "hostRuntime is required"),
+            config.world(),
+            config.actor(),
+            config.sessionId(),
+            config.snapshotStore(),
+            config.policyService(),
+            config.worldStore()
+        );
+    }
+
     public static App createApp(DomainSchema schema, Snapshot initialSnapshot, HostRuntime host) {
         return createApp(schema, initialSnapshot, host, null, null);
     }

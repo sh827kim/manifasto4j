@@ -10,6 +10,7 @@
 ## Core Planning Docs
 - 마스터 완료 계획(통합 실행 문서): [MASTER_COMPLETION_PLAN_2026-02-14.md](MASTER_COMPLETION_PLAN_2026-02-14.md)
 - 전수 점검 리포트: [TS_JAVA_FULL_AUDIT_2026-02-14.md](TS_JAVA_FULL_AUDIT_2026-02-14.md)
+- 패키지별 갭 분석 + 단계별 Task: [PACKAGE_GAP_ANALYSIS_2026-02-14.md](PACKAGE_GAP_ANALYSIS_2026-02-14.md)
 
 ## Module Specs
 - SPEC: `docs/spec/*`

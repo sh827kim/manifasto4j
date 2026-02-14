@@ -164,6 +164,44 @@ class AppParitySurfaceTest {
         assertNotNull(store.load("main"));
     }
 
+    @Test
+    void appRefAndConfigContractsAreAvailable() {
+        DomainSchema schema = buildSchema();
+        Snapshot snapshot = buildSnapshot(schema);
+        HostRuntime host = new HostRuntime();
+
+        App app = AppFactory.createApp(new AppConfig(
+            schema,
+            snapshot,
+            host,
+            null,
+            null,
+            null,
+            null,
+            new AllowAllPolicyService(),
+            null
+        ));
+        AppRef appRef = AppRefImpl.create(app);
+
+        assertEquals(AppStatus.CREATED, appRef.getStatus());
+        assertEquals(schema, appRef.getSchema());
+        assertNotNull(appRef.getSnapshot());
+    }
+
+    @Test
+    void defaultAppThrowsTypedLifecycleAndBranchExceptions() {
+        DomainSchema schema = buildSchema();
+        Snapshot snapshot = buildSnapshot(schema);
+        HostRuntime host = new HostRuntime();
+        DefaultApp app = new DefaultApp(schema, snapshot, host);
+
+        assertThrows(AppNotReadyException.class, () -> app.act(new Intent("notify", Map.of(), "intent-1")));
+
+        app.dispose();
+        assertThrows(AppDisposedException.class, app::ready);
+        assertThrows(WorldIntegrationDisabledException.class, () -> app.switchBranch(ai.manifesto.world.schema.WorldId.of("w1")));
+    }
+
     private DomainSchema buildSchema() {
         FlowNode flow = FlowNode.Seq.of(
             FlowNode.Effect.of("host.notify", Map.of()),

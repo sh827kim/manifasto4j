@@ -13,7 +13,7 @@ import java.util.function.Function;
  * KR: App는 준비(ready), 액션 실행(act), 구독(subscribe) API를 노출하는 최상위 애플리케이션 인터페이스입니다.
  * EN: App is the top-level application interface exposing ready, act, and subscribe APIs.
  */
-public interface App {
+public interface App extends Hookable {
     void ready() throws Exception;
 
     default void dispose() {
@@ -64,17 +64,11 @@ public interface App {
     }
 
     default void createBranch(String branchName, WorldId worldId) {
-        throw new UnsupportedOperationException("Branch aliasing is not enabled for this app");
+        throw new WorldIntegrationDisabledException();
     }
 
     default void switchBranch(String branchName) {
-        throw new UnsupportedOperationException("Branch aliasing is not enabled for this app");
-    }
-
-    default void addHook(AppHook hook) {
-    }
-
-    default void removeHook(AppHook hook) {
+        throw new WorldIntegrationDisabledException();
     }
 
     default ManifestoWorld getWorld() {
@@ -104,6 +98,6 @@ public interface App {
     }
 
     default void switchBranch(WorldId worldId) {
-        throw new UnsupportedOperationException("World integration is not enabled for this app");
+        throw new WorldIntegrationDisabledException();
     }
 }

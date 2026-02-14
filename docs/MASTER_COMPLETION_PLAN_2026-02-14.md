@@ -4,7 +4,7 @@
 
 ## 1. Baseline
 - TS baseline: `/workspace/manifasto-ts-core` @ `3b40070`
-- Java baseline: `/workspace/manifesto-java-core` @ `517d3ac`
+- Java baseline: `/workspace/manifesto-java-core` @ `1245a5b`
 - 상세 전수 점검: `docs/TS_JAVA_FULL_AUDIT_2026-02-14.md`
 
 ## 2. Source-Validated Findings
@@ -113,3 +113,101 @@ Validation:
 1. 상위 우선순위(P0 -> P1 -> P2) 완료 전 다음 우선순위로 이동하지 않는다.
 2. 기능 변경은 테스트와 같은 작업 사이클에서 반영한다.
 3. 각 phase 종료 시 문서를 즉시 동기화한다.
+
+## 8. Post-Gate Next Cycle
+- Completion Gate 통과 이후의 패키지별 재점검/실행 Task의 단일 기준 문서는
+  본 문서(`docs/MASTER_COMPLETION_PLAN_2026-02-14.md`)이다.
+- `docs/PACKAGE_GAP_ANALYSIS_2026-02-14.md`는 근거/분석 참고 문서로만 사용한다.
+
+## 9. Post-Gate Gap Execution Plan (Package-Based)
+
+### 9.1 Priority Order
+1. `TASK-A1` app contract parity map + 누락 API/오류/옵션 계약 반영
+2. `TASK-A2` app 회귀 테스트 확장
+3. `TASK-A3` host compliance suite 확장
+4. `TASK-A4` host golden scenario 표준화
+5. `TASK-B1` world persistence/query/event parity
+6. `TASK-B2` intent-ir edge-case 회귀 확장
+7. `TASK-B3` translator conformance matrix + adapter SPI 경계 보강
+8. `TASK-B4` codegen multi-plugin sequential mode 결정/PoC
+9. `TASK-C1` compiler CLI entrypoint + strict golden lane
+10. `TASK-C2` core/app/host/world 통합 회귀 안정화
+
+### 9.2 Stage A (P0)
+
+#### `TASK-A1` App Surface Parity (contract first)
+- [x] TS `packages/app/src/index.ts` export를 기준으로 Java app 공개 계약 parity map 작성
+- [x] Java app 누락 error/options/interface 보강 (`manifesto-app/src/main/java/ai/manifesto/app`)
+- [x] API 추가 시 기존 동작 호환성 유지
+
+Validation:
+- `./gradlew :manifesto-app:test`
+
+#### `TASK-A2` App Regression Expansion
+- [ ] lifecycle/action/session/branch/policy/memory/resume-recovery 시나리오를 TS 테스트 기준으로 매핑
+- [ ] Java app 테스트 밀도를 TS 핵심 시나리오 기준으로 확장
+
+Validation:
+- `./gradlew :manifesto-app:test`
+
+#### `TASK-A3` Host Compliance Suite Expansion
+- [ ] mailbox/job/runner/ordering/liveness/handler/context 축으로 compliance 테스트 추가
+- [ ] host-owned namespace 및 effect reinjection/fulfill 경계 검증 강화
+
+Validation:
+- `./gradlew :manifesto-host:test`
+
+#### `TASK-A4` Host Golden Scenario Standardization
+- [ ] determinism/trace-snapshot/complex-effects/todo-workflow 시나리오를 golden fixture로 정규화
+- [ ] golden loader/assertion 규약 통일
+
+Validation:
+- `./gradlew :manifesto-host:test`
+
+### 9.3 Stage B (P1)
+
+#### `TASK-B1` World Persistence Parity
+- [ ] `EdgeQuery` 필터 계약 추가
+- [ ] observable store event subscription 계약 추가
+- [ ] stats 조회 계약 추가
+
+Validation:
+- `./gradlew :manifesto-world:test`
+
+#### `TASK-B2` Intent-IR Edge-Case Regression
+- [ ] resolver/lexicon/lower TS 회귀 케이스 매핑 문서화
+- [ ] Java intent-ir edge-case 테스트 벡터 확장
+
+Validation:
+- `./gradlew :manifesto-intent-ir:test`
+
+#### `TASK-B3` Translator Conformance and Adapter Boundary
+- [ ] TS conformance suite 항목별 Java 대응 매트릭스 작성
+- [ ] adapter SPI/transport 경계 보강(프레임워크 비종속 유지)
+
+Validation:
+- `./gradlew :manifesto-translator:test`
+
+#### `TASK-B4` Codegen Multi-Plugin Mode Decision
+- [ ] Java codegen에 TS형 sequential multi-plugin mode 도입 여부 결정 문서화
+- [ ] 채택 시 PoC, 미채택 시 근거와 대체전략 명시
+
+Validation:
+- `./gradlew :manifesto-codegen:test`
+
+### 9.4 Stage C (P2)
+
+#### `TASK-C1` Compiler CLI Operationalization
+- [ ] compile/format/check CLI entrypoint 제공
+- [ ] `checkGoldenSync` strict lane(CI용) 실행 경로 문서화
+
+Validation:
+- `./gradlew :manifesto-compiler:test`
+- `./gradlew checkGoldenSync`
+
+#### `TASK-C2` Cross-Module Integration Regression
+- [ ] core/app/host/world 통합 회귀 시나리오 정리
+- [ ] 교차 모듈 회귀 테스트 안정화
+
+Validation:
+- `./gradlew test`
