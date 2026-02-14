@@ -44,12 +44,13 @@ public final class CodegenRunner implements CodeGenerator {
         Objects.requireNonNull(request, "request must not be null");
         CodegenTarget target = Objects.requireNonNull(request.target(), "request.target must not be null");
         CodegenExecutionOptions safeOptions = options == null ? CodegenExecutionOptions.defaults() : options;
+        CodegenPluginOptions effectivePluginOptions = safeOptions.pluginOptions() == null
+            ? CodegenPluginOptions.defaults()
+            : safeOptions.pluginOptions();
 
         List<CodegenDiagnostic> diagnostics = new ArrayList<>();
         diagnostics.addAll(validatePluginIds());
-        diagnostics.addAll((safeOptions.pluginOptions() == null
-            ? CodegenPluginOptions.defaults()
-            : safeOptions.pluginOptions()).validate());
+        diagnostics.addAll(effectivePluginOptions.validate());
 
         CodegenPlugin plugin = registry.resolve(target)
             .orElse(null);
@@ -67,10 +68,10 @@ public final class CodegenRunner implements CodeGenerator {
         VirtualFileSystem vfs = new VirtualFileSystem();
         List<GeneratedArtifact> generated;
         try {
-            generated = plugin.generate(request);
+            generated = plugin.generate(request, effectivePluginOptions);
         } catch (RuntimeException error) {
             diagnostics.add(CodegenDiagnostic.error(plugin.pluginId(), "Plugin threw: " + error.getMessage()));
-            return new CodegenRunResult(List.of(), List.copyOf(diagnostics), schemaHash, safeOptions.pluginOptions());
+            return new CodegenRunResult(List.of(), List.copyOf(diagnostics), schemaHash, effectivePluginOptions);
         }
 
         for (GeneratedArtifact artifact : generated) {
@@ -102,7 +103,7 @@ public final class CodegenRunner implements CodeGenerator {
             files,
             List.copyOf(diagnostics),
             schemaHash,
-            safeOptions.pluginOptions()
+            effectivePluginOptions
         );
     }
 

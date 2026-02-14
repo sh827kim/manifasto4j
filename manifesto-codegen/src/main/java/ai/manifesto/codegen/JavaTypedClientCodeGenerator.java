@@ -1,5 +1,10 @@
 package ai.manifesto.codegen;
 
+import ai.manifesto.codegen.runtime.CodegenPluginOptions;
+import ai.manifesto.codegen.runtime.NamingConvention;
+import ai.manifesto.codegen.runtime.NullabilityMode;
+import ai.manifesto.codegen.runtime.StyleProfile;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -25,7 +30,13 @@ public final class JavaTypedClientCodeGenerator implements CodegenPlugin {
 
     @Override
     public List<GeneratedArtifact> generate(CodegenRequest request) {
+        return generate(request, CodegenPluginOptions.defaults());
+    }
+
+    @Override
+    public List<GeneratedArtifact> generate(CodegenRequest request, CodegenPluginOptions options) {
         Objects.requireNonNull(request, "request must not be null");
+        Objects.requireNonNull(options, "options must not be null");
         Objects.requireNonNull(request.target(), "request.target must not be null");
         if (!supports(request.target())) {
             throw new IllegalArgumentException("Unsupported target: " + request.target().name());
@@ -46,7 +57,7 @@ public final class JavaTypedClientCodeGenerator implements CodegenPlugin {
 
         List<ActionDef> actionDefs = actions.entrySet().stream()
             .sorted(Comparator.comparing(Map.Entry::getKey))
-            .map(entry -> toActionDef(entry.getKey(), entry.getValue()))
+            .map(entry -> toActionDef(entry.getKey(), entry.getValue(), options))
             .toList();
 
         List<GeneratedArtifact> artifacts = new ArrayList<>();
@@ -57,7 +68,7 @@ public final class JavaTypedClientCodeGenerator implements CodegenPlugin {
         for (ActionDef action : actionDefs) {
             artifacts.add(new GeneratedArtifact(
                 pathPrefix + "/" + action.inputTypeName + ".java",
-                buildActionInputSource(packageName, action)
+                buildActionInputSource(packageName, action, options)
             ));
         }
         return List.copyOf(artifacts);
@@ -89,10 +100,13 @@ public final class JavaTypedClientCodeGenerator implements CodegenPlugin {
         return source.toString();
     }
 
-    private String buildActionInputSource(String packageName, ActionDef action) {
+    private String buildActionInputSource(String packageName, ActionDef action, CodegenPluginOptions options) {
         boolean needsList = action.fields.stream().anyMatch(field -> field.javaType.contains("List<"));
         boolean needsMap = action.fields.stream().anyMatch(field -> field.javaType.contains("Map<"));
-        boolean needsObjects = !action.fields.isEmpty();
+        boolean needsObjects = options.nullability() == NullabilityMode.STRICT
+            && action.fields.stream().anyMatch(FieldDef::nonNull);
+        String indent = options.style() == StyleProfile.COMPACT ? "  " : "    ";
+        String lineBreak = options.style() == StyleProfile.COMPACT ? "\n" : "\n\n";
 
         StringBuilder source = new StringBuilder();
         source.append("package ").append(packageName).append(";\n\n");
@@ -109,50 +123,52 @@ public final class JavaTypedClientCodeGenerator implements CodegenPlugin {
             source.append("\n");
         }
 
-        source.append("/**\n");
-        source.append(" * KR: action `").append(action.originalActionName).append("` 호출 입력 DTO입니다.\n");
-        source.append(" * EN: Input DTO for action `").append(action.originalActionName).append("` invocation.\n");
-        source.append(" */\n");
+        if (options.style() != StyleProfile.COMPACT) {
+            source.append("/**\n");
+            source.append(" * KR: action `").append(action.originalActionName).append("` 호출 입력 DTO입니다.\n");
+            source.append(" * EN: Input DTO for action `").append(action.originalActionName).append("` invocation.\n");
+            source.append(" */\n");
+        }
         source.append("public final class ").append(action.inputTypeName).append(" {\n");
         for (FieldDef field : action.fields) {
-            source.append("    private ").append(field.javaType).append(" ").append(field.fieldName).append(";\n");
+            source.append(indent).append("private ").append(field.javaType).append(" ").append(field.fieldName).append(";\n");
         }
         if (!action.fields.isEmpty()) {
-            source.append("\n");
+            source.append(lineBreak);
         }
-        source.append("    public ").append(action.inputTypeName).append("() {\n");
-        source.append("    }\n");
+        source.append(indent).append("public ").append(action.inputTypeName).append("() {\n");
+        source.append(indent).append("}\n");
 
         for (FieldDef field : action.fields) {
             String suffix = upperCamel(field.fieldName);
-            source.append("\n");
-            source.append("    public ").append(field.javaType).append(" get").append(suffix).append("() {\n");
-            source.append("        return ").append(field.fieldName).append(";\n");
-            source.append("    }\n");
-            source.append("\n");
-            source.append("    public void set").append(suffix).append("(").append(field.javaType).append(" ").append(field.fieldName).append(") {\n");
+            source.append(lineBreak);
+            source.append(indent).append("public ").append(field.javaType).append(" get").append(suffix).append("() {\n");
+            source.append(indent).append(indent).append("return ").append(field.fieldName).append(";\n");
+            source.append(indent).append("}\n");
+            source.append(lineBreak);
+            source.append(indent).append("public void set").append(suffix).append("(").append(field.javaType).append(" ").append(field.fieldName).append(") {\n");
             if (field.nonNull) {
-                source.append("        this.").append(field.fieldName).append(" = Objects.requireNonNull(")
+                source.append(indent).append(indent).append("this.").append(field.fieldName).append(" = Objects.requireNonNull(")
                     .append(field.fieldName).append(", \"").append(field.fieldName).append(" must not be null\");\n");
             } else {
-                source.append("        this.").append(field.fieldName).append(" = ").append(field.fieldName).append(";\n");
+                source.append(indent).append(indent).append("this.").append(field.fieldName).append(" = ").append(field.fieldName).append(";\n");
             }
-            source.append("    }\n");
+            source.append(indent).append("}\n");
         }
         source.append("}\n");
         return source.toString();
     }
 
-    private ActionDef toActionDef(String actionName, Object actionSpecValue) {
+    private ActionDef toActionDef(String actionName, Object actionSpecValue, CodegenPluginOptions options) {
         Map<String, Object> actionSpec = requireMap(actionSpecValue, "action spec must be an object: " + actionName);
-        List<FieldDef> fields = parseActionFields(actionSpec);
+        List<FieldDef> fields = parseActionFields(actionSpec, options);
 
-        String methodName = sanitizeIdentifier(lowerCamel(actionName));
+        String methodName = sanitizeIdentifier(applyNaming(actionName, options.naming()));
         String inputTypeName = upperCamel(methodName) + "Input";
         return new ActionDef(actionName, methodName, inputTypeName, fields);
     }
 
-    private List<FieldDef> parseActionFields(Map<String, Object> actionSpec) {
+    private List<FieldDef> parseActionFields(Map<String, Object> actionSpec, CodegenPluginOptions options) {
         Map<String, Object> input = optionalMap(actionSpec.get("input"));
         if (input == null) {
             return List.of();
@@ -163,16 +179,17 @@ public final class JavaTypedClientCodeGenerator implements CodegenPlugin {
         }
         return fields.entrySet().stream()
             .sorted(Comparator.comparing(Map.Entry::getKey))
-            .map(entry -> toFieldDef(entry.getKey(), entry.getValue()))
+            .map(entry -> toFieldDef(entry.getKey(), entry.getValue(), options))
             .toList();
     }
 
-    private FieldDef toFieldDef(String originalName, Object fieldSpecValue) {
+    private FieldDef toFieldDef(String originalName, Object fieldSpecValue, CodegenPluginOptions options) {
         Map<String, Object> fieldSpec = requireMap(fieldSpecValue, "field spec must be an object: " + originalName);
         String javaType = resolveJavaType(fieldSpec.get("type"));
         boolean required = Boolean.TRUE.equals(fieldSpec.get("required"));
-        String fieldName = sanitizeIdentifier(lowerCamel(originalName));
-        return new FieldDef(fieldName, javaType, required && !isContainerType(javaType));
+        String fieldName = sanitizeIdentifier(applyNaming(originalName, options.naming()));
+        boolean nonNull = options.nullability() == NullabilityMode.STRICT && required && !isContainerType(javaType);
+        return new FieldDef(fieldName, javaType, nonNull);
     }
 
     private String resolveJavaType(Object typeValue) {
@@ -255,6 +272,28 @@ public final class JavaTypedClientCodeGenerator implements CodegenPlugin {
             return sanitized + "_";
         }
         return sanitized;
+    }
+
+    private String applyNaming(String originalName, NamingConvention namingConvention) {
+        return switch (namingConvention) {
+            case CAMEL_CASE -> lowerCamel(originalName);
+            case PASCAL_CASE -> upperCamel(lowerCamel(originalName));
+            case SNAKE_CASE -> toSnakeCase(originalName);
+        };
+    }
+
+    private String toSnakeCase(String value) {
+        String camel = lowerCamel(value);
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < camel.length(); i++) {
+            char c = camel.charAt(i);
+            if (Character.isUpperCase(c)) {
+                out.append('_').append(Character.toLowerCase(c));
+            } else {
+                out.append(c);
+            }
+        }
+        return out.toString();
     }
 
     private Map<String, Object> requireMap(Object value, String message) {

@@ -1,5 +1,10 @@
 package ai.manifesto.codegen;
 
+import ai.manifesto.codegen.runtime.CodegenPluginOptions;
+import ai.manifesto.codegen.runtime.NamingConvention;
+import ai.manifesto.codegen.runtime.NullabilityMode;
+import ai.manifesto.codegen.runtime.StyleProfile;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -25,7 +30,13 @@ public final class JavaDtoCodeGenerator implements CodegenPlugin {
 
     @Override
     public List<GeneratedArtifact> generate(CodegenRequest request) {
+        return generate(request, CodegenPluginOptions.defaults());
+    }
+
+    @Override
+    public List<GeneratedArtifact> generate(CodegenRequest request, CodegenPluginOptions options) {
         Objects.requireNonNull(request, "request must not be null");
+        Objects.requireNonNull(options, "options must not be null");
         Objects.requireNonNull(request.target(), "request.target must not be null");
         if (!supports(request.target())) {
             throw new IllegalArgumentException("Unsupported target: " + request.target().name());
@@ -40,7 +51,7 @@ public final class JavaDtoCodeGenerator implements CodegenPlugin {
 
         String packageName = request.basePackage().trim();
         String pathPrefix = packageName.replace('.', '/');
-        String content = buildStateDtoSource(packageName, fields);
+        String content = buildStateDtoSource(packageName, fields, options);
 
         return List.of(new GeneratedArtifact(pathPrefix + "/StateDto.java", content));
     }
@@ -55,15 +66,18 @@ public final class JavaDtoCodeGenerator implements CodegenPlugin {
         return target != null && "java-dto".equalsIgnoreCase(target.name());
     }
 
-    private String buildStateDtoSource(String packageName, Map<String, Object> fields) {
+    private String buildStateDtoSource(String packageName, Map<String, Object> fields, CodegenPluginOptions options) {
         List<FieldDef> fieldDefs = fields.entrySet().stream()
             .sorted(Comparator.comparing(Map.Entry::getKey))
-            .map(entry -> toFieldDef(entry.getKey(), entry.getValue()))
+            .map(entry -> toFieldDef(entry.getKey(), entry.getValue(), options))
             .toList();
 
         boolean needsList = fieldDefs.stream().anyMatch(def -> def.javaType.contains("List<"));
         boolean needsMap = fieldDefs.stream().anyMatch(def -> def.javaType.contains("Map<"));
-        boolean needsObjects = !fieldDefs.isEmpty();
+        boolean needsObjects = options.nullability() == NullabilityMode.STRICT
+            && fieldDefs.stream().anyMatch(FieldDef::nonNull);
+        String indent = options.style() == StyleProfile.COMPACT ? "  " : "    ";
+        String lineBreak = options.style() == StyleProfile.COMPACT ? "\n" : "\n\n";
 
         StringBuilder source = new StringBuilder();
         source.append("package ").append(packageName).append(";\n\n");
@@ -80,50 +94,53 @@ public final class JavaDtoCodeGenerator implements CodegenPlugin {
             source.append("\n");
         }
 
-        source.append("/**\n");
-        source.append(" * KR: DomainSchema state를 Java 객체로 다루기 위한 기본 DTO입니다.\n");
-        source.append(" * EN: Basic DTO for handling DomainSchema state as a Java object.\n");
-        source.append(" */\n");
+        if (options.style() != StyleProfile.COMPACT) {
+            source.append("/**\n");
+            source.append(" * KR: DomainSchema state를 Java 객체로 다루기 위한 기본 DTO입니다.\n");
+            source.append(" * EN: Basic DTO for handling DomainSchema state as a Java object.\n");
+            source.append(" */\n");
+        }
         source.append("public final class StateDto {\n");
 
         for (FieldDef fieldDef : fieldDefs) {
-            source.append("    private ").append(fieldDef.javaType).append(" ").append(fieldDef.fieldName).append(";\n");
+            source.append(indent).append("private ").append(fieldDef.javaType).append(" ").append(fieldDef.fieldName).append(";\n");
         }
         if (!fieldDefs.isEmpty()) {
-            source.append("\n");
+            source.append(lineBreak);
         }
 
-        source.append("    public StateDto() {\n");
-        source.append("    }\n");
+        source.append(indent).append("public StateDto() {\n");
+        source.append(indent).append("}\n");
 
         for (FieldDef fieldDef : fieldDefs) {
             String methodSuffix = upperCamel(fieldDef.fieldName);
-            source.append("\n");
-            source.append("    public ").append(fieldDef.javaType).append(" get").append(methodSuffix).append("() {\n");
-            source.append("        return ").append(fieldDef.fieldName).append(";\n");
-            source.append("    }\n");
-            source.append("\n");
-            source.append("    public void set").append(methodSuffix).append("(")
+            source.append(lineBreak);
+            source.append(indent).append("public ").append(fieldDef.javaType).append(" get").append(methodSuffix).append("() {\n");
+            source.append(indent).append(indent).append("return ").append(fieldDef.fieldName).append(";\n");
+            source.append(indent).append("}\n");
+            source.append(lineBreak);
+            source.append(indent).append("public void set").append(methodSuffix).append("(")
                 .append(fieldDef.javaType).append(" ").append(fieldDef.fieldName).append(") {\n");
             if (fieldDef.nonNull) {
-                source.append("        this.").append(fieldDef.fieldName).append(" = Objects.requireNonNull(")
+                source.append(indent).append(indent).append("this.").append(fieldDef.fieldName).append(" = Objects.requireNonNull(")
                     .append(fieldDef.fieldName).append(", \"").append(fieldDef.fieldName).append(" must not be null\");\n");
             } else {
-                source.append("        this.").append(fieldDef.fieldName).append(" = ").append(fieldDef.fieldName).append(";\n");
+                source.append(indent).append(indent).append("this.").append(fieldDef.fieldName).append(" = ").append(fieldDef.fieldName).append(";\n");
             }
-            source.append("    }\n");
+            source.append(indent).append("}\n");
         }
 
         source.append("}\n");
         return source.toString();
     }
 
-    private FieldDef toFieldDef(String originalName, Object fieldSpecValue) {
+    private FieldDef toFieldDef(String originalName, Object fieldSpecValue, CodegenPluginOptions options) {
         Map<String, Object> fieldSpec = requireMap(fieldSpecValue, "field spec must be an object: " + originalName);
         String javaType = resolveJavaType(fieldSpec.get("type"));
         boolean required = Boolean.TRUE.equals(fieldSpec.get("required"));
-        String fieldName = sanitizeIdentifier(lowerCamel(originalName));
-        return new FieldDef(originalName, fieldName, javaType, required && !isContainerType(javaType));
+        String fieldName = sanitizeIdentifier(applyNaming(originalName, options.naming()));
+        boolean nonNull = options.nullability() == NullabilityMode.STRICT && required && !isContainerType(javaType);
+        return new FieldDef(originalName, fieldName, javaType, nonNull);
     }
 
     private String resolveJavaType(Object typeValue) {
@@ -207,6 +224,28 @@ public final class JavaDtoCodeGenerator implements CodegenPlugin {
             return sanitized + "_";
         }
         return sanitized;
+    }
+
+    private String applyNaming(String originalName, NamingConvention namingConvention) {
+        return switch (namingConvention) {
+            case CAMEL_CASE -> lowerCamel(originalName);
+            case PASCAL_CASE -> upperCamel(lowerCamel(originalName));
+            case SNAKE_CASE -> toSnakeCase(originalName);
+        };
+    }
+
+    private String toSnakeCase(String value) {
+        String camel = lowerCamel(value);
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < camel.length(); i++) {
+            char c = camel.charAt(i);
+            if (Character.isUpperCase(c)) {
+                out.append('_').append(Character.toLowerCase(c));
+            } else {
+                out.append(c);
+            }
+        }
+        return out.toString();
     }
 
     private record FieldDef(String originalName, String fieldName, String javaType, boolean nonNull) {

@@ -75,8 +75,8 @@ Validation:
 - `./gradlew :manifesto-translator:test`
 
 ### P1-C Codegen Option Materialization
-- [ ] A5-1 naming/nullability/style 옵션 실반영 구현
-- [ ] A5-2 옵션 조합 snapshot 회귀 테스트 확장
+- [x] A5-1 naming/nullability/style 옵션 실반영 구현
+- [x] A5-2 옵션 조합 snapshot 회귀 테스트 확장
 
 Validation:
 - `./gradlew :manifesto-codegen:test`

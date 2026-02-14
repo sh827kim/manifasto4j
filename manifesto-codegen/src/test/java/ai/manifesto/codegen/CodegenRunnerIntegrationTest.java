@@ -92,4 +92,91 @@ class CodegenRunnerIntegrationTest {
         assertTrue(result.hasErrors());
         assertTrue(result.diagnostics().stream().anyMatch(d -> d.message().contains("naming")));
     }
+
+    @Test
+    void generateDetailedMaterializesNamingNullabilityAndStyleOptions() {
+        CodegenRunner runner = CodegenRunner.withDefaults();
+        CodegenRequest request = new CodegenRequest(
+            Map.of(
+                "id", "urn:todo",
+                "actions", Map.of(
+                    "create-task", Map.of(
+                        "input", Map.of(
+                            "fields", Map.of(
+                                "task-id", Map.of("type", "string", "required", true)
+                            )
+                        )
+                    )
+                )
+            ),
+            "ai.manifesto.generated",
+            new CodegenTarget("java-typed-client", "1.0")
+        );
+
+        CodegenExecutionOptions options = new CodegenExecutionOptions(
+            "source://option-test",
+            false,
+            false,
+            new CodegenPluginOptions(NamingConvention.SNAKE_CASE, NullabilityMode.RELAXED, StyleProfile.COMPACT)
+        );
+
+        CodegenRunResult result = runner.generateDetailed(request, options);
+        assertFalse(result.hasErrors());
+        String inputSource = result.files().stream()
+            .filter(f -> f.relativePath().endsWith("Create_taskInput.java"))
+            .findFirst()
+            .orElseThrow()
+            .content();
+
+        assertTrue(inputSource.contains("private String task_id;"));
+        assertTrue(inputSource.contains("void setTask_id("));
+        assertFalse(inputSource.contains("Objects.requireNonNull("));
+        assertFalse(inputSource.contains("Input DTO for action"));
+    }
+
+    @Test
+    void generateDetailedSupportsOptionCombinationSnapshots() {
+        CodegenRunner runner = CodegenRunner.withDefaults();
+        CodegenRequest request = new CodegenRequest(
+            Map.of(
+                "state", Map.of(
+                    "fields", Map.of(
+                        "task-id", Map.of("type", "string", "required", true)
+                    )
+                )
+            ),
+            "ai.manifesto.generated",
+            new CodegenTarget("java-dto", "1.0")
+        );
+
+        CodegenRunResult strictStandard = runner.generateDetailed(
+            request,
+            new CodegenExecutionOptions(
+                "source://strict-standard",
+                false,
+                false,
+                new CodegenPluginOptions(NamingConvention.CAMEL_CASE, NullabilityMode.STRICT, StyleProfile.STANDARD)
+            )
+        );
+        CodegenRunResult pascalCompact = runner.generateDetailed(
+            request,
+            new CodegenExecutionOptions(
+                "source://pascal-compact",
+                false,
+                false,
+                new CodegenPluginOptions(NamingConvention.PASCAL_CASE, NullabilityMode.RELAXED, StyleProfile.COMPACT)
+            )
+        );
+
+        String strictSource = strictStandard.files().get(0).content();
+        String compactSource = pascalCompact.files().get(0).content();
+
+        assertTrue(strictSource.contains("private String taskId;"));
+        assertTrue(strictSource.contains("Objects.requireNonNull(taskId"));
+        assertTrue(strictSource.contains("/**"));
+
+        assertTrue(compactSource.contains("private String TaskId;"));
+        assertFalse(compactSource.contains("Objects.requireNonNull("));
+        assertFalse(compactSource.contains("/**"));
+    }
 }
