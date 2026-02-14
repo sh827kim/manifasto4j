@@ -6,6 +6,7 @@ import ai.manifesto.translator.core.IntentGraphNode;
 import ai.manifesto.translator.core.ResolutionStatus;
 import ai.manifesto.translator.targets.json.JsonOutput;
 import ai.manifesto.translator.targets.json.JsonTargetExporter;
+import ai.manifesto.translator.targets.manifesto.LoweringFailureKind;
 import ai.manifesto.translator.targets.manifesto.ManifestoBundle;
 import ai.manifesto.translator.targets.manifesto.ManifestoExportContext;
 import ai.manifesto.translator.targets.manifesto.ManifestoTargetExporter;
@@ -80,5 +81,51 @@ class TargetExportersTest {
         assertEquals("3.0.3", spec.openapi());
         assertTrue(spec.paths().containsKey("/actions/task_create"));
         assertTrue(spec.paths().containsKey("/actions/task_close"));
+    }
+
+    @Test
+    void manifestoExporterUsesDetailedFailureTaxonomy() {
+        IntentGraph graph = new IntentGraph(
+            List.of(new IntentGraphNode("n1", "", Map.of("title", "T"), ResolutionStatus.RESOLVED)),
+            List.of(),
+            Map.of()
+        );
+
+        ManifestoExportContext unresolvedActionContext = new ManifestoExportContext(
+            new ai.manifesto.intentir.DefaultIntentIrLexicon(Map.of("todo", java.util.Set.of("createTask"))),
+            new ai.manifesto.intentir.DefaultIntentIrResolver(Map.of("todo", java.util.Set.of("createTask"))),
+            new ai.manifesto.intentir.DefaultIntentIrLowerer(),
+            "todo",
+            true
+        );
+        ManifestoBundle unresolvedBundle = new ManifestoTargetExporter().export(
+            new ExportInput(graph, List.of(), null),
+            unresolvedActionContext
+        );
+        assertEquals("failed", unresolvedBundle.invocationPlan().steps().get(0).lowering().status());
+        assertEquals(
+            LoweringFailureKind.UNRESOLVED_ACTION,
+            unresolvedBundle.invocationPlan().steps().get(0).lowering().failure().kind()
+        );
+
+        ManifestoExportContext resolverFailureContext = new ManifestoExportContext(
+            new ai.manifesto.intentir.DefaultIntentIrLexicon(Map.of("todo", java.util.Set.of("createTask"))),
+            document -> { throw new IllegalStateException("resolver boom"); },
+            new ai.manifesto.intentir.DefaultIntentIrLowerer(),
+            "todo",
+            false
+        );
+        ManifestoBundle resolverFailureBundle = new ManifestoTargetExporter().export(
+            new ExportInput(new IntentGraph(
+                List.of(new IntentGraphNode("n2", "createTask", Map.of("title", "T"), ResolutionStatus.RESOLVED)),
+                List.of(),
+                Map.of()
+            ), List.of(), null),
+            resolverFailureContext
+        );
+        assertEquals(
+            LoweringFailureKind.RESOLVER_FAILURE,
+            resolverFailureBundle.invocationPlan().steps().get(0).lowering().failure().kind()
+        );
     }
 }

@@ -18,7 +18,12 @@ public final class DefaultIntentIrLowerer implements IntentIrLowerer {
         List<String> diagnostics = new ArrayList<>();
 
         String action = normalized.action();
-        if ("unknown".equalsIgnoreCase(action)) {
+        if (normalized.domain() == null || normalized.domain().isBlank()) {
+            diagnostics.add("LRW000: unresolved domain lowered as blank");
+        }
+        if (action == null || action.isBlank()) {
+            diagnostics.add("LRW002: unresolved action lowered as blank");
+        } else if ("unknown".equalsIgnoreCase(action)) {
             diagnostics.add("LRW001: unresolved action lowered as unknown");
         }
 
@@ -34,6 +39,8 @@ public final class DefaultIntentIrLowerer implements IntentIrLowerer {
             meta.putAll(normalized.meta());
         }
         meta.put("lowered", true);
+        meta.put("loweredAt", System.currentTimeMillis());
+        meta.put("lowerDiagnosticsCount", diagnostics.size());
 
         return new IntentIrLowerResult(
             normalized.domain(),

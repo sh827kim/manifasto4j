@@ -5,6 +5,11 @@ package ai.manifesto.translator.targets.manifesto;
  * EN: Failure kinds for Manifesto lowering.
  */
 public enum LoweringFailureKind {
+    UNRESOLVED_ACTION,
+    LEXICON_REJECTED,
+    RESOLVER_FAILURE,
+    LOWERER_NULL_RESULT,
+    LOWERER_EXCEPTION,
     UNSUPPORTED_EVENT,
     INVALID_ARGS,
     MISSING_REQUIRED,

@@ -58,18 +58,18 @@ Validation:
 - `./gradlew :manifesto-host:test`
 
 ### P1-A Intent-IR Semantic Depth
-- [ ] A3-1 schema validator rule/code 세분화
-- [ ] A3-2 lexicon feature(role/theta/selectional) 정책 강화
-- [ ] A3-3 resolver discourse/focus 규칙 강화
-- [ ] A3-4 lower edge-case 회귀 벡터 확장
+- [x] A3-1 schema validator rule/code 세분화
+- [x] A3-2 lexicon feature(role/theta/selectional) 정책 강화
+- [x] A3-3 resolver discourse/focus 규칙 강화
+- [x] A3-4 lower edge-case 회귀 벡터 확장
 
 Validation:
 - `./gradlew :manifesto-intent-ir:test`
 
 ### P1-B Translator Conformance Depth
-- [ ] A4-1 plugin family(coverage/dependency/or/task-enumeration 계열) 보강
-- [ ] A4-2 그래프 invariant/diagnostics/parallel conformance 테스트 확장
-- [ ] A4-3 manifesto exporter lowering failure taxonomy 정밀화
+- [x] A4-1 plugin family(coverage/dependency/or/task-enumeration 계열) 보강
+- [x] A4-2 그래프 invariant/diagnostics/parallel conformance 테스트 확장
+- [x] A4-3 manifesto exporter lowering failure taxonomy 정밀화
 
 Validation:
 - `./gradlew :manifesto-translator:test`

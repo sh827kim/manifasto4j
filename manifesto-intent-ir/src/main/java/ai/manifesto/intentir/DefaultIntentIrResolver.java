@@ -21,7 +21,14 @@ public final class DefaultIntentIrResolver implements IntentIrResolver {
     }
 
     public DefaultIntentIrResolver(Map<String, Set<String>> allowedActionsByDomain, IntentIrNormalizer normalizer) {
-        this.allowedActionsByDomain = Objects.requireNonNull(allowedActionsByDomain, "allowedActionsByDomain must not be null");
+        Objects.requireNonNull(allowedActionsByDomain, "allowedActionsByDomain must not be null");
+        Map<String, Set<String>> normalizedPolicies = new LinkedHashMap<>();
+        for (Map.Entry<String, Set<String>> entry : allowedActionsByDomain.entrySet()) {
+            String normalizedDomain = entry.getKey() == null ? "" : entry.getKey().trim().toLowerCase();
+            Set<String> actions = entry.getValue() == null ? Set.of() : entry.getValue();
+            normalizedPolicies.put(normalizedDomain, actions);
+        }
+        this.allowedActionsByDomain = Map.copyOf(normalizedPolicies);
         this.normalizer = Objects.requireNonNull(normalizer, "normalizer must not be null");
     }
 
@@ -33,6 +40,22 @@ public final class DefaultIntentIrResolver implements IntentIrResolver {
         IntentIrDocument normalized = normalizer.normalize(document);
         String domain = normalized.domain();
         String action = normalized.action();
+
+        if (domain == null || domain.isBlank() || "unknown".equalsIgnoreCase(domain)) {
+            String focusedDomain = extractFocusedDomain(normalized.meta());
+            if (focusedDomain != null && allowedActionsByDomain.containsKey(focusedDomain)) {
+                domain = focusedDomain;
+                diagnostics.add("RSV008: domain resolved from meta.focusDomain");
+            }
+        }
+
+        if (domain == null || domain.isBlank() || "unknown".equalsIgnoreCase(domain)) {
+            String discourseDomain = extractDiscourseDomain(normalized.meta());
+            if (discourseDomain != null && allowedActionsByDomain.containsKey(discourseDomain)) {
+                domain = discourseDomain;
+                diagnostics.add("RSV009: domain resolved from discourse history");
+            }
+        }
 
         if ("unknown".equalsIgnoreCase(action) || action.isBlank()) {
             String focused = extractFocusedAction(normalized.meta());
@@ -77,8 +100,14 @@ public final class DefaultIntentIrResolver implements IntentIrResolver {
             diagnostics.add("RSV004: resolved action is not allowed by lexicon");
         }
 
+        if (domain == null || domain.isBlank() || "unknown".equalsIgnoreCase(domain)) {
+            diagnostics.add("RSV010: domain unresolved");
+        }
+
         Map<String, Object> meta = new LinkedHashMap<>(normalized.meta());
-        meta.put("resolved", diagnostics.stream().noneMatch(code -> code.startsWith("RSV003") || code.startsWith("RSV004")));
+        meta.put("resolved", diagnostics.stream().noneMatch(code ->
+            code.startsWith("RSV003") || code.startsWith("RSV004") || code.startsWith("RSV010")
+        ));
 
         IntentIrDocument resolved = new IntentIrDocument(
             normalized.schemaVersion(),
@@ -91,7 +120,7 @@ public final class DefaultIntentIrResolver implements IntentIrResolver {
     }
 
     private boolean isAllowed(String domain, String action) {
-        Set<String> allowed = allowedActionsByDomain.get(domain);
+        Set<String> allowed = allowedActionsByDomain.get(domain == null ? "" : domain.trim().toLowerCase());
         return allowed != null && allowed.contains(action);
     }
 
@@ -134,6 +163,38 @@ public final class DefaultIntentIrResolver implements IntentIrResolver {
             String candidate = String.valueOf(item).trim();
             if (!candidate.isBlank() && isAllowed(domain, candidate)) {
                 return candidate;
+            }
+        }
+        return null;
+    }
+
+    private String extractFocusedDomain(Map<String, Object> meta) {
+        if (meta == null) {
+            return null;
+        }
+        Object focus = meta.get("focusDomain");
+        if (focus == null) {
+            return null;
+        }
+        String text = String.valueOf(focus).trim().toLowerCase();
+        return text.isBlank() ? null : text;
+    }
+
+    private String extractDiscourseDomain(Map<String, Object> meta) {
+        if (meta == null) {
+            return null;
+        }
+        Object history = meta.get("discourseDomains");
+        if (!(history instanceof Collection<?> items)) {
+            return null;
+        }
+        for (Object item : items) {
+            if (item == null) {
+                continue;
+            }
+            String domain = String.valueOf(item).trim().toLowerCase();
+            if (!domain.isBlank()) {
+                return domain;
             }
         }
         return null;

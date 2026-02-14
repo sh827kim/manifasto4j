@@ -97,7 +97,7 @@ public final class ManifestoTargetExporter implements TargetExporter<ManifestoBu
 
         if (context.strictValidation()) {
             if (document.action() == null || document.action().isBlank()) {
-                LoweringFailure failure = new LoweringFailure(LoweringFailureKind.SCHEMA_MISMATCH, "Action is required");
+                LoweringFailure failure = new LoweringFailure(LoweringFailureKind.UNRESOLVED_ACTION, "Action is required");
                 extensionCandidates.add(melCandidate(node, failure));
                 return new InvocationStep(node.nodeId(), document, node.resolutionStatus(), LoweringResult.failed(failure));
             }
@@ -113,7 +113,7 @@ public final class ManifestoTargetExporter implements TargetExporter<ManifestoBu
             String reason = lexiconCheck.diagnostics() == null || lexiconCheck.diagnostics().isEmpty()
                 ? "Lexicon check failed"
                 : lexiconCheck.diagnostics().get(0);
-            LoweringFailure failure = new LoweringFailure(LoweringFailureKind.UNSUPPORTED_EVENT, reason);
+            LoweringFailure failure = new LoweringFailure(LoweringFailureKind.LEXICON_REJECTED, reason);
             extensionCandidates.add(melCandidate(node, failure));
             return new InvocationStep(node.nodeId(), document, node.resolutionStatus(), LoweringResult.failed(failure));
         }
@@ -123,7 +123,7 @@ public final class ManifestoTargetExporter implements TargetExporter<ManifestoBu
             IntentIrResolveResult resolved = context.resolver().resolve(document);
             resolvedDocument = resolved == null || resolved.document() == null ? document : resolved.document();
         } catch (RuntimeException error) {
-            LoweringFailure failure = new LoweringFailure(LoweringFailureKind.INTERNAL_ERROR, error.getMessage());
+            LoweringFailure failure = new LoweringFailure(LoweringFailureKind.RESOLVER_FAILURE, error.getMessage());
             extensionCandidates.add(melCandidate(node, failure));
             return new InvocationStep(node.nodeId(), document, node.resolutionStatus(), LoweringResult.failed(failure));
         }
@@ -131,13 +131,13 @@ public final class ManifestoTargetExporter implements TargetExporter<ManifestoBu
         try {
             IntentIrLowerResult lowered = context.lowerer().lower(resolvedDocument);
             if (lowered == null) {
-                LoweringFailure failure = new LoweringFailure(LoweringFailureKind.INTERNAL_ERROR, "Lowerer returned null");
+                LoweringFailure failure = new LoweringFailure(LoweringFailureKind.LOWERER_NULL_RESULT, "Lowerer returned null");
                 extensionCandidates.add(melCandidate(node, failure));
                 return new InvocationStep(node.nodeId(), resolvedDocument, node.resolutionStatus(), LoweringResult.failed(failure));
             }
             return new InvocationStep(node.nodeId(), resolvedDocument, node.resolutionStatus(), LoweringResult.ready(lowered));
         } catch (RuntimeException error) {
-            LoweringFailure failure = new LoweringFailure(LoweringFailureKind.INTERNAL_ERROR, error.getMessage());
+            LoweringFailure failure = new LoweringFailure(LoweringFailureKind.LOWERER_EXCEPTION, error.getMessage());
             extensionCandidates.add(melCandidate(node, failure));
             return new InvocationStep(node.nodeId(), resolvedDocument, node.resolutionStatus(), LoweringResult.failed(failure));
         }

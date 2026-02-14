@@ -1,6 +1,7 @@
 package ai.manifesto.intentir;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,6 +75,8 @@ public final class DefaultIntentIrLexicon implements IntentIrLexicon {
                         diagnostics.add("LXC006: required meta key is missing: " + metaKey);
                     }
                 }
+
+                validateThetaAndSelectional(policy, action, input, diagnostics);
             }
         }
 
@@ -86,5 +89,76 @@ public final class DefaultIntentIrLexicon implements IntentIrLexicon {
 
     private String normalize(String value) {
         return value == null ? "" : value.trim().toLowerCase();
+    }
+
+    @SuppressWarnings("unchecked")
+    private void validateThetaAndSelectional(
+        IntentIrLexiconPolicy policy,
+        String action,
+        Map<String, Object> input,
+        List<String> diagnostics
+    ) {
+        if (action == null || action.isBlank()) {
+            return;
+        }
+        Map<String, Set<String>> requiredRolesByAction = policy.requiredRolesByAction() == null
+            ? Map.of()
+            : policy.requiredRolesByAction();
+        Map<String, Set<String>> selectionalRestrictionsByRole = policy.selectionalRestrictionsByRole() == null
+            ? Map.of()
+            : policy.selectionalRestrictionsByRole();
+
+        Object rolesValue = input.get("roles");
+        Map<String, Object> roles = rolesValue instanceof Map<?, ?> roleMap
+            ? (Map<String, Object>) roleMap
+            : Map.of();
+
+        Set<String> requiredRoles = requiredRolesByAction.getOrDefault(action, Set.of());
+        for (String requiredRole : requiredRoles) {
+            if (!roles.containsKey(requiredRole)) {
+                diagnostics.add("LXC007: required theta role is missing for action " + action + ": " + requiredRole);
+            }
+        }
+
+        for (Map.Entry<String, Set<String>> restriction : selectionalRestrictionsByRole.entrySet()) {
+            String role = restriction.getKey();
+            if (!roles.containsKey(role)) {
+                continue;
+            }
+            String roleType = extractRoleType(roles.get(role));
+            Set<String> allowedTypes = restriction.getValue() == null ? Set.of() : restriction.getValue();
+            if (roleType == null || roleType.isBlank()) {
+                diagnostics.add("LXC008: selectional restriction cannot be checked (missing role type): " + role);
+                continue;
+            }
+            if (!allowedTypes.isEmpty() && !allowedTypes.contains(roleType)) {
+                diagnostics.add("LXC009: selectional restriction violated for role " + role + ": " + roleType);
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private String extractRoleType(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof String text) {
+            return text.isBlank() ? null : text.trim();
+        }
+        if (value instanceof Map<?, ?> map) {
+            Object type = map.get("type");
+            if (type == null) {
+                type = map.get("entityType");
+            }
+            if (type == null) {
+                type = map.get("class");
+            }
+            return type == null ? null : String.valueOf(type).trim();
+        }
+        if (value instanceof Collection<?> collection && !collection.isEmpty()) {
+            Object first = collection.iterator().next();
+            return extractRoleType(first);
+        }
+        return String.valueOf(value).trim();
     }
 }
