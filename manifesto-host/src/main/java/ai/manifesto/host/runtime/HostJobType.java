@@ -7,5 +7,6 @@ package ai.manifesto.host.runtime;
 public enum HostJobType {
     START_INTENT,
     CONTINUE_COMPUTE,
-    FULFILL_REQUIREMENTS
+    FULFILL_REQUIREMENTS,
+    APPLY_PATCHES
 }

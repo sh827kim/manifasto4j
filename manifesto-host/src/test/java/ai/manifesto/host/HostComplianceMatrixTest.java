@@ -87,6 +87,76 @@ class HostComplianceMatrixTest {
     }
 
     @Test
+    void applyPatchesStageRunsBetweenFulfillAndNextCompute() throws Exception {
+        DomainSchema schema = schema(
+            "urn:test:host:matrix:apply-patches-stage",
+            new ActionSpec.Builder("notify")
+                .flow(FlowNode.If.of(
+                    new Eq(new Get("status"), new Lit("ok")),
+                    FlowNode.Halt.of("done"),
+                    FlowNode.Effect.of("host.notify", Map.of("message", new Lit("hi")))
+                ))
+                .build(),
+            new FieldSpec("status", "string", false, "")
+        );
+        Snapshot snapshot = snapshot(schema, Map.of("status", ""));
+        HostRuntime host = new HostRuntime()
+            .register("host.notify", params -> EffectResult.of(List.of(Patch.set("status", "ok"))));
+
+        List<HostRuntimeTraceEvent> trace = new java.util.ArrayList<>();
+        ComputeResult result = host.run(
+            schema,
+            snapshot,
+            new Intent("notify", Map.of(), "intent-apply-stage"),
+            HostRuntimeOptions.builder().traceSink(trace::add).build()
+        );
+
+        assertEquals(ComputeStatus.HALTED, result.getStatus());
+        List<String> startedJobTypes = trace.stream()
+            .filter(e -> "job:start".equals(e.type()))
+            .map(HostRuntimeTraceEvent::jobType)
+            .toList();
+
+        int fulfillIndex = startedJobTypes.indexOf("FULFILL_REQUIREMENTS");
+        int applyIndex = startedJobTypes.indexOf("APPLY_PATCHES");
+        int secondComputeIndex = startedJobTypes.lastIndexOf("CONTINUE_COMPUTE");
+        assertTrue(fulfillIndex >= 0);
+        assertTrue(applyIndex > fulfillIndex);
+        assertTrue(secondComputeIndex > applyIndex);
+        assertTrue(trace.stream().anyMatch(e -> "applyPatches:enqueue".equals(e.type())));
+        assertTrue(trace.stream().anyMatch(e -> "applyPatches:success".equals(e.type())));
+    }
+
+    @Test
+    void traceReplayModelPreservesRunnerAndJobInvariants() throws Exception {
+        DomainSchema schema = schema(
+            "urn:test:host:matrix:trace-replay",
+            new ActionSpec.Builder("notify")
+                .flow(FlowNode.If.of(
+                    new Eq(new Get("status"), new Lit("ok")),
+                    FlowNode.Halt.of("done"),
+                    FlowNode.Effect.of("host.notify", Map.of("message", new Lit("hi")))
+                ))
+                .build(),
+            new FieldSpec("status", "string", false, "")
+        );
+        Snapshot snapshot = snapshot(schema, Map.of("status", ""));
+        HostRuntime host = new HostRuntime()
+            .register("host.notify", params -> EffectResult.of(List.of(Patch.set("status", "ok"))));
+        List<HostRuntimeTraceEvent> trace = new java.util.ArrayList<>();
+
+        ComputeResult result = host.run(
+            schema,
+            snapshot,
+            new Intent("notify", Map.of(), "intent-trace-replay"),
+            HostRuntimeOptions.builder().traceSink(trace::add).build()
+        );
+
+        assertEquals(ComputeStatus.HALTED, result.getStatus());
+        assertTrue(replayTrace(trace));
+    }
+
+    @Test
     void missingHandlerKeepsIntentPendingAndRetainsRequirement() throws Exception {
         DomainSchema schema = schema(
             "urn:test:host:matrix:missing",
@@ -157,5 +227,40 @@ class HostComplianceMatrixTest {
             .input(new HashMap<>())
             .meta(Snapshot.SnapshotMeta.create(0, System.currentTimeMillis(), "seed", schema.getHash()))
             .build();
+    }
+
+    private boolean replayTrace(List<HostRuntimeTraceEvent> events) {
+        int activeRunners = 0;
+        java.util.Deque<String> jobQueue = new java.util.ArrayDeque<>();
+        for (HostRuntimeTraceEvent event : events) {
+            if ("runner:start".equals(event.type())) {
+                activeRunners += 1;
+                if (activeRunners > 1) {
+                    return false;
+                }
+                continue;
+            }
+            if ("runner:end".equals(event.type())) {
+                activeRunners -= 1;
+                if (activeRunners < 0) {
+                    return false;
+                }
+                continue;
+            }
+            if ("job:start".equals(event.type())) {
+                jobQueue.addLast(event.jobType());
+                continue;
+            }
+            if ("job:end".equals(event.type())) {
+                if (jobQueue.isEmpty()) {
+                    return false;
+                }
+                String started = jobQueue.removeFirst();
+                if (!started.equals(event.jobType())) {
+                    return false;
+                }
+            }
+        }
+        return activeRunners == 0 && jobQueue.isEmpty();
     }
 }

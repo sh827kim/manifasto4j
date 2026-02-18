@@ -4,10 +4,12 @@ import ai.manifesto.core.*;
 import ai.manifesto.core.core.Apply;
 import ai.manifesto.core.core.Compute;
 import ai.manifesto.core.schema.DomainSchema;
+import ai.manifesto.host.runtime.ApplyPatchesJob;
 import ai.manifesto.host.runtime.ContinueComputeJob;
 import ai.manifesto.host.runtime.ExecutionKey;
 import ai.manifesto.host.runtime.FulfillRequirementsJob;
 import ai.manifesto.host.runtime.HostJob;
+import ai.manifesto.host.runtime.HostJobType;
 import ai.manifesto.host.runtime.HostMailbox;
 import ai.manifesto.host.runtime.HostRunner;
 import ai.manifesto.host.runtime.InMemoryHostMailbox;
@@ -79,6 +81,7 @@ public final class HostRuntime {
             case START_INTENT -> handleStartIntent((StartIntentJob) job, mailbox);
             case CONTINUE_COMPUTE -> handleContinueCompute((ContinueComputeJob) job, mailbox, runContext);
             case FULFILL_REQUIREMENTS -> handleFulfillRequirements((FulfillRequirementsJob) job, mailbox, runContext);
+            case APPLY_PATCHES -> handleApplyPatches((ApplyPatchesJob) job, mailbox, runContext);
             default -> throw new IllegalStateException("Unsupported job type: " + job.getType());
         }
     }
@@ -169,19 +172,67 @@ public final class HostRuntime {
         }
         patches.add(Patch.set("system.pendingRequirements", java.util.List.of()));
 
-        HostContext applyContext = HostContext.forSnapshot(pendingResult.getSnapshot());
+        mailbox.enqueue(new ApplyPatchesJob(pendingResult.getSnapshot(), patches, intent));
+        runContext.getOptions().getTraceSink().onEvent(
+            new ai.manifesto.host.runtime.HostRuntimeTraceEvent(
+                "applyPatches:enqueue",
+                runContext.getExecutionKey(),
+                HostJobType.APPLY_PATCHES.name(),
+                null,
+                null,
+                null
+            )
+        );
+    }
+
+    private void handleApplyPatches(
+        ApplyPatchesJob job,
+        HostMailbox mailbox,
+        HostRunContext runContext
+    ) {
+        runContext.getOptions().getTraceSink().onEvent(
+            new ai.manifesto.host.runtime.HostRuntimeTraceEvent(
+                "applyPatches:start",
+                runContext.getExecutionKey(),
+                HostJobType.APPLY_PATCHES.name(),
+                null,
+                null,
+                null
+            )
+        );
+        HostContext applyContext = HostContext.forSnapshot(job.getBaseSnapshot());
         Result<Snapshot, ErrorValue> applied = Apply.apply(
             runContext.getSchema(),
-            pendingResult.getSnapshot(),
-            patches,
+            job.getBaseSnapshot(),
+            job.getPatches(),
             applyContext
         );
         if (applied.isErr()) {
-            runContext.setFinalResult(ComputeResult.error(pendingResult.getSnapshot(), runContext.getLastTrace()));
+            runContext.getOptions().getTraceSink().onEvent(
+                new ai.manifesto.host.runtime.HostRuntimeTraceEvent(
+                    "applyPatches:failure",
+                    runContext.getExecutionKey(),
+                    HostJobType.APPLY_PATCHES.name(),
+                    null,
+                    null,
+                    null
+                )
+            );
+            runContext.setFinalResult(ComputeResult.error(job.getBaseSnapshot(), runContext.getLastTrace()));
             return;
         }
         runContext.setCurrentSnapshot(applied.unwrap());
-        mailbox.enqueue(new ContinueComputeJob(intent));
+        runContext.getOptions().getTraceSink().onEvent(
+            new ai.manifesto.host.runtime.HostRuntimeTraceEvent(
+                "applyPatches:success",
+                runContext.getExecutionKey(),
+                HostJobType.APPLY_PATCHES.name(),
+                null,
+                null,
+                null
+            )
+        );
+        mailbox.enqueue(new ContinueComputeJob(job.getIntent()));
         emitContinueEnqueue(runContext);
     }
 

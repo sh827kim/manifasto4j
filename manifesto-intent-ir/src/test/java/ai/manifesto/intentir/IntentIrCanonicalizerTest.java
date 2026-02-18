@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -101,5 +102,30 @@ class IntentIrCanonicalizerTest {
         );
 
         assertThrows(IllegalArgumentException.class, () -> normalizer.normalize(invalid));
+    }
+
+    @Test
+    void semanticCanonicalJsonRemovesVolatileMetaButStrictKeepsIt() {
+        IntentIrCanonicalizer canonicalizer = new IntentIrCanonicalizer();
+        IntentIrDocument document = new IntentIrDocument(
+            "1.0.0",
+            "todo",
+            "create",
+            Map.of("title", "A"),
+            Map.of(
+                "requestId", "req-1",
+                "traceId", "trace-1",
+                "channel", "chat"
+            )
+        );
+
+        String strict = canonicalizer.toStrictCanonicalJson(document);
+        String semantic = canonicalizer.toSemanticCanonicalJson(document);
+
+        assertTrue(strict.contains("\"requestId\":\"req-1\""));
+        assertTrue(strict.contains("\"traceId\":\"trace-1\""));
+        assertTrue(semantic.contains("\"channel\":\"chat\""));
+        assertFalse(semantic.contains("\"requestId\""));
+        assertFalse(semantic.contains("\"traceId\""));
     }
 }

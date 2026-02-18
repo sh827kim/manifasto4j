@@ -1,6 +1,8 @@
 package ai.manifesto.codegen;
 
 import ai.manifesto.codegen.runtime.CodegenPluginOptions;
+import ai.manifesto.codegen.runtime.CodegenPluginContext;
+import ai.manifesto.codegen.runtime.CodegenPluginResult;
 
 import java.util.List;
 import java.util.Objects;
@@ -17,5 +19,14 @@ public interface CodegenPlugin extends CodeGenerator {
     default List<GeneratedArtifact> generate(CodegenRequest request, CodegenPluginOptions options) {
         Objects.requireNonNull(options, "options must not be null");
         return generate(request);
+    }
+
+    default CodegenPluginResult generateWithContext(
+        CodegenRequest request,
+        CodegenPluginOptions options,
+        CodegenPluginContext context
+    ) {
+        Objects.requireNonNull(context, "context must not be null");
+        return CodegenPluginResult.of(generate(request, options));
     }
 }

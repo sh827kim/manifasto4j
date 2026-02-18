@@ -2,9 +2,17 @@ package ai.manifesto.codegen;
 
 import ai.manifesto.codegen.runtime.*;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -49,6 +57,7 @@ public final class CodegenRunner implements CodeGenerator {
             : safeOptions.pluginOptions();
 
         List<CodegenDiagnostic> diagnostics = new ArrayList<>();
+        Map<String, Object> allArtifacts = new LinkedHashMap<>();
         diagnostics.addAll(validatePluginIds());
         diagnostics.addAll(effectivePluginOptions.validate());
 
@@ -66,17 +75,29 @@ public final class CodegenRunner implements CodeGenerator {
         ));
 
         VirtualFileSystem vfs = new VirtualFileSystem();
-        applyPluginOutput(request, safeOptions, effectivePluginOptions, diagnostics, header, vfs, plugin);
+        applyPluginOutput(
+            request,
+            safeOptions,
+            effectivePluginOptions,
+            diagnostics,
+            header,
+            vfs,
+            plugin,
+            schemaHash,
+            allArtifacts
+        );
 
         List<GeneratedArtifact> files = vfs.getFiles().stream()
             .map(file -> new GeneratedArtifact(file.path(), file.content()))
             .toList();
+        diagnostics.addAll(flushFilesIfRequested(files, diagnostics, safeOptions));
 
         return new CodegenRunResult(
             files,
             List.copyOf(diagnostics),
             schemaHash,
-            effectivePluginOptions
+            effectivePluginOptions,
+            Map.copyOf(allArtifacts)
         );
     }
 
@@ -93,6 +114,7 @@ public final class CodegenRunner implements CodeGenerator {
             : safeOptions.pluginOptions();
 
         List<CodegenDiagnostic> diagnostics = new ArrayList<>();
+        Map<String, Object> allArtifacts = new LinkedHashMap<>();
         diagnostics.addAll(validatePluginIds());
         diagnostics.addAll(effectivePluginOptions.validate());
 
@@ -119,18 +141,30 @@ public final class CodegenRunner implements CodeGenerator {
                 request.basePackage(),
                 target
             );
-            applyPluginOutput(perTargetRequest, safeOptions, effectivePluginOptions, diagnostics, header, vfs, plugin);
+            applyPluginOutput(
+                perTargetRequest,
+                safeOptions,
+                effectivePluginOptions,
+                diagnostics,
+                header,
+                vfs,
+                plugin,
+                schemaHash,
+                allArtifacts
+            );
         }
 
         List<GeneratedArtifact> files = vfs.getFiles().stream()
             .map(file -> new GeneratedArtifact(file.path(), file.content()))
             .toList();
+        diagnostics.addAll(flushFilesIfRequested(files, diagnostics, safeOptions));
 
         return new CodegenRunResult(
             files,
             List.copyOf(diagnostics),
             schemaHash,
-            effectivePluginOptions
+            effectivePluginOptions,
+            Map.copyOf(allArtifacts)
         );
     }
 
@@ -141,17 +175,26 @@ public final class CodegenRunner implements CodeGenerator {
         List<CodegenDiagnostic> diagnostics,
         String header,
         VirtualFileSystem vfs,
-        CodegenPlugin plugin
+        CodegenPlugin plugin,
+        String schemaHash,
+        Map<String, Object> allArtifacts
     ) {
-        List<GeneratedArtifact> generated;
+        CodegenPluginResult pluginResult;
         try {
-            generated = plugin.generate(request, effectivePluginOptions);
+            CodegenPluginContext pluginContext = new CodegenPluginContext(
+                safeOptions.sourceId(),
+                schemaHash,
+                safeOptions.outDir(),
+                Map.copyOf(allArtifacts)
+            );
+            pluginResult = plugin.generateWithContext(request, effectivePluginOptions, pluginContext);
         } catch (RuntimeException error) {
             diagnostics.add(CodegenDiagnostic.error(plugin.pluginId(), "Plugin threw: " + error.getMessage()));
             return;
         }
+        diagnostics.addAll(pluginResult.diagnostics());
 
-        for (GeneratedArtifact artifact : generated) {
+        for (GeneratedArtifact artifact : pluginResult.files()) {
             String relativePath = artifact.relativePath() == null ? "" : artifact.relativePath();
             PathValidationResult validation = PathSafety.validatePath(relativePath);
             if (!validation.valid()) {
@@ -169,6 +212,79 @@ public final class CodegenRunner implements CodeGenerator {
             CodegenDiagnostic collision = vfs.applyPatch(FilePatch.set(validation.normalized(), content), plugin.pluginId());
             if (collision != null) {
                 diagnostics.add(collision);
+            }
+        }
+
+        if (!pluginResult.artifacts().isEmpty()) {
+            allArtifacts.put(plugin.pluginId(), Map.copyOf(pluginResult.artifacts()));
+        }
+    }
+
+    private List<CodegenDiagnostic> flushFilesIfRequested(
+        List<GeneratedArtifact> files,
+        List<CodegenDiagnostic> currentDiagnostics,
+        CodegenExecutionOptions safeOptions
+    ) {
+        boolean hasErrors = currentDiagnostics.stream().anyMatch(d -> d.level() == CodegenDiagnosticLevel.ERROR);
+        if (hasErrors) {
+            return List.of();
+        }
+        if (!safeOptions.flushToDisk()) {
+            return List.of();
+        }
+        if (safeOptions.outDir() == null || safeOptions.outDir().isBlank()) {
+            return List.of(CodegenDiagnostic.error(
+                "runner",
+                "outDir is required when flushToDisk is enabled"
+            ));
+        }
+        try {
+            Path outDirPath = Paths.get(safeOptions.outDir());
+            writeOutputs(files, outDirPath, safeOptions.cleanOutDir());
+            return List.of();
+        } catch (InvalidPathException exception) {
+            return List.of(CodegenDiagnostic.error(
+                "runner",
+                "Invalid outDir path: " + exception.getMessage()
+            ));
+        } catch (IOException exception) {
+            return List.of(CodegenDiagnostic.error(
+                "runner",
+                "Failed to flush generated files: " + exception.getMessage()
+            ));
+        }
+    }
+
+    private void writeOutputs(
+        List<GeneratedArtifact> files,
+        Path outDirPath,
+        boolean cleanOutDir
+    ) throws IOException {
+        if (cleanOutDir && Files.exists(outDirPath)) {
+            deleteDirectoryRecursively(outDirPath);
+        }
+        Files.createDirectories(outDirPath);
+
+        for (GeneratedArtifact file : files) {
+            Path filePath = outDirPath.resolve(file.relativePath().replace("/", java.io.File.separator));
+            Path parent = filePath.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+            Files.writeString(filePath, file.content(), StandardCharsets.UTF_8);
+        }
+    }
+
+    private void deleteDirectoryRecursively(Path root) throws IOException {
+        if (!Files.exists(root)) {
+            return;
+        }
+        try (var pathStream = Files.walk(root)) {
+            List<Path> paths = pathStream
+                .sorted((left, right) -> right.compareTo(left))
+                .toList();
+            for (Path path : paths) {
+                Files.deleteIfExists(path);
             }
         }
     }

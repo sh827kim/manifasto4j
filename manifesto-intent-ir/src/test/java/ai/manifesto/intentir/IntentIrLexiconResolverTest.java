@@ -13,6 +13,30 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class IntentIrLexiconResolverTest {
 
     @Test
+    void helperFactoryCreatesDefaultLexiconAndResolver() {
+        IntentIrLexicon lexicon = IntentIrHelpers.lexicon(Map.of("todo", Set.of("add")));
+        IntentIrResolver resolver = IntentIrHelpers.resolver(Map.of("todo", Set.of("add")));
+
+        IntentIrLexiconCheckResult checkResult = lexicon.check(new IntentIrDocument(
+            "1.0.0",
+            "todo",
+            "add",
+            Map.of(),
+            Map.of()
+        ));
+        IntentIrResolveResult resolveResult = resolver.resolve(new IntentIrDocument(
+            "1.0.0",
+            "todo",
+            "unknown",
+            Map.of(),
+            Map.of("actionHint", "add")
+        ));
+
+        assertTrue(checkResult.valid());
+        assertEquals("add", resolveResult.document().action());
+    }
+
+    @Test
     void lexiconRejectsUnknownAction() {
         DefaultIntentIrLexicon lexicon = new DefaultIntentIrLexicon(
             Map.of("todo", Set.of("add", "remove"))

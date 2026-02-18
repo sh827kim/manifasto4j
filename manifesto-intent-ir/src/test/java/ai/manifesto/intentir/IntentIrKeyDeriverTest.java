@@ -76,4 +76,34 @@ class IntentIrKeyDeriverTest {
         assertTrue(distance >= 0 && distance <= 64);
         assertTrue(deriver.isNearDuplicate(leftKey, rightKey, 20));
     }
+
+    @Test
+    void simKeyUtilityApisStayConsistent() {
+        IntentIrKeyDeriver deriver = new IntentIrKeyDeriver();
+        IntentIrDocument left = new IntentIrDocument(
+            "1.0.0",
+            "todo",
+            "add",
+            Map.of("text", "buy milk today"),
+            Map.of("channel", "chat")
+        );
+        IntentIrDocument right = new IntentIrDocument(
+            "1.0.0",
+            "todo",
+            "add",
+            Map.of("text", "buy bread today"),
+            Map.of("channel", "chat")
+        );
+
+        long leftFingerprint = deriver.deriveSimFingerprint(left);
+        long rightFingerprint = deriver.deriveSimFingerprint(right);
+        String leftHex = deriver.formatSimKey(leftFingerprint);
+        String rightHex = deriver.formatSimKey(rightFingerprint);
+
+        assertEquals(leftFingerprint, deriver.parseSimKey(leftHex));
+        assertEquals(rightFingerprint, deriver.parseSimKey(rightHex));
+        assertEquals(deriver.simDistance(leftHex, rightHex), deriver.simDistance(leftFingerprint, rightFingerprint));
+        assertEquals(deriver.simDistance(left, right), deriver.simDistance(leftFingerprint, rightFingerprint));
+        assertEquals(64, deriver.maxSimDistanceBits());
+    }
 }

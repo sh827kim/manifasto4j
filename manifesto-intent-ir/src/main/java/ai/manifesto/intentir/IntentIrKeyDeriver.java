@@ -4,26 +4,16 @@ import ai.manifesto.core.utils.HashUtils;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * KR: Intent IR 문서에서 strict/semantic/sim 키를 파생하는 유틸리티입니다.
  * EN: Utility for deriving strict/semantic/sim keys from an Intent IR document.
  */
 public final class IntentIrKeyDeriver {
-    private static final Set<String> VOLATILE_META_KEYS = Set.of(
-        "requestId",
-        "traceId",
-        "timestamp",
-        "sessionId",
-        "sourceEventId"
-    );
-
     private final IntentIrCanonicalizer canonicalizer;
 
     public IntentIrKeyDeriver() {
@@ -35,59 +25,81 @@ public final class IntentIrKeyDeriver {
     }
 
     public String deriveStrictKey(IntentIrDocument source) {
-        IntentIrDocument normalized = normalizeForKey(source);
-        String canonical = canonicalizer.toCanonicalJson(normalized);
+        String canonical = canonicalizer.toStrictCanonicalJson(source);
         return HashUtils.sha256("strict:" + canonical);
     }
 
     public String deriveSemanticKey(IntentIrDocument source) {
-        IntentIrDocument semantic = toSemanticProjection(normalizeForKey(source));
-        String canonical = canonicalizer.toCanonicalJson(semantic);
+        String canonical = canonicalizer.toSemanticCanonicalJson(source);
         return HashUtils.sha256("semantic:" + canonical);
     }
 
     public String deriveSimKey(IntentIrDocument source) {
-        String content = buildSimContent(normalizeForKey(source));
-        long fingerprint = simHash64(content);
-        return Long.toUnsignedString(fingerprint, 16);
+        return Long.toUnsignedString(deriveSimFingerprint(source), 16);
+    }
+
+    public long deriveSimFingerprint(IntentIrDocument source) {
+        String content = buildSimContent(canonicalizer.canonicalizeSemantic(source));
+        return simHash64(content);
     }
 
     public int simDistance(String leftSimKeyHex, String rightSimKeyHex) {
-        long left = Long.parseUnsignedLong(leftSimKeyHex, 16);
-        long right = Long.parseUnsignedLong(rightSimKeyHex, 16);
-        return Long.bitCount(left ^ right);
+        long left = parseSimKey(leftSimKeyHex);
+        long right = parseSimKey(rightSimKeyHex);
+        return simDistance(left, right);
+    }
+
+    public int simDistance(long leftFingerprint, long rightFingerprint) {
+        return Long.bitCount(leftFingerprint ^ rightFingerprint);
+    }
+
+    public int simDistance(IntentIrDocument left, IntentIrDocument right) {
+        return simDistance(deriveSimFingerprint(left), deriveSimFingerprint(right));
+    }
+
+    public boolean isNearDuplicate(long leftFingerprint, long rightFingerprint, int maxDistance) {
+        return simDistance(leftFingerprint, rightFingerprint) <= maxDistance;
+    }
+
+    public boolean isNearDuplicate(IntentIrDocument left, IntentIrDocument right, int maxDistance) {
+        return simDistance(left, right) <= maxDistance;
+    }
+
+    public long parseSimKey(String simKeyHex) {
+        Objects.requireNonNull(simKeyHex, "simKeyHex must not be null");
+        String normalized = simKeyHex.trim();
+        if (normalized.isEmpty()) {
+            throw new IllegalArgumentException("simKeyHex must not be blank");
+        }
+        return Long.parseUnsignedLong(normalized, 16);
+    }
+
+    public String formatSimKey(long fingerprint) {
+        return Long.toUnsignedString(fingerprint, 16);
+    }
+
+    public int simDistanceHex(String leftSimKeyHex, String rightSimKeyHex) {
+        return simDistance(leftSimKeyHex, rightSimKeyHex);
+    }
+
+    public int maxSimDistanceBits() {
+        return 64;
+    }
+
+    public boolean isNearDuplicateHex(String leftSimKeyHex, String rightSimKeyHex, int maxDistance) {
+        return simDistance(leftSimKeyHex, rightSimKeyHex) <= maxDistance;
     }
 
     public boolean isNearDuplicate(String leftSimKeyHex, String rightSimKeyHex, int maxDistance) {
         return simDistance(leftSimKeyHex, rightSimKeyHex) <= maxDistance;
     }
 
-    private IntentIrDocument toSemanticProjection(IntentIrDocument source) {
-        Objects.requireNonNull(source, "source must not be null");
-        IntentIrDocument normalized = source;
-
-        Map<String, Object> filteredMeta = new LinkedHashMap<>();
-        for (Map.Entry<String, Object> entry : normalized.meta().entrySet()) {
-            if (!VOLATILE_META_KEYS.contains(entry.getKey())) {
-                filteredMeta.put(entry.getKey(), entry.getValue());
-            }
-        }
-        return new IntentIrDocument(
-            normalized.schemaVersion(),
-            normalized.domain(),
-            normalized.action(),
-            normalized.input(),
-            filteredMeta
-        );
-    }
-
     private String buildSimContent(IntentIrDocument source) {
-        IntentIrDocument normalized = source;
         List<String> tokens = new ArrayList<>();
-        tokens.add(normalized.domain().toLowerCase(Locale.ROOT));
-        tokens.add(normalized.action().toLowerCase(Locale.ROOT));
-        collectTokens(normalized.input(), tokens);
-        collectTokens(normalized.meta(), tokens);
+        tokens.add(source.domain().toLowerCase(Locale.ROOT));
+        tokens.add(source.action().toLowerCase(Locale.ROOT));
+        collectTokens(source.input(), tokens);
+        collectTokens(source.meta(), tokens);
         tokens.sort(Comparator.naturalOrder());
         return String.join(" ", tokens);
     }
@@ -160,10 +172,5 @@ public final class IntentIrKeyDeriver {
             hash *= 0x100000001b3L;
         }
         return hash;
-    }
-
-    private IntentIrDocument normalizeForKey(IntentIrDocument source) {
-        Objects.requireNonNull(source, "source must not be null");
-        return new DefaultIntentIrNormalizer().normalize(source);
     }
 }

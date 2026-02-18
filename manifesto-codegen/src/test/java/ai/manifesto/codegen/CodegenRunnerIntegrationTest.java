@@ -2,9 +2,13 @@ package ai.manifesto.codegen;
 
 import ai.manifesto.codegen.runtime.*;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -212,5 +216,133 @@ class CodegenRunnerIntegrationTest {
         assertTrue(result.files().stream().anyMatch(f -> f.relativePath().endsWith("StateDto.java")));
         assertTrue(result.files().stream().anyMatch(f -> f.relativePath().endsWith("TodoClient.java")));
         assertTrue(result.files().stream().anyMatch(f -> f.relativePath().endsWith("CreateTaskInput.java")));
+    }
+
+    @Test
+    void generateCompositeAccumulatesPluginArtifacts() {
+        AtomicBoolean secondSawFirstArtifacts = new AtomicBoolean(false);
+        CodegenPlugin first = new CodegenPlugin() {
+            @Override
+            public String pluginId() {
+                return "first-plugin";
+            }
+
+            @Override
+            public boolean supports(CodegenTarget target) {
+                return "first-target".equals(target.name());
+            }
+
+            @Override
+            public List<GeneratedArtifact> generate(CodegenRequest request) {
+                return List.of();
+            }
+
+            @Override
+            public CodegenPluginResult generateWithContext(
+                CodegenRequest request,
+                CodegenPluginOptions options,
+                CodegenPluginContext context
+            ) {
+                assertTrue(context.artifacts().isEmpty());
+                return new CodegenPluginResult(
+                    List.of(new GeneratedArtifact("gen/First.txt", "first")),
+                    Map.of("value", 42),
+                    List.of()
+                );
+            }
+        };
+        CodegenPlugin second = new CodegenPlugin() {
+            @Override
+            public String pluginId() {
+                return "second-plugin";
+            }
+
+            @Override
+            public boolean supports(CodegenTarget target) {
+                return "second-target".equals(target.name());
+            }
+
+            @Override
+            public List<GeneratedArtifact> generate(CodegenRequest request) {
+                return List.of();
+            }
+
+            @Override
+            public CodegenPluginResult generateWithContext(
+                CodegenRequest request,
+                CodegenPluginOptions options,
+                CodegenPluginContext context
+            ) {
+                Object firstArtifacts = context.artifacts().get("first-plugin");
+                secondSawFirstArtifacts.set(firstArtifacts instanceof Map<?, ?> map && map.get("value").equals(42));
+                return new CodegenPluginResult(
+                    List.of(new GeneratedArtifact("gen/Second.txt", "second")),
+                    Map.of("ok", true),
+                    List.of()
+                );
+            }
+        };
+        CodegenRunner runner = new CodegenRunner(
+            new CodegenPluginRegistry().register(first).register(second)
+        );
+        CodegenRequest request = new CodegenRequest(
+            Map.of("state", Map.of("fields", Map.of("id", Map.of("type", "string")))),
+            "ai.manifesto.generated",
+            new CodegenTarget("first-target", "1.0")
+        );
+
+        CodegenRunResult result = runner.generateComposite(
+            request,
+            CodegenExecutionOptions.defaults(),
+            List.of(
+                new CodegenTarget("first-target", "1.0"),
+                new CodegenTarget("second-target", "1.0")
+            )
+        );
+
+        assertFalse(result.hasErrors());
+        assertTrue(secondSawFirstArtifacts.get());
+        assertEquals(2, result.pluginArtifacts().size());
+        assertEquals(42, ((Map<?, ?>) result.pluginArtifacts().get("first-plugin")).get("value"));
+    }
+
+    @Test
+    void generateDetailedFlushesFilesToOutDirAndCleansExistingFiles(@TempDir Path tempDir) throws Exception {
+        Path stale = tempDir.resolve("stale.txt");
+        Files.writeString(stale, "stale");
+
+        CodegenPlugin plugin = new CodegenPlugin() {
+            @Override
+            public String pluginId() {
+                return "flush-plugin";
+            }
+
+            @Override
+            public boolean supports(CodegenTarget target) {
+                return "flush-target".equals(target.name());
+            }
+
+            @Override
+            public List<GeneratedArtifact> generate(CodegenRequest request) {
+                return List.of(new GeneratedArtifact("generated/Output.txt", "hello"));
+            }
+        };
+
+        CodegenRunner runner = new CodegenRunner(new CodegenPluginRegistry().register(plugin));
+        CodegenRequest request = new CodegenRequest(
+            Map.of("state", Map.of("fields", Map.of("name", Map.of("type", "string")))),
+            "ai.manifesto.generated",
+            new CodegenTarget("flush-target", "1.0")
+        );
+        CodegenExecutionOptions options = CodegenExecutionOptions.defaults()
+            .withOutputDirectory(tempDir.toString(), true);
+
+        CodegenRunResult result = runner.generateDetailed(request, options);
+
+        assertFalse(result.hasErrors());
+        assertFalse(Files.exists(stale));
+        Path written = tempDir.resolve("generated").resolve("Output.txt");
+        assertTrue(Files.exists(written));
+        assertTrue(Files.readString(written).contains("hello"));
     }
 }
