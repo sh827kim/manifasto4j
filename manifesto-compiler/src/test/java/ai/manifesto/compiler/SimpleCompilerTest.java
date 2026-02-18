@@ -78,4 +78,19 @@ class SimpleCompilerTest {
         assertNotNull(payload.getFields().get("items").getItems());
         assertEquals("string", payload.getFields().get("items").getItems().getType());
     }
+
+    @Test
+    @DisplayName("CompilerFacade 기본 parse/tokenize API 노출")
+    void testFacadeParseAndTokenizeApis() {
+        String mel = "domain Todo { state { count: number } }";
+        SimpleCompiler compiler = new SimpleCompiler();
+
+        var lexResult = compiler.tokenize(mel);
+        assertFalse(lexResult.tokens().isEmpty());
+        assertEquals("DOMAIN", lexResult.tokens().get(0).kind().name());
+
+        var parseResult = compiler.parseSource(mel);
+        assertNotNull(parseResult.program());
+        assertEquals("Todo", parseResult.program().domain().name());
+    }
 }

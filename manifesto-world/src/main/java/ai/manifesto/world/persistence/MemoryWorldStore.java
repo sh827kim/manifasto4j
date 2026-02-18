@@ -43,7 +43,10 @@ public final class MemoryWorldStore implements ObservableWorldStore {
     @Override
     public StoreResult<World> saveWorld(World world) {
         if (worlds.containsKey(world.getWorldId().value())) {
-            return StoreResult.failure("World already exists: " + world.getWorldId().value());
+            return StoreResult.failure(
+                WorldErrorCode.WORLD_ALREADY_EXISTS,
+                "World already exists: " + world.getWorldId().value()
+            );
         }
         worlds.put(world.getWorldId().value(), world);
         emit(StoreEventType.WORLD_SAVED, world);
@@ -73,10 +76,10 @@ public final class MemoryWorldStore implements ObservableWorldStore {
     @Override
     public StoreResult<Void> setGenesis(WorldId worldId) {
         if (genesisId != null) {
-            return StoreResult.failure("Genesis already set");
+            return StoreResult.failure(WorldErrorCode.GENESIS_ALREADY_SET, "Genesis already set");
         }
         if (!worlds.containsKey(worldId.value())) {
-            return StoreResult.failure("World does not exist: " + worldId.value());
+            return StoreResult.failure(WorldErrorCode.WORLD_NOT_FOUND, "World does not exist: " + worldId.value());
         }
         genesisId = worldId;
         emit(StoreEventType.GENESIS_SET, worldId);
@@ -86,7 +89,7 @@ public final class MemoryWorldStore implements ObservableWorldStore {
     @Override
     public StoreResult<Void> saveSnapshot(WorldId worldId, Snapshot snapshot) {
         if (!worlds.containsKey(worldId.value())) {
-            return StoreResult.failure("World does not exist: " + worldId.value());
+            return StoreResult.failure(WorldErrorCode.WORLD_NOT_FOUND, "World does not exist: " + worldId.value());
         }
         snapshots.put(worldId.value(), SnapshotStoreUtils.canonicalizeForStorage(snapshot));
         return StoreResult.success();
@@ -101,13 +104,19 @@ public final class MemoryWorldStore implements ObservableWorldStore {
     public StoreResult<WorldEdge> saveEdge(WorldEdge edge) {
         String edgeId = edge.getEdgeId().value();
         if (edges.containsKey(edgeId)) {
-            return StoreResult.failure("Edge already exists: " + edgeId);
+            return StoreResult.failure(WorldErrorCode.EDGE_ALREADY_EXISTS, "Edge already exists: " + edgeId);
         }
         if (!worlds.containsKey(edge.getFromWorld().value())) {
-            return StoreResult.failure("Source world does not exist: " + edge.getFromWorld().value());
+            return StoreResult.failure(
+                WorldErrorCode.EDGE_SOURCE_WORLD_NOT_FOUND,
+                "Source world does not exist: " + edge.getFromWorld().value()
+            );
         }
         if (!worlds.containsKey(edge.getToWorld().value())) {
-            return StoreResult.failure("Target world does not exist: " + edge.getToWorld().value());
+            return StoreResult.failure(
+                WorldErrorCode.EDGE_TARGET_WORLD_NOT_FOUND,
+                "Target world does not exist: " + edge.getToWorld().value()
+            );
         }
         edges.put(edgeId, edge);
         emit(StoreEventType.EDGE_SAVED, edge);
@@ -148,7 +157,10 @@ public final class MemoryWorldStore implements ObservableWorldStore {
     @Override
     public StoreResult<Proposal> saveProposal(Proposal proposal) {
         if (proposals.containsKey(proposal.getProposalId().value())) {
-            return StoreResult.failure("Proposal already exists: " + proposal.getProposalId().value());
+            return StoreResult.failure(
+                WorldErrorCode.PROPOSAL_ALREADY_EXISTS,
+                "Proposal already exists: " + proposal.getProposalId().value()
+            );
         }
         proposals.put(proposal.getProposalId().value(), proposal);
         emit(StoreEventType.PROPOSAL_SAVED, proposal);
@@ -159,7 +171,7 @@ public final class MemoryWorldStore implements ObservableWorldStore {
     public StoreResult<Proposal> updateProposal(ProposalId proposalId, TransitionUpdates updates, ProposalStatus nextStatus) {
         Proposal proposal = proposals.get(proposalId.value());
         if (proposal == null) {
-            return StoreResult.failure("Proposal not found: " + proposalId.value());
+            return StoreResult.failure(WorldErrorCode.PROPOSAL_NOT_FOUND, "Proposal not found: " + proposalId.value());
         }
 
         TransitionUpdates resolved = updates != null ? updates : TransitionUpdates.empty();
@@ -179,7 +191,7 @@ public final class MemoryWorldStore implements ObservableWorldStore {
     @Override
     public StoreResult<Void> deleteProposal(ProposalId proposalId) {
         if (proposals.remove(proposalId.value()) == null) {
-            return StoreResult.failure("Proposal not found: " + proposalId.value());
+            return StoreResult.failure(WorldErrorCode.PROPOSAL_NOT_FOUND, "Proposal not found: " + proposalId.value());
         }
         emit(StoreEventType.PROPOSAL_DELETED, proposalId);
         return StoreResult.success();
@@ -216,12 +228,15 @@ public final class MemoryWorldStore implements ObservableWorldStore {
         Objects.requireNonNull(decisionRecord, "decisionRecord is required");
         String id = decisionRecord.getDecisionId().value();
         if (decisions.containsKey(id)) {
-            return StoreResult.failure("Decision already exists: " + id);
+            return StoreResult.failure(WorldErrorCode.DECISION_ALREADY_EXISTS, "Decision already exists: " + id);
         }
 
         String proposalId = decisionRecord.getProposalId().value();
         if (decisionByProposal.containsKey(proposalId)) {
-            return StoreResult.failure("Decision already exists for proposal: " + proposalId);
+            return StoreResult.failure(
+                WorldErrorCode.DECISION_ALREADY_EXISTS_FOR_PROPOSAL,
+                "Decision already exists for proposal: " + proposalId
+            );
         }
 
         decisions.put(id, decisionRecord);
@@ -262,7 +277,7 @@ public final class MemoryWorldStore implements ObservableWorldStore {
     @Override
     public StoreResult<Void> removeBinding(String actorId) {
         if (bindings.remove(actorId) == null) {
-            return StoreResult.failure("Binding not found: " + actorId);
+            return StoreResult.failure(WorldErrorCode.BINDING_NOT_FOUND, "Binding not found: " + actorId);
         }
         emit(StoreEventType.BINDING_REMOVED, actorId);
         return StoreResult.success();

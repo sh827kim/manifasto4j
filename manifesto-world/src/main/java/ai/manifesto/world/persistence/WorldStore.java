@@ -23,6 +23,9 @@ import java.util.stream.Collectors;
  */
 public interface WorldStore {
     StoreResult<World> saveWorld(World world);
+    default StoreBatchResult saveWorldBatch(List<World> worlds) {
+        return StoreBatching.apply(worlds, this::saveWorld);
+    }
     World getWorld(WorldId worldId);
     boolean hasWorld(WorldId worldId);
     List<World> listWorlds();
@@ -47,6 +50,9 @@ public interface WorldStore {
     Snapshot getSnapshot(WorldId worldId);
 
     StoreResult<WorldEdge> saveEdge(WorldEdge edge);
+    default StoreBatchResult saveEdgeBatch(List<WorldEdge> worldEdges) {
+        return StoreBatching.apply(worldEdges, this::saveEdge);
+    }
     WorldEdge getEdge(EdgeId edgeId);
     WorldEdge getParentEdge(WorldId worldId);
     List<WorldEdge> getChildEdges(WorldId worldId);
@@ -64,6 +70,9 @@ public interface WorldStore {
     }
 
     StoreResult<Proposal> saveProposal(Proposal proposal);
+    default StoreBatchResult saveProposalBatch(List<Proposal> proposals) {
+        return StoreBatching.apply(proposals, this::saveProposal);
+    }
     StoreResult<Proposal> updateProposal(ProposalId proposalId, TransitionUpdates updates, ProposalStatus nextStatus);
     StoreResult<Void> deleteProposal(ProposalId proposalId);
     Proposal getProposal(ProposalId proposalId);

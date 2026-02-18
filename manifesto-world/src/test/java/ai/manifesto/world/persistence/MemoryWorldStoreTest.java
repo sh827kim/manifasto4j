@@ -316,4 +316,32 @@ class MemoryWorldStoreTest {
         assertEquals(1, stats.worlds());
         assertEquals(1, stats.bindings());
     }
+
+    @Test
+    void storeResultIncludesWorldErrorCodeOnFailure() {
+        World world = new World(WorldId.of("w-dup"), "schema", "s", 1L, null, null);
+        assertTrue(store.saveWorld(world).isSuccess());
+
+        StoreResult<World> duplicate = store.saveWorld(world);
+        assertFalse(duplicate.isSuccess());
+        assertEquals(WorldErrorCode.WORLD_ALREADY_EXISTS, duplicate.getErrorCode());
+        assertTrue(duplicate.getError().contains("World already exists"));
+    }
+
+    @Test
+    void worldBatchUtilityReportsProcessedAndFailedCounts() {
+        World w1 = new World(WorldId.of("w1"), "schema", "s1", 1L, null, null);
+        World w2 = new World(WorldId.of("w2"), "schema", "s2", 2L, null, null);
+
+        StoreBatchResult firstBatch = store.saveWorldBatch(java.util.List.of(w1, w2));
+        assertTrue(firstBatch.success());
+        assertEquals(2, firstBatch.processed());
+        assertEquals(0, firstBatch.failed());
+
+        StoreBatchResult secondBatch = store.saveWorldBatch(java.util.List.of(w1, w2));
+        assertFalse(secondBatch.success());
+        assertEquals(0, secondBatch.processed());
+        assertEquals(2, secondBatch.failed());
+        assertTrue(secondBatch.errors().stream().allMatch(message -> message.startsWith("WORLD_ALREADY_EXISTS")));
+    }
 }

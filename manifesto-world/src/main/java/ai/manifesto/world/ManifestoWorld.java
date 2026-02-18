@@ -557,7 +557,9 @@ public final class ManifestoWorld {
 
     private static <T> void ensureSuccess(StoreResult<T> result) {
         if (!result.isSuccess()) {
-            throw new IllegalStateException(result.getError() != null ? result.getError() : "Store operation failed");
+            String code = result.getErrorCode() == null ? "INTERNAL_ERROR" : result.getErrorCode().name();
+            String message = result.getError() != null ? result.getError() : "Store operation failed";
+            throw new IllegalStateException(code + ": " + message);
         }
     }
 

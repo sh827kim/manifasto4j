@@ -28,3 +28,9 @@
   - `ObservableWorldStore` + store event 타입/리스너 계약 추가
   - `StoreStats` 계약 및 `MemoryWorldStore` 통계 구현 추가
   - persistence query/event/stats 회귀 테스트 보강
+
+- 구현 완료 (2026-02-18, TASK-F2):
+  - `WorldErrorCode` 기반 persistence 오류 taxonomy 정비
+  - `StoreResult.errorCode` 확장 및 `MemoryWorldStore` 실패 코드 매핑
+  - `StoreBatchResult`/`StoreBatching` 도입 + `WorldStore` default batch API 추가
+  - batch/result 오류코드 회귀 테스트 보강

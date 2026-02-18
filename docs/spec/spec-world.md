@@ -40,3 +40,13 @@ World defines governance: proposals, authority checks, decisions, and lineage DA
 - stats 계약 확장:
   - `StoreStats` 추가
   - `WorldStore.getStats()` 및 `MemoryWorldStore` count 기반 구현 제공
+
+## 5. Persistence Contract Tightening (Cycle 10 / TASK-F2)
+
+- persistence 결과 타입에 오류 taxonomy를 명시한다.
+  - `WorldErrorCode` 도입
+  - `StoreResult`에 `errorCode` 포함
+- 배치 계약/유틸리티를 도입한다.
+  - `StoreBatchResult`, `StoreBatching`
+  - `WorldStore` default batch API (`saveWorldBatch`, `saveEdgeBatch`, `saveProposalBatch`)
+- `MemoryWorldStore`는 실패 케이스에 표준 오류 코드를 반환한다.

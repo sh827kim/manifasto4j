@@ -1,6 +1,8 @@
 package ai.manifesto.compiler;
 
 import ai.manifesto.core.core.ValidationUtils;
+import ai.manifesto.compiler.lexer.Lexer;
+import ai.manifesto.compiler.parser.ParseResult;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -12,7 +14,7 @@ import java.util.Objects;
 
 /**
  * KR: CompilerCli는 compile/format/check 서브커맨드를 제공하는 compiler 실행 진입점입니다.
- * EN: CompilerCli is the compiler execution entrypoint exposing compile/format/check subcommands.
+ * EN: CompilerCli is the compiler execution entrypoint exposing compile/format/check/parse/tokens subcommands.
  */
 public final class CompilerCli {
     private CompilerCli() {
@@ -40,6 +42,8 @@ public final class CompilerCli {
                 case "compile" -> runCompile(optionArgs, out, err);
                 case "format" -> runFormat(optionArgs, out, err);
                 case "check" -> runCheck(optionArgs, out, err);
+                case "parse" -> runParse(optionArgs, out, err);
+                case "tokens" -> runTokens(optionArgs, out, err);
                 default -> {
                     err.println("Unknown command: " + command);
                     err.println(usage());
@@ -91,6 +95,42 @@ public final class CompilerCli {
         return 0;
     }
 
+    private static int runParse(String[] optionArgs, PrintStream out, PrintStream err) {
+        CompilerCliSupport.CliOptions options = CompilerCliSupport.parseArgs(optionArgs);
+        String mel = loadMel(options);
+        ParseResult result = CompilerCliSupport.parseMel(mel);
+        if (result.diagnostics().stream().anyMatch(d -> d.severity() == ai.manifesto.compiler.diagnostics.DiagnosticSeverity.ERROR)) {
+            String message = result.diagnostics().stream()
+                .filter(d -> d.severity() == ai.manifesto.compiler.diagnostics.DiagnosticSeverity.ERROR)
+                .map(d -> d.message())
+                .findFirst()
+                .orElse("Unknown parse error");
+            err.println("Parse failed: " + message);
+            return 1;
+        }
+        String json = CompilerCliSupport.renderParseResultJson(result);
+        writeOutput(options.outFile(), json, out);
+        return 0;
+    }
+
+    private static int runTokens(String[] optionArgs, PrintStream out, PrintStream err) {
+        CompilerCliSupport.CliOptions options = CompilerCliSupport.parseArgs(optionArgs);
+        String mel = loadMel(options);
+        Lexer.LexResult result = CompilerCliSupport.tokenizeMel(mel);
+        if (result.diagnostics().stream().anyMatch(d -> d.severity() == ai.manifesto.compiler.diagnostics.DiagnosticSeverity.ERROR)) {
+            String message = result.diagnostics().stream()
+                .filter(d -> d.severity() == ai.manifesto.compiler.diagnostics.DiagnosticSeverity.ERROR)
+                .map(d -> d.message())
+                .findFirst()
+                .orElse("Unknown tokenize error");
+            err.println("Tokenize failed: " + message);
+            return 1;
+        }
+        String json = CompilerCliSupport.renderTokenResultJson(result);
+        writeOutput(options.outFile(), json, out);
+        return 0;
+    }
+
     private static String loadMel(CompilerCliSupport.CliOptions options) {
         MelSourceLoader loader = new MelSourceLoader();
         if (options.sourceFile() != null) {
@@ -117,7 +157,7 @@ public final class CompilerCli {
     }
 
     private static String usage() {
-        return "Usage: compiler-cli <compile|format|check> [--source=path | --classpath=resource] "
+        return "Usage: compiler-cli <compile|format|check|parse|tokens> [--source=path | --classpath=resource] "
             + "[--out=path] [--format-only] [--indent=  ] [--newline=lf|crlf]";
     }
 }

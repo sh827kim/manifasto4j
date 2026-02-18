@@ -32,3 +32,6 @@
 - [x] TS vector 재도입 복구 스크립트(`scripts/recover-golden-sync.sh`) 추가
 - [x] compile/format/check 서브커맨드 CLI entrypoint(`CompilerCli`) 추가
 - [x] CI strict lane 실행 경로 문서화(`CHECK_GOLDEN_SYNC_REQUIRE_SOURCE=1 ./gradlew checkGoldenSync`)
+- [x] compiler facade parse/tokens API 노출(`tokenize`, `parseSource`)
+- [x] CLI subcommand 확장(`parse`, `tokens`)
+- [x] parse/tokens 회귀 테스트 및 문서 반영

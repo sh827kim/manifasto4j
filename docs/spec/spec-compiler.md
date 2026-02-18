@@ -65,3 +65,13 @@ Compiler specifies lowering MEL into core IR and diagnostics.
   - `CHECK_GOLDEN_SYNC_REQUIRE_SOURCE=1 ./gradlew checkGoldenSync`
 - TS core 경로를 명시할 때:
   - `TS_CORE_REPO=/path/to/manifasto-ts-core CHECK_GOLDEN_SYNC_REQUIRE_SOURCE=1 ./gradlew checkGoldenSync`
+
+## 9. Parse/Tokens Surface Extension (Cycle 10 / TASK-F1)
+
+- `CompilerFacade`는 compile 외에 parse/tokens 보조 API를 노출한다.
+  - `tokenize(melText)` → lexer token stream + diagnostics
+  - `parseSource(melText)` → parser AST + diagnostics
+- `CompilerCli`는 `parse`, `tokens` 서브커맨드를 지원한다.
+  - `parse`: parse summary JSON 출력(`ok`, `diagnostics`, `program` summary)
+  - `tokens`: token stream JSON 출력(`ok`, `diagnostics`, `tokens`)
+- 공통 입력 옵션은 `compile/format/check`와 동일하게 유지한다.

@@ -40,4 +40,19 @@ class CompilerCliSupportTest {
         assertTrue(rendered.contains("\r\n"));
         assertTrue(rendered.contains("    state"));
     }
+
+    @Test
+    void parseAndTokenHelpersReturnJsonPayloads() {
+        String mel = "domain Todo { state { count: number } }";
+
+        var parseResult = CompilerCliSupport.parseMel(mel);
+        String parseJson = CompilerCliSupport.renderParseResultJson(parseResult);
+        assertTrue(parseJson.contains("\"ok\":true"));
+        assertTrue(parseJson.contains("\"domain\":\"Todo\""));
+
+        var tokenResult = CompilerCliSupport.tokenizeMel(mel);
+        String tokenJson = CompilerCliSupport.renderTokenResultJson(tokenResult);
+        assertTrue(tokenJson.contains("\"kind\":\"DOMAIN\""));
+        assertTrue(tokenJson.contains("\"kind\":\"EOF\""));
+    }
 }
