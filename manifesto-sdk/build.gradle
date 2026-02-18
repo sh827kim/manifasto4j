@@ -3,5 +3,8 @@ plugins {
 }
 
 dependencies {
-    api project(':manifesto-runtime')
+    implementation project(':manifesto-runtime')
+    api project(':manifesto-core')
+    api project(':manifesto-host')
+    api project(':manifesto-world')
 }

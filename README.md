@@ -18,11 +18,11 @@ Manifesto is a deterministic domain-runtime stack for stateful apps:
 Reference docs:
 https://docs.manifesto-ai.dev/
 
-## Current Status (2026-02-14)
+## Current Status (2026-02-18)
 - TS baseline packages: `app/codegen/compiler/core/host/intent-ir/translator/world`
 - TS latest reviewed commit: `3b40070`
 - TS diff `754d860..3b40070` is docs/ADR/SPEC updates (no package source behavior change)
-- Java active modules: `core/host/app/compiler/world`
+- Java active modules: `core/host/runtime/sdk/compiler/world`
 - Java planned-but-implemented baseline modules: `intent-ir/translator/codegen`
 
 ## Current Priority
@@ -45,6 +45,7 @@ https://docs.manifesto-ai.dev/
 - `docs/INDEX.md` - spec/fdr index
 - `docs/ko/book/index.md` - Korean learning guide for Java developers
 - `docs/spec/spec-*.md`, `docs/fdr/fdr-*.md` - package-level references
+- `docs/migration/migrate-manifesto-app-to-sdk-runtime.md` - migration guide from retired `manifesto-app`
 
 ## Planning/Local Notes
 - Planning docs, gap analysis, and local-environment notes are maintained in `local-only-docs/` (not tracked by Git).

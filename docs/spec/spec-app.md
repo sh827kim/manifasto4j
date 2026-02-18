@@ -107,4 +107,4 @@ TS SDK/Runtime 공개 계약(`packages/sdk/src/index.ts`, `packages/runtime/src/
 ## 9. Immediate Gaps (P0)
 
 - `getHeads/getLatestHead`는 노출되었고 기본 정렬 동작을 제공하지만, TS의 world-query 보장 범위와의 세부 의미동치 검증은 추가 필요
-- `manifesto-sdk`가 runtime 타입(`ai.manifesto.app.*`)을 직접 재노출하는 구간은 후속 단계에서 sdk 전용 타입으로 정리 필요
+- sdk 전용 API(`ai.manifesto.sdk.*`)에서 고급 world/session 제어 surface를 얼마나 노출할지 정책 정리가 추가 필요

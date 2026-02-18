@@ -15,7 +15,7 @@
 
 ```text
 ai.manifesto.sdk
-ai.manifesto.app
+ai.manifesto.runtime
 ```
 
 ## 패키지별 역할
@@ -23,7 +23,7 @@ ai.manifesto.app
 | 패키지 | 역할 |
 | --- | --- |
 | `ai.manifesto.sdk` | canonical app 생성 진입점, sdk config |
-| `ai.manifesto.app` | runtime 구현/계약, 옵션, 예외, hook, session, memory/world store |
+| `ai.manifesto.runtime` | runtime 구현/계약, 옵션, 예외, hook, session, memory/world store |
 
 ## 주요 핵심 클래스
 
@@ -31,14 +31,14 @@ ai.manifesto.app
 | --- | --- |
 | `ai.manifesto.sdk.AppFactory` | sdk canonical 생성 API |
 | `ai.manifesto.sdk.AppConfig` | sdk 구성 계약 |
-| `App` | 앱 공개 인터페이스 |
-| `DefaultApp` | 기본 런타임 구현 |
-| `AppFactory` | app 조립 팩토리 |
-| `ActionHandle` | action 비동기 결과/phase 추적 핸들 |
-| `AppSession`/`DefaultAppSession` | session 관리 |
-| `ActOptions`/`SubscribeOptions`/`SessionOptions` | 실행/구독/세션 옵션 |
-| `AppHook`/`HookContext` | 이벤트 훅 확장 계약 |
-| `AppWorldStore`/`AppSnapshotStore` | 영속 경계 계약 |
+| `ai.manifesto.sdk.App` | SDK 앱 공개 인터페이스 |
+| `ai.manifesto.runtime.DefaultApp` | 기본 런타임 구현 |
+| `ai.manifesto.runtime.AppFactory` | runtime 조립 팩토리 |
+| `ai.manifesto.sdk.ActionHandle` | SDK 액션 비동기 결과 핸들 |
+| `ai.manifesto.runtime.AppSession`/`DefaultAppSession` | session 관리 |
+| `ai.manifesto.runtime.ActOptions`/`SubscribeOptions`/`SessionOptions` | 실행/구독/세션 옵션 |
+| `ai.manifesto.runtime.AppHook`/`HookContext` | 이벤트 훅 확장 계약 |
+| `ai.manifesto.runtime.AppWorldStore`/`AppSnapshotStore` | 영속 경계 계약 |
 
 ## App이 있는 이유
 직접 `core + host + world`를 조합하면 서비스 코드가 복잡해집니다.

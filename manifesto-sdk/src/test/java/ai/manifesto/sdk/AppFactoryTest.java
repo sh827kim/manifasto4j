@@ -1,6 +1,5 @@
 package ai.manifesto.sdk;
 
-import ai.manifesto.app.App;
 import ai.manifesto.core.Intent;
 import ai.manifesto.core.Patch;
 import ai.manifesto.core.core.ValidationUtils;
@@ -14,9 +13,12 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AppFactoryTest {
 
@@ -50,6 +52,52 @@ class AppFactoryTest {
         app.act(new Intent("notify", Map.of(), UUID.randomUUID().toString()));
 
         assertEquals("ok", app.getSnapshot().getData().get("status"));
+    }
+
+    @Test
+    void appConfigSupportsSdkMemoryProviderAndVerifier() throws Exception {
+        DomainSchema schema = buildSchema();
+        Map<String, StoredMemoryRecord> storage = new ConcurrentHashMap<>();
+        MemoryProvider provider = new MemoryProvider() {
+            @Override
+            public void save(StoredMemoryRecord record) {
+                storage.put(record.key(), record);
+            }
+
+            @Override
+            public Optional<StoredMemoryRecord> load(String key) {
+                return Optional.ofNullable(storage.get(key));
+            }
+
+            @Override
+            public List<StoredMemoryRecord> list() {
+                return List.copyOf(storage.values());
+            }
+        };
+        MemoryVerifier verifier = (key, value) -> key.startsWith("deny/")
+            ? MemoryVerificationResult.freeze("deny_key")
+            : MemoryVerificationResult.accept();
+
+        App app = AppFactory.createApp(new AppConfig(
+            schema,
+            null,
+            null,
+            Map.of(),
+            Map.of("host.notify", params -> EffectResult.of(List.of(Patch.set("status", "ok")))),
+            provider,
+            verifier,
+            false
+        ));
+        app.ready();
+
+        MemoryFacade memory = app.getMemoryFacade();
+        memory.ingest("allow/a", "v1");
+        memory.ingest("deny/a", "v2");
+
+        assertEquals(Optional.of("v1"), memory.recall("allow/a"));
+        assertTrue(memory.isContextFrozen());
+        assertEquals("deny_key", memory.getLastFailureMarker());
+        assertTrue(storage.containsKey("allow/a"));
     }
 
     private DomainSchema buildSchema() {

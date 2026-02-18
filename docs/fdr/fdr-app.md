@@ -67,9 +67,9 @@ This closes the gap between minimal synchronous execution and lifecycle observab
 ## 3. Deferred Areas
 
 - Hook chain composability/retry policy
-- Memory provider pluggability
+- Memory provider/verifier 고도화(외부 저장소/검증 정책 템플릿)
 - Full system action catalog
-- sdk 전용 타입 계층(`ai.manifesto.sdk.*`) 확장 및 runtime 타입 직접 노출 축소
+- sdk 전용 타입 계층(`ai.manifesto.sdk.*`)의 world/session 고급 surface 확장 범위 결정
 
 ## 4. Cross-Module Integration Regression (2026-02-14, TASK-C2)
 
