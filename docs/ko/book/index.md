@@ -4,7 +4,7 @@
 
 ## 이 문서의 목표
 - 이 프로젝트가 왜 존재하는지 설명할 수 있다.
-- `core/host/app/world/compiler/intent-ir/translator/codegen` 각 모듈의 역할을 구분할 수 있다.
+- `core/host/runtime/sdk/world/compiler/intent-ir/translator/codegen` 각 모듈의 역할을 구분할 수 있다.
 - 핵심 개념(`Intent`, `Snapshot`, `Patch`, `Effect`, `Trace`)이 어떻게 연결되는지 이해할 수 있다.
 - 실제 코드에서 어디를 먼저 읽어야 하는지 알 수 있다.
 
@@ -18,7 +18,7 @@
 7. [07. 이 프로젝트로 할 수 있는 일 (LLM 활용 포함)](./07-llm-integration.md)
 8. [08. 모듈 상세: manifesto-core](./08-module-core.md)
 9. [09. 모듈 상세: manifesto-host](./09-module-host.md)
-10. [10. 모듈 상세: manifesto-app](./10-module-app.md)
+10. [10. 모듈 상세: manifesto-sdk + manifesto-runtime](./10-module-app.md)
 11. [11. 모듈 상세: manifesto-world](./11-module-world.md)
 12. [12. 모듈 상세: manifesto-compiler](./12-module-compiler.md)
 13. [13. 모듈 상세: manifesto-intent-ir](./13-module-intent-ir.md)
@@ -28,7 +28,7 @@
 ## 현재 코드 기준 범위 (2026-02-14)
 - TS baseline 패키지: `app`, `codegen`, `compiler`, `core`, `host`, `intent-ir`, `translator`, `world`
 - Java 모듈도 동일한 8개 모듈을 모두 보유
-- 현재 다음 중점 작업은 `TASK-C2`(cross-module integration regression) 단계
+- 현재 runtime/sdk 분리 이후 기준으로 문서 동기화를 진행 중
 
 ## 학습 전 준비
 - Java 17 문법(클래스/인터페이스/record/컬렉션)

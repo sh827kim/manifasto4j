@@ -61,15 +61,16 @@ graph LR
   IntentIr["manifesto-intent-ir"] --> Translator["manifesto-translator"]
   Translator --> Host["manifesto-host"]
   Core --> Host
-  World["manifesto-world"] --> App["manifesto-app"]
-  Host --> App
-  Core --> App
+  World["manifesto-world"] --> Runtime["manifesto-runtime"]
+  Host --> Runtime
+  Core --> Runtime
+  Sdk["manifesto-sdk"] --> Runtime
   Codegen["manifesto-codegen"] -.schema 기반 생성.- Core
-  Translator -.의도 변환.- App
+  Translator -.의도 변환.- Runtime
 ```
 
 핵심 포인트:
-- 실행 중심 경로는 `app -> world -> host -> core`입니다.
+- 실행 중심 경로는 `sdk -> runtime -> world -> host -> core`입니다.
 - 개발 생산성 경로는 `compiler`, `intent-ir`, `translator`, `codegen`입니다.
 - `core`가 계산의 기준점이며 다른 모듈이 이를 둘러싸는 구조입니다.
 

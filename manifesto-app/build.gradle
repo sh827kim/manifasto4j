@@ -1,5 +1,0 @@
-dependencies {
-    implementation project(':manifesto-core')
-    implementation project(':manifesto-host')
-    implementation project(':manifesto-world')
-}

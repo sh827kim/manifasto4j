@@ -189,6 +189,50 @@ class AppParitySurfaceTest {
     }
 
     @Test
+    void sdkStyleCreateAppSupportsInitialDataAndEffects() throws Exception {
+        DomainSchema schema = buildSchema();
+
+        App app = AppFactory.createApp(
+            schema,
+            Map.of("status", "boot"),
+            Map.of("host.notify", params -> EffectResult.of(List.of(Patch.set("status", "ok"))))
+        );
+        app.ready();
+
+        assertEquals("boot", app.getSnapshot().getData().get("status"));
+        app.act(new Intent("notify", Map.of(), UUID.randomUUID().toString()));
+        assertEquals("ok", app.getSnapshot().getData().get("status"));
+    }
+
+    @Test
+    void sdkStyleCreateTestAppOverloadIsUsable() throws Exception {
+        DomainSchema schema = buildSchema();
+        App app = AppFactory.createTestApp(
+            schema,
+            Map.of("status", "seed"),
+            Map.of("host.notify", params -> EffectResult.of(List.of(Patch.set("status", "ok"))))
+        );
+        app.ready();
+        app.act(new Intent("notify", Map.of(), UUID.randomUUID().toString()));
+        assertEquals("ok", app.getSnapshot().getData().get("status"));
+    }
+
+    @Test
+    void appConfigSdkModeWorksWithoutLegacySnapshotAndHostFields() throws Exception {
+        DomainSchema schema = buildSchema();
+        App app = AppFactory.createApp(
+            AppConfig.sdk(
+                schema,
+                Map.of("status", "seed"),
+                Map.of("host.notify", params -> EffectResult.of(List.of(Patch.set("status", "ok"))))
+            )
+        );
+        app.ready();
+        app.act(new Intent("notify", Map.of(), UUID.randomUUID().toString()));
+        assertEquals("ok", app.getSnapshot().getData().get("status"));
+    }
+
+    @Test
     void defaultAppThrowsTypedLifecycleAndBranchExceptions() {
         DomainSchema schema = buildSchema();
         Snapshot snapshot = buildSnapshot(schema);

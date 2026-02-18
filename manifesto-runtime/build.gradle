@@ -1,0 +1,9 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    api project(':manifesto-core')
+    api project(':manifesto-host')
+    api project(':manifesto-world')
+}

@@ -353,6 +353,26 @@ public final class DefaultApp implements App {
     }
 
     @Override
+    public List<AppHead> getHeads() {
+        if (world == null || branchAliases.isEmpty()) {
+            return List.of();
+        }
+        return branchAliases.entrySet().stream()
+            .map(entry -> new AppHead(entry.getKey(), entry.getValue(), resolveHeadCreatedAt(entry.getValue())))
+            .sorted(Comparator.comparingLong(AppHead::createdAt).reversed())
+            .toList();
+    }
+
+    @Override
+    public AppHead getLatestHead() {
+        List<AppHead> heads = getHeads();
+        if (heads.isEmpty()) {
+            return null;
+        }
+        return heads.get(0);
+    }
+
+    @Override
     public void createBranch(String branchName, WorldId worldId) {
         Objects.requireNonNull(branchName, "branchName is required");
         Objects.requireNonNull(worldId, "worldId is required");
@@ -454,6 +474,21 @@ public final class DefaultApp implements App {
             return;
         }
         worldStore.save(branchName, worldId, snapshot);
+    }
+
+    private long resolveHeadCreatedAt(WorldId worldId) {
+        if (world == null || worldId == null) {
+            return 0L;
+        }
+        World worldEntity = world.getStore().getWorld(worldId);
+        if (worldEntity != null) {
+            return worldEntity.getCreatedAt();
+        }
+        Snapshot worldSnapshot = world.getStore().getSnapshot(worldId);
+        if (worldSnapshot != null && worldSnapshot.getMeta() != null) {
+            return worldSnapshot.getMeta().getTimestamp();
+        }
+        return 0L;
     }
 
     private ComputeStatus toComputeStatus(ProposalStatus status) {

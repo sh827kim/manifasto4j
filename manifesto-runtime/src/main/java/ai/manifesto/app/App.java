@@ -63,6 +63,14 @@ public interface App extends Hookable {
         return List.of();
     }
 
+    default List<AppHead> getHeads() {
+        return List.of();
+    }
+
+    default AppHead getLatestHead() {
+        return null;
+    }
+
     default void createBranch(String branchName, WorldId worldId) {
         throw new WorldIntegrationDisabledException();
     }

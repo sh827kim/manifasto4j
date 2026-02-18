@@ -25,7 +25,8 @@ https://docs.manifesto-ai.dev/
 ## 모듈
 - `manifesto-core` - core runtime (schema/expr/flow/compute)
 - `manifesto-host` - compute/effect 루프
-- `manifesto-app` - 고수준 API
+- `manifesto-sdk` - canonical 공개 API 계층
+- `manifesto-runtime` - App runtime 구현 계층
 - `manifesto-compiler` - MEL 컴파일러 + lowering
 - `manifesto-world` - world/authority/lineage 런타임
 
@@ -44,6 +45,6 @@ https://docs.manifesto-ai.dev/
 
 ## 자주 쓰는 검증 명령
 ```bash
-./gradlew :manifesto-core:test :manifesto-host:test :manifesto-app:test :manifesto-compiler:test :manifesto-world:test
+./gradlew :manifesto-core:test :manifesto-host:test :manifesto-runtime:test :manifesto-sdk:test :manifesto-compiler:test :manifesto-world:test
 ./gradlew checkGoldenSync
 ```

@@ -54,5 +54,5 @@ ai.manifesto.host
 ---
 
 ## 다음 문서
-- [10. 모듈 상세: manifesto-app](./10-module-app.md)
+- [10. 모듈 상세: manifesto-sdk + manifesto-runtime](./10-module-app.md)
 <!-- NEXT_DOC_END -->

@@ -33,7 +33,8 @@ https://docs.manifesto-ai.dev/
 ## Modules
 - `manifesto-core` - core runtime (schema/expr/flow/compute)
 - `manifesto-host` - compute/effect loop
-- `manifesto-app` - high-level API surface
+- `manifesto-sdk` - canonical public API surface
+- `manifesto-runtime` - runtime app implementation layer
 - `manifesto-compiler` - MEL compiler + lowering
 - `manifesto-world` - world/authority/lineage runtime
 - `manifesto-intent-ir` - intent IR normalization/canonical/hash and key pipeline bootstrap
@@ -55,7 +56,7 @@ https://docs.manifesto-ai.dev/
 
 ## Useful Verification Commands
 ```bash
-./gradlew :manifesto-core:test :manifesto-host:test :manifesto-app:test :manifesto-compiler:test :manifesto-world:test
+./gradlew :manifesto-core:test :manifesto-host:test :manifesto-runtime:test :manifesto-sdk:test :manifesto-compiler:test :manifesto-world:test
 ./gradlew :manifesto-intent-ir:test :manifesto-translator:test :manifesto-codegen:test
 ./gradlew checkGoldenSync
 ```

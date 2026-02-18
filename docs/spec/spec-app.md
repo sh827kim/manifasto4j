@@ -3,19 +3,24 @@
 | Field | Value |
 | --- | --- |
 | Status | Draft (Java port) |
-| Scope | app facade for server/CLI |
-| Source of Truth | `https://github.com/manifesto-ai/core/blob/main/packages/app/docs/VERSION-INDEX.md` |
-| Latest | `2.3.1` |
+| Scope | Java SDK facade for server/CLI (`manifesto-sdk` + `manifesto-runtime`) |
+| Source of Truth | `https://github.com/manifesto-ai/core/blob/main/packages/sdk/src/index.ts` |
+| Source of Truth | `https://github.com/manifesto-ai/core/blob/main/packages/runtime/src/types/app.ts` |
+| Source of Truth | `https://github.com/manifesto-ai/core/blob/main/docs/internals/adr/008-sdk-first-transition-and-app-retirement.md` |
+| Latest | SDK `1.2.0`, Runtime `0.1.2` (TS `c7a47aa` 기준) |
 
 ## 1. Scope
 
-App is a facade over Core/Host/World/Store. Java App should provide:
+TS 기준에서 `@manifesto-ai/app`는 retire 되었고, `@manifesto-ai/sdk`가 canonical public entry다.
+Java도 동일하게 `manifesto-sdk`를 canonical public entry로 사용한다.
 
-- createApp(domain, opts)
-- app.ready() explicit initialization
-- act(intent) with ActionHandle lifecycle
-- subscribe(state selector)
-- service registration (effect handlers)
+Java App should provide:
+
+- SDK-level `createApp(...)` entry semantics
+- `app.ready()` explicit initialization
+- `act(intent)` with ActionHandle lifecycle
+- `subscribe(state selector)`
+- world/system/memory facade boundary
 
 ## 2. Server/CLI-Friendly Minimal App
 
@@ -81,17 +86,25 @@ Minimal conformance for server/CLI:
 - Hook plugin chain 고도화(필터 조합/재시도 정책)
 - Memory provider pluggability
 
-## 8. A1 Contract Parity Map (2026-02-14)
+## 8. SDK/Runtime Contract Parity Map (Rebaseline, 2026-02-18)
 
-TS app 공개 계약(`packages/app/src/index.ts`) 대비 Java app(`manifesto-app`) 기준의 A1 범위 매핑:
+TS SDK/Runtime 공개 계약(`packages/sdk/src/index.ts`, `packages/runtime/src/types/app.ts`) 대비 Java sdk/runtime 기준의 매핑:
 
 | TS 계약군 | Java 대응 | 상태 |
 | --- | --- | --- |
-| Hookable/AppRef/HookContext | `Hookable`, `AppRef`, `AppRefImpl`, `HookContext` | 반영 |
-| App 조립 옵션 | `AppConfig`, `AppFactory.createApp(AppConfig)` | 반영 |
-| 실행 옵션 계약 | `ActOptions`, `SubscribeOptions`, `SessionOptions`, `ForkOptions`, `EnqueueOptions` | 반영 |
-| lifecycle/branch 에러 타입 | `AppNotReadyException`, `AppDisposedException`, `BranchNotFoundException`, `WorldIntegrationDisabledException` | 반영 |
+| SDK canonical entry (`createApp`, `createTestApp`) | `AppFactory.createApp(...)`, `AppFactory.createWorldApp(...)` | 부분 반영 |
+| App lifecycle (`status`, `ready`, `dispose`) | `App.getStatus()`, `ready()`, `dispose()` | 반영 |
+| Action API (`act`, `ActionHandle`, `getActionHandle`) | `act(Intent)`, `ActionHandle` | 부분 반영 |
+| Session/Branch surface | `createSession`, `listBranches`, `switchBranch` | 부분 반영 |
+| World query (`getWorld`, `getSnapshot(worldId)`, `getHeads`) | `getWorld()`, branch/world 조회 API 일부 | 부분 반영 |
+| System/Memory facade | `SystemFacade`, `MemoryFacade` | 반영 |
+| SDK effects-first config (`schema + effects`) | `AppFactory.createApp(schema, initialData, effects)` / `createTestApp(...)` + `AppConfig.sdk(...)` | 반영 |
 
 비고:
-- 본 사이클에서는 **계약 타입 정식화(contract-first)**를 우선 적용했다.
-- 세부 동작(예: 옵션 기반 실행 분기)은 후속 Task(A2 이상)에서 테스트와 함께 단계적으로 확장한다.
+- 본 문서는 app 기준이 아닌 **sdk/runtime 기준 parity 문서**로 재기준화되었다.
+- Java canonical 진입점은 `manifesto-sdk`이며 runtime 구현은 `manifesto-runtime`에 위치한다.
+
+## 9. Immediate Gaps (P0)
+
+- `getHeads/getLatestHead`는 노출되었고 기본 정렬 동작을 제공하지만, TS의 world-query 보장 범위와의 세부 의미동치 검증은 추가 필요
+- `manifesto-sdk`가 runtime 타입(`ai.manifesto.app.*`)을 직접 재노출하는 구간은 후속 단계에서 sdk 전용 타입으로 정리 필요

@@ -80,6 +80,9 @@ class AppWorldIntegrationTest {
         assertEquals("main", app.getCurrentBranchName());
         app.createBranch("genesis", world.getStore().getGenesis().getWorldId());
         assertTrue(app.listBranchNames().contains("genesis"));
+        assertTrue(app.getHeads().size() >= 2);
+        assertNotNull(app.getLatestHead());
+        assertEquals("main", app.getLatestHead().branchName());
 
         WorldId genesisId = world.getStore().getGenesis().getWorldId();
         app.switchBranch("genesis");
